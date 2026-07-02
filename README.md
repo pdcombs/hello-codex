@@ -1,6 +1,6 @@
 # Hello Codex
 
-A small three-tier application with a React frontend, GraphQL API, and MongoDB database.
+I am learning and getting familiar with Codex by deploying a React application connected to a Node.js GraphQL API and a MongoDB document database.
 
 ## Local development
 
