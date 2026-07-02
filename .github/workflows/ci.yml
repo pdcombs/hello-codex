@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: |
+            hello-world/pnpm-lock.yaml
+            hello-world-api/pnpm-lock.yaml
+      - run: pnpm --dir hello-world install --frozen-lockfile
+      - run: pnpm --dir hello-world-api install --frozen-lockfile
+      - run: pnpm --dir hello-world lint
+      - run: pnpm --dir hello-world build
+      - run: node --check hello-world-api/server.js

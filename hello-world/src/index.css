@@ -1,0 +1,15 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #213547;
+  background: #f7f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}

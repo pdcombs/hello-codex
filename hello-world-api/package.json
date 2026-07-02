@@ -1,0 +1,14 @@
+{
+  "name": "hello-world-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0",
+    "mongodb": "^7.0.0"
+  }
+}
