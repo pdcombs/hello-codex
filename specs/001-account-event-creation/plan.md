@@ -184,7 +184,7 @@ specs/001-account-event-creation/
 ### Source Code (repository root)
 
 ```text
-hello-world/
+votiy-web/
 ├── src/
 │   ├── app/
 │   ├── components/
@@ -196,7 +196,7 @@ hello-world/
     ├── component/
     └── contract/
 
-hello-world-api/
+votiy-api/
 ├── src/
 │   ├── api/graphql/
 │   ├── config/

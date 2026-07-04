@@ -3,8 +3,8 @@ services:
     name: hello-codex
     runtime: node
     plan: starter
-    buildCommand: corepack pnpm --dir hello-world install --frozen-lockfile && corepack pnpm --dir hello-world build && corepack pnpm --dir hello-world-api install --frozen-lockfile
-    startCommand: corepack pnpm --dir hello-world-api start
+    buildCommand: corepack pnpm --dir votiy-web install --frozen-lockfile && corepack pnpm --dir votiy-web build && corepack pnpm --dir votiy-api install --frozen-lockfile
+    startCommand: corepack pnpm --dir votiy-api start
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:

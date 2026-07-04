@@ -9,7 +9,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const port = Number(process.env.PORT ?? 4000)
 const host = isProduction ? '0.0.0.0' : '127.0.0.1'
 const apiDirectory = dirname(fileURLToPath(import.meta.url))
-const frontendDirectory = join(apiDirectory, '..', 'hello-world', 'dist')
+const frontendDirectory = join(apiDirectory, '..', 'votiy-web', 'dist')
 
 const seedWords = [
   'aurora',
@@ -32,8 +32,9 @@ const schema = buildSchema(`
 
 const mongoUrl = process.env.MONGODB_URI
   ?? 'mongodb://root:localpassword@127.0.0.1:27017/hello_world?authSource=admin'
+const databaseName = process.env.MONGODB_DATABASE ?? 'hello_world'
 const mongoClient = new MongoClient(mongoUrl, { maxPoolSize: 10 })
-const wordsCollection = mongoClient.db('hello_world').collection('words')
+const wordsCollection = mongoClient.db(databaseName).collection('words')
 const rateLimits = new Map()
 let lastWord
 
@@ -95,7 +96,7 @@ function hasValidOrigin(request) {
   const origin = request.headers.origin
   const forwardedHost = request.headers['x-forwarded-host'] ?? request.headers.host
   const expectedOrigin = `https://${forwardedHost}`
-  return origin === expectedOrigin && request.headers['x-requested-with'] === 'hello-world'
+  return origin === expectedOrigin && request.headers['x-requested-with'] === 'votiy-web'
 }
 
 async function readRequestBody(request) {
@@ -197,7 +198,7 @@ await mongoClient.connect()
 await ensureWordsExist()
 
 server.listen(port, host, () => {
-  console.log(`Application running at http://${host}:${port}`)
+  console.log(`Votiy API running at http://${host}:${port}`)
 })
 
 async function shutdown() {

@@ -1,4 +1,4 @@
-# Hello Codex
+# Votiy
 
 Votiy is a voting-event platform being developed through GitHub Spec Kit's spec-driven workflow. The
 current foundation is a React application connected to a Node.js GraphQL API and MongoDB.
@@ -20,16 +20,18 @@ Start MongoDB:
 docker compose up -d
 ```
 
-Start the API from `hello-world-api`:
+Start the Votiy API:
 
 ```bash
+cd votiy-api
 pnpm install
 pnpm dev
 ```
 
-Start React from `hello-world`:
+Start the Votiy React web app in another terminal:
 
 ```bash
+cd votiy-web
 pnpm install
 pnpm dev
 ```
@@ -42,5 +44,9 @@ Render builds React and serves it from the Node API. Set these secret environmen
 
 - `MONGODB_URI`: MongoDB Atlas connection string for the restricted application user
 - `NODE_ENV`: `production`
+
+The existing Render service name and MongoDB database remain unchanged during this repository rename.
+Both environments continue to use `hello_world` unless `MONGODB_DATABASE` is explicitly configured during
+a future database migration.
 
 The service exposes `/health` for health checks and `/graphql` for same-origin requests from the application.

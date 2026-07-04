@@ -13,7 +13,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-With': 'hello-world',
+          'X-Requested-With': 'votiy-web',
         },
         body: JSON.stringify({ query: '{ message }' }),
       })
@@ -31,9 +31,9 @@ function App() {
   return (
     <div className="app-shell">
       <header className="glass-nav">
-        <a className="brand" href="#top" aria-label="Nightshift home">
-          <span className="brand-mark">N</span>
-          <span>NIGHTSHIFT</span>
+        <a className="brand" href="#top" aria-label="Votiy home">
+          <span className="brand-mark">V</span>
+          <span>VOTIY</span>
         </a>
         <nav aria-label="Primary navigation">
           <a href="#machine">Machine</a>
@@ -123,7 +123,7 @@ function App() {
       </main>
 
       <footer>
-        <span>Nightshift systems</span>
+        <span>Votiy</span>
         <span>React / GraphQL / MongoDB</span>
       </footer>
     </div>

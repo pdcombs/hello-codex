@@ -22,10 +22,10 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: |
-            hello-world/pnpm-lock.yaml
-            hello-world-api/pnpm-lock.yaml
-      - run: pnpm --dir hello-world install --frozen-lockfile
-      - run: pnpm --dir hello-world-api install --frozen-lockfile
-      - run: pnpm --dir hello-world lint
-      - run: pnpm --dir hello-world build
-      - run: node --check hello-world-api/server.js
+            votiy-web/pnpm-lock.yaml
+            votiy-api/pnpm-lock.yaml
+      - run: pnpm --dir votiy-web install --frozen-lockfile
+      - run: pnpm --dir votiy-api install --frozen-lockfile
+      - run: pnpm --dir votiy-web lint
+      - run: pnpm --dir votiy-web build
+      - run: node --check votiy-api/server.js
