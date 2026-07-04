@@ -1,6 +1,16 @@
 # Hello Codex
 
-I am learning and getting familiar with Codex by deploying a React application connected to a Node.js GraphQL API and a MongoDB document database.
+Votiy is a voting-event platform being developed through GitHub Spec Kit's spec-driven workflow. The
+current foundation is a React application connected to a Node.js GraphQL API and MongoDB.
+
+## Spec-driven development
+
+Project principles live in `.specify/memory/constitution.md`, and feature artifacts live under `specs/`.
+The standard flow is constitution → specify → clarify → plan → tasks → analyze → implement.
+
+Quality gates require layered unit, contract, integration, and UI end-to-end tests. Every successful
+`main` pipeline deploys the tested commit to production, runs post-deploy smoke checks, and relies on
+structured observability signals for rapid diagnosis and rollback.
 
 ## Local development
 

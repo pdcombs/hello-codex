@@ -1,0 +1,153 @@
+scalar DateTime
+
+enum ErrorCode {
+  AUTHENTICATION_REQUIRED
+  EMAIL_NOT_VERIFIED
+  FORBIDDEN
+  INVALID_CREDENTIALS
+  INVALID_OR_EXPIRED_TOKEN
+  NOT_FOUND
+  RATE_LIMITED
+  VALIDATION_FAILED
+  CONFLICT
+  SERVICE_UNAVAILABLE
+}
+
+enum EventVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum EventAccessStatus {
+  INVITED
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+type FieldError {
+  field: String!
+  code: String!
+  message: String!
+}
+
+type OperationError {
+  code: ErrorCode!
+  message: String!
+  fieldErrors: [FieldError!]!
+  correlationId: String
+}
+
+type Account {
+  id: ID!
+  email: String!
+  isVerified: Boolean!
+  createdAt: DateTime!
+}
+
+type SessionPayload {
+  account: Account!
+}
+
+type Event {
+  id: ID!
+  publicId: String!
+  title: String!
+  description: String
+  location: String
+  visibility: EventVisibility!
+  isOwner: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type EventAccess {
+  id: ID!
+  email: String!
+  status: EventAccessStatus!
+  createdAt: DateTime!
+}
+
+type OwnedEventConnection {
+  nodes: [Event!]!
+  nextCursor: String
+}
+
+type AccountSuccess { account: Account! }
+type SessionSuccess { session: SessionPayload! }
+type SignOutSuccess { signedOut: Boolean! }
+type EventSuccess { event: Event! }
+type EventListSuccess { events: OwnedEventConnection! }
+type EventAccessSuccess { access: EventAccess! }
+type EventAccessListSuccess { access: [EventAccess!]! }
+
+union AccountResult = AccountSuccess | OperationError
+union SessionResult = SessionSuccess | OperationError
+union SignOutResult = SignOutSuccess | OperationError
+union EventResult = EventSuccess | OperationError
+union EventListResult = EventListSuccess | OperationError
+union EventAccessResult = EventAccessSuccess | OperationError
+union EventAccessListResult = EventAccessListSuccess | OperationError
+
+input RegisterInput {
+  email: String!
+  password: String!
+  idempotencyKey: ID!
+}
+
+input VerifyEmailInput {
+  token: String!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input CreateEventInput {
+  title: String!
+  description: String
+  location: String
+  visibility: EventVisibility = PRIVATE
+  idempotencyKey: ID!
+}
+
+input SetEventVisibilityInput {
+  eventId: ID!
+  visibility: EventVisibility!
+}
+
+input InviteEventAttendeeInput {
+  eventId: ID!
+  email: String!
+  idempotencyKey: ID!
+}
+
+input AcceptEventInvitationInput {
+  token: String!
+}
+
+input RemoveEventAttendeeInput {
+  eventId: ID!
+  accessId: ID!
+}
+
+type Query {
+  viewer: SessionResult!
+  ownedEvents(first: Int = 20, after: String): EventListResult!
+  eventByPublicId(publicId: String!): EventResult!
+  eventAccess(eventId: ID!): EventAccessListResult!
+}
+
+type Mutation {
+  register(input: RegisterInput!): AccountResult!
+  verifyEmail(input: VerifyEmailInput!): SessionResult!
+  resendVerification: AccountResult!
+  signIn(input: SignInInput!): SessionResult!
+  signOut: SignOutResult!
+  createEvent(input: CreateEventInput!): EventResult!
+  setEventVisibility(input: SetEventVisibilityInput!): EventResult!
+  inviteEventAttendee(input: InviteEventAttendeeInput!): EventAccessResult!
+  acceptEventInvitation(input: AcceptEventInvitationInput!): EventAccessResult!
+  removeEventAttendee(input: RemoveEventAttendeeInput!): EventAccessResult!
+}
