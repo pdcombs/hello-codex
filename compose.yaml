@@ -1,3 +1,5 @@
+name: votiy-app
+
 services:
   votiy-database:
     image: mongo:8.0
@@ -6,7 +8,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: localpassword
-      MONGO_INITDB_DATABASE: hello_world
+      MONGO_INITDB_DATABASE: votiy
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
@@ -20,3 +22,5 @@ services:
 
 volumes:
   mongodb_data:
+    name: hello-codex_mongodb_data
+    external: true

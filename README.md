@@ -3,6 +3,8 @@
 Votiy is a voting-event platform being developed through GitHub Spec Kit's spec-driven workflow. The
 current foundation is a React application connected to a Node.js GraphQL API and MongoDB.
 
+The local workspace and Docker Compose project are named `votiy-app`.
+
 ## Spec-driven development
 
 Project principles live in `.specify/memory/constitution.md`, and feature artifacts live under `specs/`.
@@ -25,6 +27,7 @@ Start the Votiy API:
 ```bash
 cd votiy-api
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
@@ -45,8 +48,8 @@ Render builds React and serves it from the Node API. Set these secret environmen
 - `MONGODB_URI`: MongoDB Atlas connection string for the restricted application user
 - `NODE_ENV`: `production`
 
-The existing Render service name and MongoDB database remain unchanged during this repository rename.
-Both environments continue to use `hello_world` unless `MONGODB_DATABASE` is explicitly configured during
-a future database migration.
+The existing Render service name and production MongoDB database remain unchanged during this repository
+rename. Local development reads `MONGODB_DATABASE=votiy` from the ignored `votiy-api/.env.local` file;
+production continues to use `hello_world` because that local file is never committed or deployed.
 
 The service exposes `/health` for health checks and `/graphql` for same-origin requests from the application.
