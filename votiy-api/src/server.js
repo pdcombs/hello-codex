@@ -2,15 +2,19 @@ import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildSchema, graphql } from 'graphql'
-import { MongoClient } from 'mongodb'
 import { createApplication, securityHeaders } from './app.js'
+import { createHealthHandlers } from './api/health.js'
 import { loadEnvironment } from './config/env.js'
+import { createLogger } from './observability/logger.js'
+import { ensureCollectionsAndIndexes } from './repositories/indexes.js'
+import { createMongoConnection } from './repositories/mongo.js'
 
 const environment = loadEnvironment()
 const sourceDirectory = dirname(fileURLToPath(import.meta.url))
 const frontendDirectory = join(sourceDirectory, '..', '..', 'votiy-web', 'dist')
-const mongoClient = new MongoClient(environment.mongoUri, { maxPoolSize: 10 })
-const wordsCollection = mongoClient.db(environment.mongoDatabase).collection('words')
+const logger = createLogger({ level: environment.logLevel, environment: environment.nodeEnvironment })
+const mongo = createMongoConnection({ uri: environment.mongoUri, databaseName: environment.mongoDatabase })
+const wordsCollection = mongo.collection('words')
 
 const seedWords = ['aurora', 'breeze', 'comet', 'dandelion', 'ember', 'fjord', 'galaxy', 'horizon', 'island', 'jasmine']
 const schema = buildSchema('type Query { message: String! }')
@@ -65,25 +69,22 @@ async function graphqlHandler(request, response) {
   }
 }
 
-function healthHandler(_request, response) {
-  response.writeHead(200, securityHeaders('application/json'))
-  response.end(JSON.stringify({ status: 'ok' }))
-}
-
-const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler })
+const { healthHandler, readyHandler } = createHealthHandlers({ mongo })
+const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger })
 const server = createServer(application)
 const host = environment.isProduction ? '0.0.0.0' : '127.0.0.1'
 
-await mongoClient.connect()
+await mongo.connect()
+await ensureCollectionsAndIndexes(mongo.database)
 await ensureWordsExist()
 
 server.listen(environment.port, host, () => {
-  console.log(`Votiy API running at http://${host}:${environment.port}`)
+  logger.info({ host, port: environment.port }, 'Votiy API started')
 })
 
 async function shutdown() {
   server.close()
-  await mongoClient.close()
+  await mongo.close()
 }
 
 process.once('SIGINT', shutdown)

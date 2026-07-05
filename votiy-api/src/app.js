@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { extname, join, normalize } from 'node:path'
+import { correlationIdFromRequest, runWithRequestContext } from './observability/request-context.js'
+import { logRequestCompletion } from './observability/logger.js'
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -48,22 +50,29 @@ async function serveFrontend(request, response, frontendDirectory) {
   }
 }
 
-export function createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler }) {
+export function createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger }) {
   if (!frontendDirectory || !graphqlHandler || !healthHandler) {
     throw new TypeError('frontendDirectory, graphqlHandler, and healthHandler are required')
   }
 
   return async function application(request, response) {
-    const pathname = new URL(request.url, 'http://localhost').pathname
+    const correlationId = correlationIdFromRequest(request)
+    const startedAt = process.hrtime.bigint()
+    response.setHeader('X-Correlation-ID', correlationId)
+    if (logger) response.once('finish', () => logRequestCompletion(logger, { request, response, correlationId, startedAt }))
 
-    if (pathname === '/health') return healthHandler(request, response)
-    if (pathname === '/ready' && readyHandler) return readyHandler(request, response)
-    if (pathname === '/graphql') return graphqlHandler(request, response)
-    if (request.method === 'GET' || request.method === 'HEAD') {
-      return serveFrontend(request, response, frontendDirectory)
-    }
+    return runWithRequestContext({ correlationId, startedAt }, async () => {
+      const pathname = new URL(request.url, 'http://localhost').pathname
 
-    response.writeHead(404, securityHeaders('application/json'))
-    response.end(JSON.stringify({ error: 'Not found' }))
+      if (pathname === '/health') return healthHandler(request, response)
+      if (pathname === '/ready' && readyHandler) return readyHandler(request, response)
+      if (pathname === '/graphql') return graphqlHandler(request, response)
+      if (request.method === 'GET' || request.method === 'HEAD') {
+        return serveFrontend(request, response, frontendDirectory)
+      }
+
+      response.writeHead(404, securityHeaders('application/json'))
+      response.end(JSON.stringify({ error: 'Not found' }))
+    })
   }
 }

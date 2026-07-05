@@ -39,11 +39,11 @@
 - [X] T010 [P] Implement stable error codes, typed application errors, and safe client error mapping in `votiy-api/src/domain/errors.js`
 - [X] T011 [P] Implement email normalization, cryptographic token generation/digests, constant-time comparison, and idempotency request digests in `votiy-api/src/domain/security.js`
 - [X] T012 [P] Implement event text and account input schemas with documented length limits in `votiy-api/src/domain/validation.js`
-- [ ] T013 Implement MongoDB connection lifecycle and dependency readiness checks in `votiy-api/src/repositories/mongo.js`
-- [ ] T014 Create MongoDB collection validators and all indexes from `data-model.md` in `votiy-api/src/repositories/indexes.js`
-- [ ] T015 [P] Implement correlation IDs, structured request-completion logs, secret redaction, and operation timing in `votiy-api/src/observability/logger.js` and `votiy-api/src/observability/request-context.js`
-- [ ] T016 [P] Implement immutable allowlisted audit-event persistence in `votiy-api/src/repositories/audit-event-repository.js`
-- [ ] T017 Implement `/health` liveness and MongoDB/config-aware `/ready` endpoints in `votiy-api/src/api/health.js`
+- [X] T013 Implement MongoDB connection lifecycle and dependency readiness checks in `votiy-api/src/repositories/mongo.js`
+- [X] T014 Create MongoDB collection validators and all indexes from `data-model.md` in `votiy-api/src/repositories/indexes.js`
+- [X] T015 [P] Implement correlation IDs, structured request-completion logs, secret redaction, and operation timing in `votiy-api/src/observability/logger.js` and `votiy-api/src/observability/request-context.js`
+- [X] T016 [P] Implement immutable allowlisted audit-event persistence in `votiy-api/src/repositories/audit-event-repository.js`
+- [X] T017 Implement `/health` liveness and MongoDB/config-aware `/ready` endpoints in `votiy-api/src/api/health.js`
 - [ ] T018 Implement GraphQL schema loading, custom `DateTime` scalar, typed result unions, and production introspection controls from `specs/001-account-event-creation/contracts/schema.graphql` in `votiy-api/src/api/graphql/schema.js`
 - [ ] T019 Implement bounded GraphQL request parsing, same-origin mutation enforcement, rate-limit hooks, and correlation-aware error handling in `votiy-api/src/api/graphql/handler.js`
 - [ ] T020 [P] Create a same-origin GraphQL client with credentials, typed result handling, and correlation-aware failures in `votiy-web/src/lib/graphql.js`
