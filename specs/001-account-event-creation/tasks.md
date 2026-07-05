@@ -66,7 +66,7 @@
 ### Tests for User Story 1 ⚠️
 
 - [X] T026 [P] [US1] Write failing unit tests for normalization, password policy/hashing, verification lifecycle, duplicate suppression, and registration idempotency in `votiy-api/tests/unit/registration-service.test.js` and `votiy-api/tests/unit/verification-service.test.js`
-- [ ] T027 [P] [US1] Write failing GraphQL contract tests for `register`, `verifyEmail`, `resendVerification`, `viewer`, and safe error unions in `votiy-api/tests/contract/account.contract.test.js`
+- [X] T027 [P] [US1] Write failing GraphQL contract tests for `register`, `verifyEmail`, `resendVerification`, `viewer`, and safe error unions in `votiy-api/tests/contract/account.contract.test.js`
 - [ ] T028 [P] [US1] Write failing real-Mongo integration tests for unique normalized emails, verification atomicity/expiry, session creation, and fake-email delivery in `votiy-api/tests/integration/account-registration.test.js`
 - [ ] T029 [P] [US1] Write failing component tests for registration, verification, authenticated empty, loading, field-error, and recoverable-failure states in `votiy-web/tests/component/registration.test.jsx` and `votiy-web/tests/component/verification.test.jsx`
 - [ ] T030 [P] [US1] Write the failing CUF-001 registration-through-verification browser flow using Mailpit in `tests/e2e/new-host-registration.spec.js`
