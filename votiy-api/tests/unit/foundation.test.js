@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadEnvironment } from '../../src/config/env.js'
+import { assertAccountFeatureEnvironment, loadEnvironment } from '../../src/config/env.js'
 import { ApplicationError, ErrorCode, toClientError } from '../../src/domain/errors.js'
 import {
   constantTimeEqual,
@@ -22,8 +22,13 @@ describe('environment configuration', () => {
     expect(environment.isProduction).toBe(false)
   })
 
-  it('rejects unsafe production defaults', () => {
-    expect(() => loadEnvironment({ NODE_ENV: 'production' })).toThrow('Invalid production configuration')
+  it('allows the current production shell to boot before account features are enabled', () => {
+    expect(loadEnvironment({ NODE_ENV: 'production' }).isProduction).toBe(true)
+  })
+
+  it('rejects unsafe production settings when account features are wired', () => {
+    const environment = loadEnvironment({ NODE_ENV: 'production' })
+    expect(() => assertAccountFeatureEnvironment(environment)).toThrow('Invalid production configuration')
   })
 
   it('rejects an idle session lifetime longer than the absolute lifetime', () => {

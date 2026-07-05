@@ -24,18 +24,22 @@ const environmentSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 })
 
-function assertProductionSettings(environment) {
+export function assertAccountFeatureEnvironment(environment) {
+  if (!environment.isProduction) return environment
+
   const problems = []
 
-  if (environment.TOKEN_PEPPER === LOCAL_TOKEN_PEPPER) problems.push('TOKEN_PEPPER')
-  if (environment.EMAIL_TRANSPORT !== 'provider') problems.push('EMAIL_TRANSPORT')
-  if (!environment.EMAIL_PROVIDER_ENDPOINT) problems.push('EMAIL_PROVIDER_ENDPOINT')
-  if (!environment.EMAIL_PROVIDER_API_KEY) problems.push('EMAIL_PROVIDER_API_KEY')
-  if (!environment.APP_ORIGIN.startsWith('https://')) problems.push('APP_ORIGIN')
+  if (environment.tokenPepper === LOCAL_TOKEN_PEPPER) problems.push('TOKEN_PEPPER')
+  if (environment.emailTransport !== 'provider') problems.push('EMAIL_TRANSPORT')
+  if (!environment.emailProviderEndpoint) problems.push('EMAIL_PROVIDER_ENDPOINT')
+  if (!environment.emailProviderApiKey) problems.push('EMAIL_PROVIDER_API_KEY')
+  if (!environment.appOrigin.startsWith('https://')) problems.push('APP_ORIGIN')
 
   if (problems.length > 0) {
     throw new Error(`Invalid production configuration: ${problems.join(', ')}`)
   }
+
+  return environment
 }
 
 export function loadEnvironment(source = process.env) {
@@ -49,8 +53,6 @@ export function loadEnvironment(source = process.env) {
   if (result.data.SESSION_IDLE_TTL_SECONDS > result.data.SESSION_TTL_SECONDS) {
     throw new Error('Invalid environment configuration: SESSION_IDLE_TTL_SECONDS')
   }
-
-  if (result.data.NODE_ENV === 'production') assertProductionSettings(result.data)
 
   return Object.freeze({
     nodeEnvironment: result.data.NODE_ENV,
