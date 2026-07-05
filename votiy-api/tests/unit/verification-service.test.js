@@ -37,7 +37,7 @@ function createHarness(overrides = {}) {
     revokeActiveForAccount: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ _id: 'session-1' }),
   }
-  const emailSender = { sendVerification: vi.fn().mockResolvedValue(undefined) }
+  const emailSender = { send: vi.fn().mockResolvedValue(undefined) }
   const dependencies = {
     verificationRepository,
     accountRepository,
@@ -131,7 +131,7 @@ describe('verification service', () => {
         consumedAt: null,
       }),
     )
-    expect(harness.emailSender.sendVerification).toHaveBeenCalledWith({
+    expect(harness.emailSender.send).toHaveBeenCalledWith({
       email: 'host@example.com',
       token: 'replacement-raw-token',
     })
@@ -150,6 +150,6 @@ describe('verification service', () => {
       code: ErrorCode.CONFLICT,
     })
     expect(harness.verificationRepository.create).not.toHaveBeenCalled()
-    expect(harness.emailSender.sendVerification).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
   })
 })

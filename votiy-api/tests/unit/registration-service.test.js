@@ -29,7 +29,7 @@ function createHarness(overrides = {}) {
     create: vi.fn().mockResolvedValue(undefined),
   }
   const passwordHasher = { hash: vi.fn().mockResolvedValue('argon2id-password-hash') }
-  const emailSender = { sendVerification: vi.fn().mockResolvedValue(undefined) }
+  const emailSender = { send: vi.fn().mockResolvedValue(undefined) }
 
   const dependencies = {
     accountRepository,
@@ -108,7 +108,7 @@ describe('registration service', () => {
         consumedAt: null,
       }),
     )
-    expect(harness.emailSender.sendVerification).toHaveBeenCalledWith({
+    expect(harness.emailSender.send).toHaveBeenCalledWith({
       email: 'new.host@example.com',
       token: 'raw-verification-token',
     })
@@ -132,7 +132,7 @@ describe('registration service', () => {
     expect(harness.passwordHasher.hash).not.toHaveBeenCalled()
     expect(harness.accountRepository.createPending).not.toHaveBeenCalled()
     expect(harness.verificationRepository.create).not.toHaveBeenCalled()
-    expect(harness.emailSender.sendVerification).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
   })
 
   it('returns the original result for an identical idempotent retry without repeating side effects', async () => {
@@ -149,7 +149,7 @@ describe('registration service', () => {
     expect(harness.accountRepository.findById).toHaveBeenCalledWith('account-1')
     expect(harness.passwordHasher.hash).not.toHaveBeenCalled()
     expect(harness.verificationRepository.create).not.toHaveBeenCalled()
-    expect(harness.emailSender.sendVerification).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
   })
 
   it('rejects reuse of an idempotency key with different registration input', async () => {
@@ -165,6 +165,6 @@ describe('registration service', () => {
       code: ErrorCode.CONFLICT,
     })
     expect(harness.accountRepository.createPending).not.toHaveBeenCalled()
-    expect(harness.emailSender.sendVerification).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
   })
 })
