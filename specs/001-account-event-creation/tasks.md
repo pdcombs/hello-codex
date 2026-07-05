@@ -18,13 +18,13 @@
 
 **Purpose**: Install the planned runtime and test tooling and make local dependencies reproducible.
 
-- [ ] T001 Add root workspace scripts and Playwright/Vitest development dependencies in `package.json` and `pnpm-lock.yaml`
-- [ ] T002 [P] Add GraphQL, Zod, Argon2, cookie parsing, Pino, Vitest, and test-support dependencies in `votiy-api/package.json` and `votiy-api/pnpm-lock.yaml`
-- [ ] T003 [P] Add React Router, Zod, Vitest, React Testing Library, and jsdom dependencies in `votiy-web/package.json` and `votiy-web/pnpm-lock.yaml`
-- [ ] T004 Add Mailpit service, health check, and local networking configuration in `compose.yaml`
-- [ ] T005 [P] Document all local API configuration keys without secrets in `votiy-api/.env.example`
-- [ ] T006 [P] Add the Vite same-origin API proxy and frontend test configuration in `votiy-web/vite.config.js`
-- [ ] T007 [P] Configure root Playwright projects, web server startup, and test artifact retention in `playwright.config.js`
+- [X] T001 Add root workspace scripts and Playwright/Vitest development dependencies in `package.json` and `pnpm-lock.yaml`
+- [X] T002 [P] Add GraphQL, Zod, Argon2, cookie parsing, Pino, Vitest, and test-support dependencies in `votiy-api/package.json` and `votiy-api/pnpm-lock.yaml`
+- [X] T003 [P] Add React Router, Zod, Vitest, React Testing Library, and jsdom dependencies in `votiy-web/package.json` and `votiy-web/pnpm-lock.yaml`
+- [X] T004 Add Mailpit service, health check, and local networking configuration in `compose.yaml`
+- [X] T005 [P] Document all local API configuration keys without secrets in `votiy-api/.env.example`
+- [X] T006 [P] Add the Vite same-origin API proxy and frontend test configuration in `votiy-web/vite.config.js`
+- [X] T007 [P] Configure root Playwright projects, web server startup, and test artifact retention in `playwright.config.js`
 
 ---
 

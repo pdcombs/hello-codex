@@ -20,6 +20,19 @@ services:
       timeout: 5s
       retries: 10
 
+  votiy-mail:
+    image: axllent/mailpit:v1.27
+    container_name: votiy-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mongodb_data:
     name: hello-codex_mongodb_data

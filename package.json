@@ -4,5 +4,17 @@
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": "24.x"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"pnpm --dir votiy-api dev\" \"pnpm --dir votiy-web dev\"",
+    "test": "pnpm test:unit && pnpm test:e2e",
+    "test:unit": "pnpm --dir votiy-api test && pnpm --dir votiy-web test",
+    "test:e2e": "playwright test",
+    "build": "pnpm --dir votiy-web build"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "concurrently": "^10.0.3",
+    "vitest": "^4.1.9"
   }
 }
