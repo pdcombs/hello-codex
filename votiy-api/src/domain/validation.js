@@ -1,0 +1,46 @@
+import { z } from 'zod'
+
+const trimmedRequiredText = (maximum, label) => z.string()
+  .trim()
+  .min(1, `${label} is required`)
+  .max(maximum, `${label} must be ${maximum} characters or fewer`)
+
+const optionalText = (maximum, label) => z.string()
+  .trim()
+  .max(maximum, `${label} must be ${maximum} characters or fewer`)
+  .transform((value) => value || null)
+  .nullish()
+  .transform((value) => value ?? null)
+
+export const emailSchema = z.string().trim().email('Enter a valid email address').max(254)
+export const passwordSchema = z.string()
+  .min(12, 'Password must be at least 12 characters')
+  .max(128, 'Password must be 128 characters or fewer')
+export const idempotencyKeySchema = z.string().uuid('Idempotency key must be a UUID')
+
+export const registerInputSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  idempotencyKey: idempotencyKeySchema,
+}).strict()
+
+export const signInInputSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1).max(128),
+}).strict()
+
+export const eventInputSchema = z.object({
+  title: trimmedRequiredText(120, 'Title'),
+  description: optionalText(2_000, 'Description'),
+  location: optionalText(300, 'Location'),
+  registrationPolicy: z.enum(['ADMIN_MANAGED', 'OPEN']).default('ADMIN_MANAGED'),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()
+
+export const participantIdentifierSchema = z.object({
+  email: emailSchema.optional(),
+  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').optional(),
+}).refine(({ email, phone }) => Boolean(email) !== Boolean(phone), {
+  message: 'Provide exactly one email address or phone number',
+  path: ['email'],
+})

@@ -34,11 +34,11 @@
 
 **⚠️ CRITICAL**: No user story work begins until this phase is complete.
 
-- [ ] T008 Refactor process startup and static serving from `votiy-api/server.js` into an application factory in `votiy-api/src/app.js` and entry point in `votiy-api/src/server.js`
-- [ ] T009 [P] Implement validated environment loading for database, origin, session, token, email, and logging settings in `votiy-api/src/config/env.js`
-- [ ] T010 [P] Implement stable error codes, typed application errors, and safe client error mapping in `votiy-api/src/domain/errors.js`
-- [ ] T011 [P] Implement email normalization, cryptographic token generation/digests, constant-time comparison, and idempotency request digests in `votiy-api/src/domain/security.js`
-- [ ] T012 [P] Implement event text and account input schemas with documented length limits in `votiy-api/src/domain/validation.js`
+- [X] T008 Refactor process startup and static serving from `votiy-api/server.js` into an application factory in `votiy-api/src/app.js` and entry point in `votiy-api/src/server.js`
+- [X] T009 [P] Implement validated environment loading for database, origin, session, token, email, and logging settings in `votiy-api/src/config/env.js`
+- [X] T010 [P] Implement stable error codes, typed application errors, and safe client error mapping in `votiy-api/src/domain/errors.js`
+- [X] T011 [P] Implement email normalization, cryptographic token generation/digests, constant-time comparison, and idempotency request digests in `votiy-api/src/domain/security.js`
+- [X] T012 [P] Implement event text and account input schemas with documented length limits in `votiy-api/src/domain/validation.js`
 - [ ] T013 Implement MongoDB connection lifecycle and dependency readiness checks in `votiy-api/src/repositories/mongo.js`
 - [ ] T014 Create MongoDB collection validators and all indexes from `data-model.md` in `votiy-api/src/repositories/indexes.js`
 - [ ] T015 [P] Implement correlation IDs, structured request-completion logs, secret redaction, and operation timing in `votiy-api/src/observability/logger.js` and `votiy-api/src/observability/request-context.js`

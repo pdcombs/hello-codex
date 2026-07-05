@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node --env-file-if-exists=.env.local server.js",
-    "dev": "node --env-file-if-exists=.env.local server.js",
-    "dev:watch": "node --env-file-if-exists=.env.local --watch-path=server.js server.js",
+    "start": "node --env-file-if-exists=.env.local src/server.js",
+    "dev": "node --env-file-if-exists=.env.local src/server.js",
+    "dev:watch": "node --env-file-if-exists=.env.local --watch-path=src src/server.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
