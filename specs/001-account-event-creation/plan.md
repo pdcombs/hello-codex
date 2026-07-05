@@ -1,4 +1,4 @@
-# Implementation Plan: Account and Event Creation
+# Implementation Plan: Account, Event, and Participant Registration
 
 **Branch**: `001-account-event-creation` | **Date**: 2026-07-04 | **Spec**: [spec.md](./spec.md)
 
@@ -6,11 +6,12 @@
 
 ## Summary
 
-Replace the demonstration word generator with Votiy's first useful product slice: email/password accounts,
-email verification, secure sessions, multiple creator-owned events, public direct-link viewing, and
-private attendee access. Preserve the existing single Render service, React client, GraphQL boundary, and
-MongoDB datastore. Add explicit service and repository boundaries, server-side authorization, layered
-tests, production delivery gates, and structured operational signals.
+Replace the demonstration word generator with Votiy's first useful product slice: email/password host
+accounts, email verification, secure sessions, multiple creator-owned voting events, direct-link viewing,
+OPEN self-registration, and ADMIN_MANAGED participant registration. Host-added identifiers create or reuse
+unverified provisional accounts and participant records without sending links. Preserve the existing
+single Render service, React client, GraphQL boundary, and MongoDB datastore while adding explicit service
+and repository boundaries, server-side authorization, layered tests, delivery gates, and operational signals.
 
 ## Technical Context
 
@@ -30,8 +31,8 @@ API; current mobile and desktop browsers
 **Project Type**: Single-repository web application with separate frontend and backend packages deployed
 as one web service
 
-**Performance Goals**: 95% of valid account, sign-in, and event submissions show a result within two
-seconds; public/private event reads target p95 under 500 ms at the service boundary under normal load
+**Performance Goals**: 95% of valid account, sign-in, event, and participant-registration submissions show
+a result within two seconds; direct-link event reads target p95 under 500 ms at the service boundary
 
 **Constraints**: Same-origin browser/API deployment; HTTP-only secure session cookies; no browser secrets
 or direct database access; 80% repository-wide line and branch coverage; exact tested commit deploys from
@@ -71,25 +72,25 @@ constitutional exception or additional deployable service is required.
 2. The browser sends same-origin GraphQL requests and receives an opaque session cookie; it never handles
    password hashes, session tokens, verification tokens, or database credentials.
 3. GraphQL resolvers translate the transport contract and delegate to application services.
-4. Application services enforce verification, ownership, visibility, invitation, idempotency, and audit
-   rules independent of transport or storage.
+4. Application services enforce verification, ownership, registration policy, participant identity,
+   idempotency, and audit rules independent of transport or storage.
 5. Repository modules validate and persist MongoDB documents and create required indexes.
-6. An email adapter sends verification/invitation links through Mailpit locally and the configured
-   transactional provider in production.
+6. An email adapter sends visitor account-verification links through Mailpit locally and the configured
+   transactional provider in production; host-added participants receive no message.
 
 ### Authentication and Authorization
 
 - Normalize email by trimming and lowercasing before uniqueness checks.
 - Hash passwords with Argon2id and never log or return credentials.
-- Store only SHA-256 digests of single-use verification and invitation secrets.
+- Store only SHA-256 digests of single-use visitor email-verification secrets.
 - Store opaque session records in MongoDB; send the random session secret only in a `Secure`, `HttpOnly`,
   `SameSite=Lax` cookie (omit `Secure` only on local HTTP).
 - Rotate the session on sign-in and verification, expire inactive sessions, and invalidate on sign-out.
 - Require a verified session for event creation and host management.
-- Permit public event queries without a session. Require a matching signed-in account access record for
-  private event queries. Check authorization on every request.
+- Permit all direct-link event queries without a session. Require a verified session for OPEN
+  self-registration and event-owner authorization for ADMIN_MANAGED participant changes.
 - Validate same-origin mutation requests, bound request size/complexity, disable production introspection,
-  and apply stricter throttles to registration, sign-in, verification, and invitation operations.
+  and apply stricter throttles to account registration, sign-in, verification, and participant operations.
 
 ## Data and Contract Strategy
 
@@ -106,10 +107,10 @@ constitutional exception or additional deployable service is required.
 
 ### Unit and Component
 
-- Unit-test normalization, validation, password/session/token handling, visibility decisions,
-  authorization matrices, duplicate suppression, and state transitions.
-- Exercise every decision path for authentication, verification, ownership, public/private visibility,
-  and invitation status regardless of aggregate coverage.
+- Unit-test normalization, validation, password/session/token handling, registration-policy decisions,
+  provisional-account creation, authorization matrices, duplicate suppression, and state transitions.
+- Exercise every decision path for authentication, verification, ownership, OPEN/ADMIN_MANAGED policy,
+  provisional-account reuse, and participant status regardless of aggregate coverage.
 - Test React forms and pages for loading, empty, success, validation, expired-session, and failure states.
 - Enforce at least 80% line and branch coverage across frontend and backend.
 
@@ -117,17 +118,18 @@ constitutional exception or additional deployable service is required.
 
 - Parse and snapshot the GraphQL schema; validate checked-in client operations against it.
 - Verify GraphQL result/error shapes and MongoDB document validators/indexes.
-- Run API integration tests against a real MongoDB service, including duplicate email, idempotent event
-  creation, session expiry, private denial, invitation acceptance/removal, and dependency outage behavior.
+- Run API integration tests against a real MongoDB service, including duplicate identifiers, idempotent
+  event/participant creation, session expiry, OPEN self-registration, ADMIN_MANAGED denial, provisional
+  accounts, participant removal, and dependency outage behavior.
 - Test the email adapter contract with a deterministic fake and one local Mailpit integration path.
 
 ### End-to-End
 
-- CUF-001: register, capture verification link in Mailpit, verify, create private and public events, and
-  see both after returning.
+- CUF-001: register, capture the host verification link in Mailpit, verify, create OPEN and ADMIN_MANAGED
+  events, and see both after returning.
 - CUF-002: sign in, list owned events, open an event, and sign out.
-- CUF-003: anonymously open a public event; deny anonymous/uninvited private access; invite a second
-  account, allow it, remove it, and deny it again.
+- CUF-003: anonymously open either event; self-register a verified account for an OPEN event; deny
+  self-registration for ADMIN_MANAGED; add email/phone participants as provisional accounts; remove one.
 - Run deterministic Playwright journeys before deployment. Run safe read-only health/public-page smoke
   checks after deployment; use a dedicated synthetic account for any authenticated production smoke.
 
@@ -156,8 +158,9 @@ committed or exposed through Vite variables.
 - Emit one structured JSON request completion event with timestamp, severity, environment, operation,
   status, duration, correlation ID, and authenticated account ID when safe. Never log email addresses,
   passwords, cookies, or raw tokens.
-- Emit audit events for registration, verification, sign-in success/failure (without account disclosure),
-  sign-out, event creation/visibility change, invitation issue/accept/revoke, and authorization denial.
+- Emit audit events for account registration, verification, sign-in success/failure (without account
+  disclosure), sign-out, event creation/registration-policy change, participant add/remove, provisional
+  account creation, self-registration, and authorization denial.
 - `/health` reports process liveness only. `/ready` verifies MongoDB and required configuration and returns
   non-success when the instance should not receive traffic.
 - Track availability, GraphQL error rate, p50/p95 latency, authentication failure rate, email-send failure,

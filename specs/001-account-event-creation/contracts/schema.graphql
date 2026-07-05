@@ -13,16 +13,19 @@ enum ErrorCode {
   SERVICE_UNAVAILABLE
 }
 
-enum EventVisibility {
-  PRIVATE
-  PUBLIC
+enum EventRegistrationPolicy {
+  ADMIN_MANAGED
+  OPEN
 }
 
-enum EventAccessStatus {
-  INVITED
-  ACTIVE
-  REVOKED
-  EXPIRED
+enum EventRegistrationStatus {
+  REGISTERED
+  REMOVED
+}
+
+enum EventRegistrationSource {
+  SELF
+  HOST
 }
 
 type FieldError {
@@ -55,16 +58,20 @@ type Event {
   title: String!
   description: String
   location: String
-  visibility: EventVisibility!
+  registrationPolicy: EventRegistrationPolicy!
   isOwner: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
 
-type EventAccess {
+type EventRegistration {
   id: ID!
-  email: String!
-  status: EventAccessStatus!
+  accountId: ID!
+  email: String
+  phone: String
+  accountCompleted: Boolean!
+  status: EventRegistrationStatus!
+  source: EventRegistrationSource!
   createdAt: DateTime!
 }
 
@@ -78,16 +85,16 @@ type SessionSuccess { session: SessionPayload! }
 type SignOutSuccess { signedOut: Boolean! }
 type EventSuccess { event: Event! }
 type EventListSuccess { events: OwnedEventConnection! }
-type EventAccessSuccess { access: EventAccess! }
-type EventAccessListSuccess { access: [EventAccess!]! }
+type EventRegistrationSuccess { registration: EventRegistration! }
+type EventRegistrationListSuccess { registrations: [EventRegistration!]! }
 
 union AccountResult = AccountSuccess | OperationError
 union SessionResult = SessionSuccess | OperationError
 union SignOutResult = SignOutSuccess | OperationError
 union EventResult = EventSuccess | OperationError
 union EventListResult = EventListSuccess | OperationError
-union EventAccessResult = EventAccessSuccess | OperationError
-union EventAccessListResult = EventAccessListSuccess | OperationError
+union EventRegistrationResult = EventRegistrationSuccess | OperationError
+union EventRegistrationListResult = EventRegistrationListSuccess | OperationError
 
 input RegisterInput {
   email: String!
@@ -108,35 +115,32 @@ input CreateEventInput {
   title: String!
   description: String
   location: String
-  visibility: EventVisibility = PRIVATE
+  registrationPolicy: EventRegistrationPolicy = ADMIN_MANAGED
   idempotencyKey: ID!
 }
 
-input SetEventVisibilityInput {
+input SetEventRegistrationPolicyInput {
   eventId: ID!
-  visibility: EventVisibility!
+  registrationPolicy: EventRegistrationPolicy!
 }
 
-input InviteEventAttendeeInput {
+input AddEventParticipantInput {
   eventId: ID!
-  email: String!
+  email: String
+  phone: String
   idempotencyKey: ID!
 }
 
-input AcceptEventInvitationInput {
-  token: String!
-}
-
-input RemoveEventAttendeeInput {
+input RemoveEventParticipantInput {
   eventId: ID!
-  accessId: ID!
+  registrationId: ID!
 }
 
 type Query {
   viewer: SessionResult!
   ownedEvents(first: Int = 20, after: String): EventListResult!
   eventByPublicId(publicId: String!): EventResult!
-  eventAccess(eventId: ID!): EventAccessListResult!
+  eventRegistrations(eventId: ID!): EventRegistrationListResult!
 }
 
 type Mutation {
@@ -146,8 +150,8 @@ type Mutation {
   signIn(input: SignInInput!): SessionResult!
   signOut: SignOutResult!
   createEvent(input: CreateEventInput!): EventResult!
-  setEventVisibility(input: SetEventVisibilityInput!): EventResult!
-  inviteEventAttendee(input: InviteEventAttendeeInput!): EventAccessResult!
-  acceptEventInvitation(input: AcceptEventInvitationInput!): EventAccessResult!
-  removeEventAttendee(input: RemoveEventAttendeeInput!): EventAccessResult!
+  setEventRegistrationPolicy(input: SetEventRegistrationPolicyInput!): EventResult!
+  registerForEvent(eventId: ID!, idempotencyKey: ID!): EventRegistrationResult!
+  addEventParticipant(input: AddEventParticipantInput!): EventRegistrationResult!
+  removeEventParticipant(input: RemoveEventParticipantInput!): EventRegistrationResult!
 }

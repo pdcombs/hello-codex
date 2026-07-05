@@ -24,7 +24,7 @@ browser JWTs.
 identity provider reduces credential implementation but adds cost/vendor setup and changes the deliberately
 simple local environment. It can be reconsidered before social login or MFA.
 
-## Verification and Invitation Secrets
+## Verification Secrets
 
 **Decision**: Generate cryptographically random, single-use secrets; persist only a digest; expire them;
 and consume them atomically.
@@ -34,16 +34,20 @@ and consume them atomically.
 **Alternatives considered**: Persisting raw secrets is simpler but unsafe. Signed self-contained links are
 harder to revoke and audit.
 
-## Private Event Access
+## Event Viewing and Participant Registration
 
-**Decision**: Bind each private-event invitation/access record to a normalized email and then to the
-matching verified account. Public links require no account; private links alone never grant access.
+**Decision**: Every event is viewable by direct link. `OPEN` permits verified users to self-register;
+`ADMIN_MANAGED` permits only the event creator to register or remove participants. Creator-added email or
+phone identifiers reuse a matching account or create an unverified provisional account, and the
+EventRegistration stores that account ID immediately.
 
-**Rationale**: This implements the clarified persona model and provides an auditable identity boundary.
+**Rationale**: Viewing and participation are separate concerns. Stable account IDs preserve participant
+identity across events, including before account completion, while server-side policy checks protect the
+registration boundary.
 
-**Alternatives considered**: Bearer invitation links without sign-in are convenient but can be forwarded
-and do not reliably identify the attendee. Fixed platform roles do not fit users holding different personas
-per event.
+**Alternatives considered**: Hiding ADMIN_MANAGED events conflates discovery with participation. Sending
+claim/invitation links to provisional accounts adds messaging, expiry, and completion workflows that are
+deferred. Free-standing participant records without account IDs would complicate later identity merging.
 
 ## GraphQL Error Contract
 
@@ -69,11 +73,12 @@ unbounded documents and makes TTL cleanup difficult. A relational migration is u
 
 ## Transactional Email
 
-**Decision**: Define a small email-sender interface, use Mailpit locally/in CI, and configure a production
-transactional provider through Render secrets.
+**Decision**: Define a small email-sender interface for visitor-created account verification, use Mailpit
+locally/in CI, and configure a production transactional provider through Render secrets. Host-added
+provisional participants receive no message in this MVP.
 
-**Rationale**: Verification and invitations require deliverable links, while the adapter keeps provider
-details out of domain logic and tests.
+**Rationale**: Host account verification requires a deliverable link, while the adapter keeps provider
+details out of domain logic and tests without expanding provisional-account scope.
 
 **Alternatives considered**: Logging links locally risks accidental production behavior. Running a
 production mail server is operationally disproportionate.

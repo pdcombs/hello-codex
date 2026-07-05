@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Account and Event Creation
+# Specification Quality Checklist: Account, Event, and Participant Registration
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-07-03
@@ -33,6 +33,6 @@
 ## Notes
 
 - Validation passed on the first review iteration.
-- Email/password, verification before event creation, private-by-default events, and field limits are recorded
-  as explicit MVP assumptions and can be revisited during clarification.
+- Email/password host accounts, verification before event creation, ADMIN_MANAGED-by-default participant
+  registration, provisional participant accounts, and field limits are explicit MVP assumptions.
 - Critical flows CUF-001 through CUF-003 define the initial pre-deploy E2E and post-deploy smoke-test scope.
