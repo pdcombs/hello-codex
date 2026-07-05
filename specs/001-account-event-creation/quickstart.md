@@ -48,27 +48,32 @@ A failure in any gate must return a non-zero exit and prevent deployment.
 
 ### CUF-001 — New Host Creates Events
 
-1. Register with an unused email and valid password.
-2. Confirm event creation is unavailable before verification.
-3. Open the verification email in Mailpit and follow its single-use link.
-4. Create an ADMIN_MANAGED event using only a title.
-5. Create an OPEN event with title, description, and location.
-6. Confirm both appear in the host dashboard and remain after sign-out/sign-in.
-7. Repeat a creation request with the same idempotency key and confirm only one event exists.
+1. Open the public home page and confirm it explains what Votiy is.
+2. Register with an unused email and valid password.
+3. Confirm event creation is unavailable before verification.
+4. Open the verification email in Mailpit and follow its single-use link.
+5. Confirm the home page switches to the hosted-events dashboard after sign-in.
+6. Create an ADMIN_MANAGED event using only a title.
+7. Create an OPEN event with title, description, and location.
+8. Confirm both appear in the hosted-events dashboard and remain after sign-out/sign-in.
+9. Repeat a creation request with the same idempotency key and confirm only one event exists.
 
 ### CUF-002 — Returning Host
 
 1. Sign in with the verified account.
-2. Confirm all owned events appear and participant records are not mixed between events.
-3. Sign out and confirm protected host pages reject the ended session.
-4. Try an invalid password and confirm the response does not disclose whether an email is registered.
+2. Confirm the hosted-events dashboard appears and all owned events are listed there.
+3. Open one event and confirm you land on that event's detail page with only that event's actions.
+4. Sign out and confirm protected host pages reject the ended session.
+5. Try an invalid password and confirm the response does not disclose whether an email is registered.
 
 ### CUF-003 — Viewing and Participant Registration Policy
 
-1. Open both OPEN and ADMIN_MANAGED event links in a signed-out browser; confirm event details render.
-2. Sign in with a verified account and self-register for the OPEN event.
+1. Open both OPEN and ADMIN_MANAGED event links in a signed-out browser; confirm the event detail page
+   renders for each.
+2. Sign in with a verified account and self-register for the OPEN event from its detail page.
 3. Attempt self-registration for the ADMIN_MANAGED event and confirm no registration is created.
-4. As host, add one participant by unused email and one by unused phone number.
+4. As host, open an event detail page and add one participant by unused email and one by unused phone
+   number.
 5. Confirm each addition creates an unverified provisional account and an EventRegistration referencing its
    account ID, without sending email or SMS.
 6. Add either identifier to another event and confirm the existing provisional account is reused.

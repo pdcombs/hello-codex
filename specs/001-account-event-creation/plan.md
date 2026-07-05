@@ -9,9 +9,12 @@
 Replace the demonstration word generator with Votiy's first useful product slice: email/password host
 accounts, email verification, secure sessions, multiple creator-owned voting events, direct-link viewing,
 OPEN self-registration, and ADMIN_MANAGED participant registration. Host-added identifiers create or reuse
-unverified provisional accounts and participant records without sending links. Preserve the existing
-single Render service, React client, GraphQL boundary, and MongoDB datastore while adding explicit service
-and repository boundaries, server-side authorization, layered tests, delivery gates, and operational signals.
+unverified provisional accounts, tag those accounts with the host referrer ID, and create participant
+records without sending links. Preserve the existing single Render service, React client, GraphQL
+boundary, and MongoDB datastore while adding explicit service and repository boundaries, server-side
+authorization, layered tests, delivery gates, and operational signals. The public home page is
+informational, the signed-in home page becomes the hosted-events dashboard, and all event actions live on
+the event detail page.
 
 ## Technical Context
 
@@ -69,13 +72,16 @@ constitutional exception or additional deployable service is required.
 ## Architecture and Boundaries
 
 1. The React application renders public, authentication, dashboard, event-creation, and event-view flows.
-2. The browser sends same-origin GraphQL requests and receives an opaque session cookie; it never handles
+2. The public home page explains what Votiy is and routes visitors toward sign-in or account creation.
+3. After authentication, the home page becomes the hosted-events dashboard for the current host.
+4. Event detail pages present one event at a time and contain all event-specific actions.
+5. The browser sends same-origin GraphQL requests and receives an opaque session cookie; it never handles
    password hashes, session tokens, verification tokens, or database credentials.
-3. GraphQL resolvers translate the transport contract and delegate to application services.
-4. Application services enforce verification, ownership, registration policy, participant identity,
+6. GraphQL resolvers translate the transport contract and delegate to application services.
+7. Application services enforce verification, ownership, registration policy, participant identity,
    idempotency, and audit rules independent of transport or storage.
-5. Repository modules validate and persist MongoDB documents and create required indexes.
-6. An email adapter sends visitor account-verification links through Mailpit locally and the configured
+8. Repository modules validate and persist MongoDB documents and create required indexes.
+9. An email adapter sends visitor account-verification links through Mailpit locally and the configured
    transactional provider in production; host-added participants receive no message.
 
 ### Authentication and Authorization
@@ -108,10 +114,13 @@ constitutional exception or additional deployable service is required.
 ### Unit and Component
 
 - Unit-test normalization, validation, password/session/token handling, registration-policy decisions,
-  provisional-account creation, authorization matrices, duplicate suppression, and state transitions.
+  provisional-account creation, referral metadata, authorization matrices, duplicate suppression, and
+  state transitions.
 - Exercise every decision path for authentication, verification, ownership, OPEN/ADMIN_MANAGED policy,
   provisional-account reuse, and participant status regardless of aggregate coverage.
 - Test React forms and pages for loading, empty, success, validation, expired-session, and failure states.
+- Test the public home page, authenticated dashboard, and event detail page for correct navigation and
+  action placement.
 - Enforce at least 80% line and branch coverage across frontend and backend.
 
 ### Contract and Integration
@@ -120,16 +129,17 @@ constitutional exception or additional deployable service is required.
 - Verify GraphQL result/error shapes and MongoDB document validators/indexes.
 - Run API integration tests against a real MongoDB service, including duplicate identifiers, idempotent
   event/participant creation, session expiry, OPEN self-registration, ADMIN_MANAGED denial, provisional
-  accounts, participant removal, and dependency outage behavior.
+  accounts, referral metadata, participant removal, and dependency outage behavior.
 - Test the email adapter contract with a deterministic fake and one local Mailpit integration path.
 
 ### End-to-End
 
-- CUF-001: register, capture the host verification link in Mailpit, verify, create OPEN and ADMIN_MANAGED
-  events, and see both after returning.
-- CUF-002: sign in, list owned events, open an event, and sign out.
-- CUF-003: anonymously open either event; self-register a verified account for an OPEN event; deny
-  self-registration for ADMIN_MANAGED; add email/phone participants as provisional accounts; remove one.
+- CUF-001: open the public home page, register, capture the host verification link in Mailpit, verify,
+  create OPEN and ADMIN_MANAGED events, and see them from the hosted-events dashboard after returning.
+- CUF-002: sign in, land on the hosted-events dashboard, open an event detail page, and sign out.
+- CUF-003: anonymously open either event from its direct link; self-register a verified account for an
+  OPEN event; deny self-registration for ADMIN_MANAGED; add email/phone participants as provisional
+  accounts with host referral metadata; remove one from the event detail page.
 - Run deterministic Playwright journeys before deployment. Run safe read-only health/public-page smoke
   checks after deployment; use a dedicated synthetic account for any authenticated production smoke.
 

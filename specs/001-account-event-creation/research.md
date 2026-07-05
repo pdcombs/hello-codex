@@ -49,6 +49,19 @@ registration boundary.
 claim/invitation links to provisional accounts adds messaging, expiry, and completion workflows that are
 deferred. Free-standing participant records without account IDs would complicate later identity merging.
 
+## Home and Dashboard Navigation
+
+**Decision**: Anonymous visitors land on an informational home page that explains Votiy and points to
+sign-in or account creation. After sign-in, the home page becomes the hosted-events dashboard. Event
+actions are moved onto a single event detail page for the selected event.
+
+**Rationale**: This separates marketing, account overview, and event management into clear stages and
+keeps the dashboard focused on a host's event list instead of mixing actions across multiple events.
+
+**Alternatives considered**: A single mixed home page for signed-in and signed-out users would blur the
+primary call to action. Putting event actions on the dashboard list would make the user choose between
+overview and management every time.
+
 ## GraphQL Error Contract
 
 **Decision**: Return typed result unions with stable error codes for expected business failures and reserve

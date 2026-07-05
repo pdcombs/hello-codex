@@ -25,7 +25,7 @@
 ## Feature Readiness
 
 - [x] All functional requirements have clear acceptance criteria
-- [x] User scenarios cover primary flows
+- [x] User scenarios cover primary flows, including public home, dashboard, and event detail navigation
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 - [x] Critical user flows are identified for automated end-to-end validation
@@ -34,5 +34,7 @@
 
 - Validation passed on the first review iteration.
 - Email/password host accounts, verification before event creation, ADMIN_MANAGED-by-default participant
-  registration, provisional participant accounts, and field limits are explicit MVP assumptions.
-- Critical flows CUF-001 through CUF-003 define the initial pre-deploy E2E and post-deploy smoke-test scope.
+  registration, provisional participant accounts, public home/dashboard routing, and field limits are
+  explicit MVP assumptions.
+- Critical flows CUF-001 through CUF-003 define the initial pre-deploy E2E and post-deploy smoke-test scope,
+  with event actions centered on the event detail page.

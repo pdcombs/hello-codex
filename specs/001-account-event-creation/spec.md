@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Allow people to navigate to the application, create an account, and create a minimal event with a title, description, and location."
+**Input**: User description: "Make the public home page informational, switch signed-in users to a hosted-events dashboard, and keep all event-specific actions on the event detail page."
 
 ## Clarifications
 
@@ -29,6 +29,7 @@
 
 ### Actors and Personas
 
+- **Visitor** lands on a public informational home page that explains what Votiy is and points toward sign-in or account creation.
 - **Signed-in user** and **anonymous user** describe authentication state, not permanent roles.
 - **Provisional user** has an unverified account created through participant registration and cannot
   authenticate or exercise completed-account privileges in this MVP.
@@ -37,6 +38,13 @@
 - **Event attendee** views or attends an event and may be signed in or anonymous according to the host's
   access configuration.
 - A single person may hold different personas in different events.
+
+### Navigation and Page Model
+
+- Public visitors see an informational home page focused on what Votiy is and what they can do next.
+- After sign-in, the home page becomes the user's hosted-events dashboard.
+- Event-specific actions live on the detail page for a single event rather than on the dashboard list.
+- The dashboard lists events the user hosts; it does not mix in unrelated participant activity.
 
 ### User Story 1 - Create an Account (Priority: P1)
 
@@ -47,7 +55,7 @@ protected identity.
 knowing who the user is.
 
 **Independent Test**: A visitor can submit valid account information, verify ownership of the email
-address, and reach an authenticated empty state without creating an event.
+address, and reach the hosted-events dashboard in an authenticated empty state without creating an event.
 
 **Acceptance Scenarios**:
 
@@ -73,7 +81,7 @@ and sign out; invalid credentials never grant access.
 **Acceptance Scenarios**:
 
 1. **Given** a verified user, **When** they provide valid credentials, **Then** they enter an authenticated
-   session and see their event area.
+   session and see their hosted-events dashboard.
 2. **Given** a visitor provides invalid credentials, **When** they attempt to sign in, **Then** access is
    denied without revealing whether a specific account exists.
 3. **Given** an authenticated user, **When** they sign out, **Then** their session ends and protected areas
@@ -90,7 +98,8 @@ participant-registration policy, establishing the first host-controlled event re
 participant, entry, category, and voting features.
 
 **Independent Test**: A verified authenticated user can create multiple events, see a confirmation with
-the saved values for each, leave, return, and still see all of those events associated with their account.
+the saved values for each, leave, return, and still see all of those events on the hosted-events
+dashboard associated with their account.
 
 **Acceptance Scenarios**:
 
@@ -110,7 +119,9 @@ the saved values for each, leave, return, and still see all of those events asso
    **Then** no participant registration is created and the event creator must register them.
 8. **Given** the creator registers a participant by email or phone and no matching account exists, **When**
    registration succeeds, **Then** a provisional account is created and the event registration references
-   that account's ID.
+   that account's ID, with the host recorded as the account's referrer.
+9. **Given** a signed-in host opens an event from their dashboard, **When** the event detail page loads,
+   **Then** they see only that event's details and available actions.
 
 ---
 
@@ -133,6 +144,9 @@ the saved values for each, leave, return, and still see all of those events asso
 ### In Scope
 
 - Account registration using an email address and password.
+- A public informational home page that explains Votiy to visitors and routes them toward sign-in or
+  account creation.
+- A signed-in hosted-events dashboard that becomes the home page after authentication.
 - Provisional account creation from an event participant's email address or phone number.
 - Email ownership verification for visitor-created accounts.
 - Sign-in, authenticated-session recognition, and sign-out.
@@ -141,6 +155,7 @@ the saved values for each, leave, return, and still see all of those events asso
 - Event title, description, and location fields.
 - Host selection of OPEN or ADMIN_MANAGED participant registration during event creation.
 - Direct-link viewing of every event by signed-in or anonymous attendees.
+- Event detail pages that present one event at a time and contain that event's actions.
 - Participant self-registration for OPEN events and creator-managed participant registration for
   ADMIN_MANAGED events.
 - Event-host, event-participant, and event-attendee journeys.
@@ -213,13 +228,24 @@ the saved values for each, leave, return, and still see all of those events asso
   authenticate or exercise completed-account privileges in this MVP.
 - **FR-026**: Host-managed participant registration MUST NOT send a verification, notification,
   invitation, or account-completion message.
+- **FR-027**: When a host-managed participant account is created, the system MUST store the creating host's
+  account ID on the account as referral metadata; self-registered accounts MUST store a null referral.
+- **FR-028**: The system MUST show an informational public home page to anonymous visitors and switch the
+  home page to a hosted-events dashboard after sign-in.
+- **FR-029**: The system MUST present event-specific actions on a single event detail page for the selected
+  event and MUST not require users to act from the dashboard list.
 
 ### Key Entities
 
-- **Account**: A platform identity with a normalized unique email address or phone number, provisional-or-
-  completed lifecycle state, identifier-verification state, optional credential security information,
-  creation time, and session eligibility. A host-created provisional account has no credentials, remains
-  unverified, and is not session eligible in this MVP.
+- **Account**: A platform identity with a normalized unique email address or phone number, optional host
+  referral metadata, provisional-or-completed lifecycle state, identifier-verification state, optional
+  credential security information, creation time, and session eligibility. A host-created provisional
+  account has no credentials, records the host's account ID as its referrer, remains unverified, and is
+  not session eligible in this MVP.
+- **Home Page**: A visitor-facing public page that explains Votiy and routes people into sign-in or account
+  creation before authentication.
+- **Hosted-Events Dashboard**: The signed-in home page that lists events the user hosts and provides entry
+  points to each event's detail page.
 - **Event**: A creator-owned voting-event record with a required title, optional description, optional
   location, OPEN-or-ADMIN_MANAGED participant-registration policy, direct-link identifier, creation time,
   and immutable creator association for this MVP.
@@ -233,7 +259,10 @@ the saved values for each, leave, return, and still see all of those events asso
 ### Ownership and Access
 
 - An account owns the events it creates.
+- The public home page is informational for anonymous visitors, while the signed-in home page becomes the
+  hosted-events dashboard.
 - Anyone with the direct link may view an event's details.
+- Each event's actions are performed from that event's detail page.
 - Event ownership is assigned by the system from the authenticated session, never accepted from client
   input.
 - Each event registration references exactly one immutable account ID.
@@ -261,6 +290,8 @@ the saved values for each, leave, return, and still see all of those events asso
   signing out and returning in a later session.
 - **SC-006**: At least 90% of usability-test participants can identify which event fields are required and
   correct an invalid submission without assistance.
+- **SC-007**: In acceptance testing, first-time visitors can identify Votiy's purpose from the home page
+  and reach the sign-in or account-creation entry points without assistance.
 
 ### Critical User Flows *(mandatory)*
 

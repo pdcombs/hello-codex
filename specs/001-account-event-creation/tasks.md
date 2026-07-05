@@ -47,7 +47,7 @@
 - [ ] T018 Implement GraphQL schema loading, custom `DateTime` scalar, typed result unions, and production introspection controls from `specs/001-account-event-creation/contracts/schema.graphql` in `votiy-api/src/api/graphql/schema.js`
 - [ ] T019 Implement bounded GraphQL request parsing, same-origin mutation enforcement, rate-limit hooks, and correlation-aware error handling in `votiy-api/src/api/graphql/handler.js`
 - [ ] T020 [P] Create a same-origin GraphQL client with credentials, typed result handling, and correlation-aware failures in `votiy-web/src/lib/graphql.js`
-- [ ] T021 [P] Create the React application router, protected-route shell, public-route shell, and accessible error boundary in `votiy-web/src/app/AppRouter.jsx` and `votiy-web/src/app/AppErrorBoundary.jsx`
+- [ ] T021 [P] Create the React application router, informational public-home shell, signed-in dashboard shell, event-detail shell, and accessible error boundary in `votiy-web/src/app/AppRouter.jsx` and `votiy-web/src/app/AppErrorBoundary.jsx`
 - [ ] T022 [P] Configure backend and frontend Vitest coverage with 80% line and branch thresholds in `votiy-api/vitest.config.js` and `votiy-web/vitest.config.js`
 - [ ] T023 [P] Create isolated real-Mongo test lifecycle, database cleanup, and deterministic fake-email fixtures in `votiy-api/tests/support/mongo.js` and `votiy-api/tests/support/fake-email.js`
 - [ ] T024 [P] Add GraphQL schema snapshot, client-operation validation, and MongoDB validator/index contract harnesses in `votiy-api/tests/contract/schema.contract.test.js` and `votiy-api/tests/contract/persistence.contract.test.js`
@@ -73,7 +73,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T031 [P] [US1] Implement Account and EmailVerification document mapping and validation in `votiy-api/src/domain/account.js` and `votiy-api/src/domain/email-verification.js`
+- [ ] T031 [P] [US1] Implement Account and EmailVerification document mapping and validation, including host referral metadata on accounts, in `votiy-api/src/domain/account.js` and `votiy-api/src/domain/email-verification.js`
 - [ ] T032 [P] [US1] Implement opaque Session document mapping, cookie options, rotation, expiry, and revocation primitives in `votiy-api/src/domain/session.js`
 - [ ] T033 [P] [US1] Implement account, verification, session, and idempotency persistence operations in `votiy-api/src/repositories/account-repository.js`, `votiy-api/src/repositories/verification-repository.js`, `votiy-api/src/repositories/session-repository.js`, and `votiy-api/src/repositories/idempotency-repository.js`
 - [ ] T034 [P] [US1] Define the transactional email interface plus deterministic fake, Mailpit SMTP, and production-provider adapters in `votiy-api/src/email/email-sender.js`, `votiy-api/src/email/mailpit-sender.js`, and `votiy-api/src/email/provider-sender.js`
@@ -83,7 +83,7 @@
 - [ ] T038 [US1] Wire account queries/mutations and registration/verification audit events in `votiy-api/src/api/graphql/account-resolvers.js`
 - [ ] T039 [P] [US1] Add checked-in account GraphQL operations in `votiy-web/src/features/auth/account.graphql.js`
 - [ ] T040 [US1] Build accessible registration and verification pages with loading, success, validation, replay, expiry, and service-failure states in `votiy-web/src/features/auth/RegisterPage.jsx` and `votiy-web/src/features/auth/VerifyEmailPage.jsx`
-- [ ] T041 [US1] Build authenticated viewer state and empty event dashboard in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/features/events/EventDashboardPage.jsx`
+- [ ] T041 [US1] Build authenticated viewer state, public-home-to-dashboard switching, and the empty hosted-events dashboard in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/features/events/EventDashboardPage.jsx`
 - [ ] T042 [US1] Emit registration, verification, email-send, and authentication-denial metrics/log events without email addresses or secrets in `votiy-api/src/services/registration-service.js` and `votiy-api/src/services/verification-service.js`
 
 **Checkpoint**: User Story 1 passes its unit, contract, integration, component, and E2E tests independently and constitutes the first deployable MVP slice.
@@ -119,7 +119,7 @@
 
 ## Phase 5: User Story 3 - Create a Minimal Event (Priority: P3)
 
-**Goal**: A verified host creates and revisits multiple voting events, chooses OPEN or ADMIN_MANAGED participant registration, and manages participant records linked to completed or provisional accounts.
+**Goal**: A verified host creates and revisits multiple voting events, chooses OPEN or ADMIN_MANAGED participant registration, and manages participant records linked to completed or provisional accounts with host referral metadata.
 
 **Independent Test**: Create multiple events with ADMIN_MANAGED default behavior, revisit them after a new session, view every direct link anonymously, self-register for an OPEN event, deny self-registration for ADMIN_MANAGED, add participants by email/phone as provisional accounts, reuse those accounts across events, and remove a participant.
 
@@ -128,8 +128,8 @@
 - [ ] T054 [P] [US3] Write failing unit tests for event validation, Unicode preservation, public IDs, immutable ownership, registration-policy decisions, provisional-account reuse, participant transitions, and idempotency in `votiy-api/tests/unit/event-service.test.js` and `votiy-api/tests/unit/event-registration-service.test.js`
 - [ ] T055 [P] [US3] Write failing GraphQL contract tests for all event queries/mutations and stable authorization/error unions in `votiy-api/tests/contract/event.contract.test.js`
 - [ ] T056 [P] [US3] Write failing persistence contract tests for event/access validators and unique/compound/partial indexes in `votiy-api/tests/contract/event-persistence.contract.test.js`
-- [ ] T057 [P] [US3] Write failing real-Mongo integration tests for ownership, multiple events, duplicate retries, direct-link reads, OPEN self-registration, ADMIN_MANAGED denial, provisional accounts, removal, and concurrent policy changes in `votiy-api/tests/integration/event-lifecycle.test.js`
-- [ ] T058 [P] [US3] Write failing component tests for event form, event list/detail, empty/loading/error states, registration-policy controls, and participant management in `votiy-web/tests/component/events.test.jsx`
+- [ ] T057 [P] [US3] Write failing real-Mongo integration tests for ownership, multiple events, duplicate retries, direct-link reads, OPEN self-registration, ADMIN_MANAGED denial, provisional accounts, referral metadata, removal, and concurrent policy changes in `votiy-api/tests/integration/event-lifecycle.test.js`
+- [ ] T058 [P] [US3] Write failing component tests for public home, dashboard, event detail, empty/loading/error states, registration-policy controls, and participant management in `votiy-web/tests/component/events.test.jsx`
 - [ ] T059 [P] [US3] Extend the failing CUF-001 browser flow through OPEN/ADMIN_MANAGED event creation and persistence in `tests/e2e/new-host-events.spec.js`
 - [ ] T060 [P] [US3] Write the failing CUF-003 direct-link, self-registration, provisional-account, and host participant-management browser flow in `tests/e2e/event-registration.spec.js`
 
@@ -138,12 +138,12 @@
 - [ ] T061 [P] [US3] Implement Event and EventRegistration document mapping, validation, state transitions, and authorization policy in `votiy-api/src/domain/event.js` and `votiy-api/src/domain/event-registration.js`
 - [ ] T062 [P] [US3] Implement event and participant-registration persistence with owner/public-ID lookups and atomic account reuse/creation in `votiy-api/src/repositories/event-repository.js` and `votiy-api/src/repositories/event-registration-repository.js`
 - [ ] T063 [US3] Implement verified-owner event creation, ADMIN_MANAGED default policy, unguessable public IDs, multiple-event listing, and idempotent retries in `votiy-api/src/services/event-service.js`
-- [ ] T064 [US3] Implement direct-link reads, owner policy changes, OPEN self-registration, ADMIN_MANAGED creator registration, provisional account creation/reuse, listing, and removal without notifications in `votiy-api/src/services/event-registration-service.js`
+- [ ] T064 [US3] Implement direct-link reads, owner policy changes, OPEN self-registration, ADMIN_MANAGED creator registration, provisional account creation/reuse, referral metadata persistence, listing, and removal without notifications in `votiy-api/src/services/event-registration-service.js`
 - [ ] T065 [US3] Wire event and participant-registration queries/mutations with creator authorization and domain audit events in `votiy-api/src/api/graphql/event-resolvers.js`
 - [ ] T066 [P] [US3] Add checked-in event and access GraphQL operations in `votiy-web/src/features/events/events.graphql.js`
 - [ ] T067 [US3] Build the accessible event creation form with private default, optional fields, client/server validation, duplicate-submit protection, and success/failure states in `votiy-web/src/features/events/CreateEventPage.jsx`
-- [ ] T068 [US3] Build owner event list and detail pages with persisted empty/loading/error states and registration-policy controls in `votiy-web/src/features/events/EventDashboardPage.jsx` and `votiy-web/src/features/events/OwnerEventPage.jsx`
-- [ ] T069 [US3] Build anonymous and signed-in direct-link event rendering with OPEN self-registration state in `votiy-web/src/features/events/EventPage.jsx`
+- [ ] T068 [US3] Build the hosted-events dashboard and event detail pages with persisted empty/loading/error states and registration-policy controls in `votiy-web/src/features/events/EventDashboardPage.jsx` and `votiy-web/src/features/events/OwnerEventPage.jsx`
+- [ ] T069 [US3] Build anonymous and signed-in direct-link event detail rendering with OPEN self-registration state in `votiy-web/src/features/events/EventPage.jsx`
 - [ ] T070 [US3] Build creator participant add/list/remove flows for email and phone identifiers, showing provisional status without sending links in `votiy-web/src/features/events/EventParticipantsPanel.jsx`
 - [ ] T071 [US3] Emit event creation, policy change, participant add/remove, provisional-account creation, self-registration, and authorization-denial audit/log/metric events in `votiy-api/src/services/event-service.js` and `votiy-api/src/services/event-registration-service.js`
 
