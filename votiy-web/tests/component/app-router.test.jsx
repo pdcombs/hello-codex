@@ -1,10 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import App from '../../src/App.jsx'
 import AppErrorBoundary from '../../src/app/AppErrorBoundary.jsx'
 import { AppRoutes } from '../../src/app/AppRouter.jsx'
 
 describe('application routes', () => {
+  it('renders through the production application entry component', () => {
+    render(<App />)
+    expect(screen.getByRole('heading', { name: 'Voting events without the spreadsheet chaos.' })).toBeVisible()
+  })
   it('shows an informational home page to visitors', () => {
     render(<MemoryRouter><AppRoutes /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Voting events without the spreadsheet chaos.' })).toBeVisible()
@@ -21,14 +26,23 @@ describe('application routes', () => {
     expect(screen.getByText('Event reference: event-123')).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Event actions' })).toBeVisible()
   })
+
+  it('renders placeholder and not-found routes safely', () => {
+    const { rerender } = render(<MemoryRouter initialEntries={['/register']}><AppRoutes /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: 'Create your account' })).toBeVisible()
+    rerender(<MemoryRouter key="missing" initialEntries={['/missing']}><AppRoutes /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+  })
 })
 
 describe('error boundary', () => {
   it('renders an accessible recovery state', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onError = vi.fn()
     function Broken() { throw new Error('boom') }
-    render(<AppErrorBoundary><Broken /></AppErrorBoundary>)
+    render(<AppErrorBoundary onError={onError}><Broken /></AppErrorBoundary>)
     expect(screen.getByRole('alert')).toHaveTextContent('Votiy hit an unexpected snag.')
+    expect(onError).toHaveBeenCalledOnce()
     vi.restoreAllMocks()
   })
 })

@@ -12,6 +12,17 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports: ["27017:27017"]
+      mailpit:
+        image: axllent/mailpit:v1.27
+        ports: ["1025:1025", "8025:8025"]
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/votiy
+      MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+      APP_ORIGIN: http://127.0.0.1:5173
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -22,10 +33,19 @@ jobs:
           node-version: 24
           cache: pnpm
           cache-dependency-path: |
+            pnpm-lock.yaml
             votiy-web/pnpm-lock.yaml
             votiy-api/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --dir votiy-web install --frozen-lockfile
       - run: pnpm --dir votiy-api install --frozen-lockfile
+      - run: pnpm format:check
       - run: pnpm --dir votiy-web lint
+      - run: pnpm --dir votiy-api test:coverage
+      - run: pnpm --dir votiy-web test:coverage
+      - run: pnpm --dir votiy-api test:contract
+      - run: pnpm --dir votiy-api test:integration
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/server.js
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e --project=chromium

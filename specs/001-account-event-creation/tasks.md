@@ -48,10 +48,10 @@
 - [X] T019 Implement bounded GraphQL request parsing, same-origin mutation enforcement, rate-limit hooks, and correlation-aware error handling in `votiy-api/src/api/graphql/handler.js`
 - [X] T020 [P] Create a same-origin GraphQL client with credentials, typed result handling, and correlation-aware failures in `votiy-web/src/lib/graphql.js`
 - [X] T021 [P] Create the React application router, informational public-home shell, signed-in dashboard shell, event-detail shell, and accessible error boundary in `votiy-web/src/app/AppRouter.jsx` and `votiy-web/src/app/AppErrorBoundary.jsx`
-- [ ] T022 [P] Configure backend and frontend Vitest coverage with 80% line and branch thresholds in `votiy-api/vitest.config.js` and `votiy-web/vitest.config.js`
-- [ ] T023 [P] Create isolated real-Mongo test lifecycle, database cleanup, and deterministic fake-email fixtures in `votiy-api/tests/support/mongo.js` and `votiy-api/tests/support/fake-email.js`
-- [ ] T024 [P] Add GraphQL schema snapshot, client-operation validation, and MongoDB validator/index contract harnesses in `votiy-api/tests/contract/schema.contract.test.js` and `votiy-api/tests/contract/persistence.contract.test.js`
-- [ ] T025 Replace the current lint/build-only workflow with frozen install, formatting, lint, coverage, contract, real-Mongo integration, Playwright, and production-build gates in `.github/workflows/ci.yml`
+- [X] T022 [P] Configure backend and frontend Vitest coverage with 80% line and branch thresholds in `votiy-api/vitest.config.js` and `votiy-web/vitest.config.js`
+- [X] T023 [P] Create isolated real-Mongo test lifecycle, database cleanup, and deterministic fake-email fixtures in `votiy-api/tests/support/mongo.js` and `votiy-api/tests/support/fake-email.js`
+- [X] T024 [P] Add GraphQL schema snapshot, client-operation validation, and MongoDB validator/index contract harnesses in `votiy-api/tests/contract/schema.contract.test.js` and `votiy-api/tests/contract/persistence.contract.test.js`
+- [X] T025 Replace the current lint/build-only workflow with frozen install, formatting, lint, coverage, contract, real-Mongo integration, Playwright, and production-build gates in `.github/workflows/ci.yml`
 
 **Checkpoint**: The application can start through the new boundaries, report liveness/readiness, run every test layer, and block deployment when a quality gate fails.
 

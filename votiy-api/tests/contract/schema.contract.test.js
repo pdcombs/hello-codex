@@ -8,6 +8,19 @@ describe('GraphQL schema contract', () => {
       'viewer', 'ownedEvents', 'eventByPublicId', 'eventRegistrations',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
+    expect(Object.keys(schema.getTypeMap()).filter((name) => !name.startsWith('__')).sort()).toMatchSnapshot()
+  })
+
+  it('validates representative checked-in client operations', async () => {
+    const schema = await createGraphqlSchema()
+    const operations = [
+      'query Viewer { viewer { __typename } }',
+      'query Event($publicId: String!) { eventByPublicId(publicId: $publicId) { __typename } }',
+      'mutation SignOut { signOut { __typename } }',
+    ]
+    for (const operation of operations) {
+      expect(validateGraphqlOperation(schema, operation).errors).toEqual([])
+    }
   })
 
   it('serializes DateTime values as UTC instants', async () => {

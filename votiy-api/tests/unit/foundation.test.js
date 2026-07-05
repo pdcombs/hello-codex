@@ -53,6 +53,15 @@ describe('application errors', () => {
       correlationId: 'correlation-2',
     })
   })
+
+  it('rejects unknown codes and can expose an explicitly safe message', () => {
+    expect(() => new ApplicationError('UNKNOWN')).toThrow('Unknown application error code')
+    const error = new ApplicationError(ErrorCode.CONFLICT, {
+      internalMessage: 'This event has already changed.',
+      exposeMessage: true,
+    })
+    expect(toClientError(error).message).toBe('This event has already changed.')
+  })
 })
 
 describe('security helpers', () => {
@@ -66,6 +75,11 @@ describe('security helpers', () => {
     expect(digestSecret(token, 'a'.repeat(32))).toBe(digestSecret(token, 'a'.repeat(32)))
     expect(constantTimeEqual('same', 'same')).toBe(true)
     expect(constantTimeEqual('same', 'different')).toBe(false)
+  })
+
+  it('rejects weak token and digest inputs', () => {
+    expect(() => generateOpaqueToken(8)).toThrow('at least 16')
+    expect(() => digestSecret('', 'pepper')).toThrow('required')
   })
 
   it('digests equivalent object inputs independent of key order', () => {
