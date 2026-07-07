@@ -4,7 +4,10 @@ import RegisterPage from '../features/auth/RegisterPage.jsx'
 import SignInPage from '../features/auth/SignInPage.jsx'
 import SignOutButton from '../features/auth/SignOutButton.jsx'
 import VerifyEmailPage from '../features/auth/VerifyEmailPage.jsx'
+import CreateEventPage from '../features/events/CreateEventPage.jsx'
 import EventDashboardPage from '../features/events/EventDashboardPage.jsx'
+import EventPage from '../features/events/EventPage.jsx'
+import OwnerEventPage from '../features/events/OwnerEventPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
 
 function SiteHeader({ viewer }) {
@@ -42,19 +45,17 @@ export function HostedEventsDashboard({ viewer }) {
   return <EventDashboardPage viewer={viewer} />
 }
 
-export function EventDetailShell() {
+export function EventDetailShell({ viewer }) {
   const { publicId } = useParams()
   return (
-    <main className="page-shell">
-      <Link to="/">← Back to events</Link>
-      <p className="eyebrow">Voting event</p>
-      <h1>Event details</h1>
-      <p>Event reference: {publicId}</p>
-      <section aria-labelledby="event-actions">
-        <h2 id="event-actions">Event actions</h2>
-        <p>Registration and participant actions will live here.</p>
-      </section>
-    </main>
+    <>
+      <main className="page-shell">
+        <Link to={viewer ? '/' : '/'}>{viewer ? '← Back to events' : '← Back to home'}</Link>
+        <p className="eyebrow">Event reference</p>
+        <p>{publicId}</p>
+      </main>
+      {viewer ? <OwnerEventPage viewer={viewer} /> : <EventPage viewer={viewer} />}
+    </>
   )
 }
 
@@ -78,12 +79,12 @@ export function AppRoutes({ viewer = null, onVerified }) {
       <SiteHeader viewer={viewer} />
       <Routes>
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
-        <Route path="/events/:publicId" element={<EventDetailShell />} />
+        <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
         <Route
           path="/events/new"
           element={
             <Protected viewer={viewer}>
-              <PlaceholderPage title="Create an event" />
+              <CreateEventPage />
             </Protected>
           }
         />

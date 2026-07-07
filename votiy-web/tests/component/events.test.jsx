@@ -1,0 +1,183 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { describe, expect, it, vi } from 'vitest'
+import { GraphqlClientError } from '../../src/lib/graphql.js'
+import CreateEventPage from '../../src/features/events/CreateEventPage.jsx'
+import EventDashboardPage from '../../src/features/events/EventDashboardPage.jsx'
+import EventPage from '../../src/features/events/EventPage.jsx'
+import EventParticipantsPanel from '../../src/features/events/EventParticipantsPanel.jsx'
+import OwnerEventPage from '../../src/features/events/OwnerEventPage.jsx'
+
+describe('event UI', () => {
+  it('loads the hosted dashboard and links to saved events', async () => {
+    const loader = vi.fn().mockResolvedValue({
+      events: {
+        nodes: [
+          { id: 'evt-1', publicId: 'event-one', title: 'Board vote', registrationPolicy: 'ADMIN_MANAGED' },
+          { id: 'evt-2', publicId: 'event-two', title: 'Budget vote', registrationPolicy: 'OPEN' },
+        ],
+      },
+    })
+
+    render(
+      <MemoryRouter>
+        <EventDashboardPage viewer={{ email: 'host@example.com' }} loader={loader} />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('link', { name: 'Board vote' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Budget vote' })).toBeVisible()
+    expect(loader).toHaveBeenCalledWith({ first: 20 })
+  })
+
+  it('creates an event and redirects to its detail page', async () => {
+    const create = vi.fn().mockResolvedValue({
+      event: { id: 'evt-1', publicId: 'board-vote', title: 'Board vote' },
+    })
+    render(
+      <MemoryRouter initialEntries={['/events/new']}>
+        <Routes>
+          <Route path="/events/new" element={<CreateEventPage create={create} />} />
+          <Route path="/events/:publicId" element={<p>Arrived</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Title'), 'Board vote')
+    await user.selectOptions(screen.getByLabelText('Registration policy'), 'OPEN')
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+
+    expect(await screen.findByText('Arrived')).toBeVisible()
+    expect(create).toHaveBeenCalledWith({
+      title: 'Board vote',
+      description: null,
+      location: null,
+      registrationPolicy: 'OPEN',
+      idempotencyKey: expect.any(String),
+    })
+  })
+
+  it('renders public event details and allows self-registration for open events', async () => {
+    const loader = vi.fn().mockResolvedValue({
+      event: {
+        id: 'evt-1',
+        publicId: 'board-vote',
+        title: 'Board vote',
+        description: 'Choose next quarter priorities',
+        location: 'Remote',
+        registrationPolicy: 'OPEN',
+        isOwner: false,
+      },
+    })
+    const register = vi.fn().mockResolvedValue({ registration: { id: 'reg-1' } })
+    render(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route path="/events/:publicId" element={<EventPage viewer={{ id: 'acct-1' }} loader={loader} register={register} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByRole('heading', { name: 'Board vote' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Register for event' }))
+    expect(await screen.findByText('You are registered for this event.')).toBeVisible()
+  })
+
+  it('lets the owner change policy and manage participants', async () => {
+    const loader = vi.fn().mockResolvedValue({
+      event: {
+        id: 'evt-1',
+        publicId: 'board-vote',
+        title: 'Board vote',
+        description: null,
+        location: null,
+        registrationPolicy: 'ADMIN_MANAGED',
+        isOwner: true,
+      },
+    })
+    const updatePolicy = vi.fn().mockResolvedValue({
+      event: {
+        id: 'evt-1',
+        publicId: 'board-vote',
+        title: 'Board vote',
+        description: null,
+        location: null,
+        registrationPolicy: 'OPEN',
+        isOwner: true,
+      },
+    })
+    const participantsLoader = vi.fn().mockResolvedValue({
+      registrations: [{ id: 'reg-1', accountId: 'acct-2', email: 'guest@example.com', phone: null, accountCompleted: false }],
+    })
+    const addParticipant = vi.fn().mockResolvedValue({
+      registration: { id: 'reg-2', accountId: 'acct-3', email: 'new@example.com', phone: null, accountCompleted: false },
+    })
+    const removeParticipant = vi.fn().mockResolvedValue({
+      registration: { id: 'reg-1' },
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route
+            path="/events/:publicId"
+            element={
+              <OwnerEventPage
+                viewer={{ id: 'acct-1' }}
+                loader={loader}
+                updatePolicy={updatePolicy}
+                participantsLoader={participantsLoader}
+                addParticipant={addParticipant}
+                removeParticipant={removeParticipant}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('Current policy: Admin managed')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Make open' }))
+    expect(await screen.findByText('Current policy: Open')).toBeVisible()
+
+    await user.type(screen.getByLabelText('Email'), 'new@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(await screen.findByText(/new@example\.com/)).toBeVisible()
+    expect(screen.getAllByText(/provisional account/i)[0]).toBeVisible()
+
+    await user.click(screen.getAllByRole('button', { name: 'Remove' })[0])
+    expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', registrationId: 'reg-1' })
+  })
+
+  it('surfaces event errors in accessible alerts', async () => {
+    render(
+      <MemoryRouter>
+        <EventDashboardPage
+          viewer={{ email: 'host@example.com' }}
+          loader={() => Promise.reject(new GraphqlClientError('Events are unavailable right now.'))}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Events are unavailable right now.')
+  })
+
+  it('shows an empty participant list before the host adds anyone', async () => {
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [] })}
+          addParticipant={vi.fn()}
+          removeParticipant={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+  })
+})

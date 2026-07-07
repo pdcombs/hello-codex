@@ -21,6 +21,29 @@ export function createPendingAccount({ emailNormalized, passwordHash, referredBy
   return assertAccount(document)
 }
 
+export function createProvisionalAccount({
+  emailNormalized = null,
+  phoneNormalized = null,
+  referredByAccountId,
+  now = new Date(),
+}) {
+  const document = {
+    _id: new ObjectId(),
+    emailNormalized,
+    phoneNormalized,
+    referredByAccountId: referredByAccountId instanceof ObjectId ? referredByAccountId : new ObjectId(referredByAccountId),
+    lifecycleStatus: 'provisional',
+    passwordHash: null,
+    verificationStatus: 'pending',
+    verifiedAt: null,
+    credentialVersion: 0,
+    createdAt: now,
+    updatedAt: now,
+    schemaVersion: 1,
+  }
+  return assertAccount(document)
+}
+
 export function assertAccount(account) {
   if (
     !(account?._id instanceof ObjectId) ||
@@ -30,6 +53,9 @@ export function assertAccount(account) {
     throw new TypeError('Invalid account document')
   if (account.lifecycleStatus === 'completed' && (!account.emailNormalized || !account.passwordHash)) {
     throw new TypeError('Completed accounts require email and password credentials')
+  }
+  if (account.lifecycleStatus === 'provisional' && !account.emailNormalized && !account.phoneNormalized) {
+    throw new TypeError('Provisional accounts require an email or phone identifier')
   }
   if (account.verificationStatus === 'verified' && !(account.verifiedAt instanceof Date)) {
     throw new TypeError('Verified accounts require verifiedAt')

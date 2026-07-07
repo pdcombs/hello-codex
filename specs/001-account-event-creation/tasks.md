@@ -125,27 +125,27 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T054 [P] [US3] Write failing unit tests for event validation, Unicode preservation, public IDs, immutable ownership, registration-policy decisions, provisional-account reuse, participant transitions, and idempotency in `votiy-api/tests/unit/event-service.test.js` and `votiy-api/tests/unit/event-registration-service.test.js`
-- [ ] T055 [P] [US3] Write failing GraphQL contract tests for all event queries/mutations and stable authorization/error unions in `votiy-api/tests/contract/event.contract.test.js`
-- [ ] T056 [P] [US3] Write failing persistence contract tests for event/access validators and unique/compound/partial indexes in `votiy-api/tests/contract/event-persistence.contract.test.js`
-- [ ] T057 [P] [US3] Write failing real-Mongo integration tests for ownership, multiple events, duplicate retries, direct-link reads, OPEN self-registration, ADMIN_MANAGED denial, provisional accounts, referral metadata, removal, and concurrent policy changes in `votiy-api/tests/integration/event-lifecycle.test.js`
-- [ ] T058 [P] [US3] Write failing component tests for public home, dashboard, event detail, empty/loading/error states, registration-policy controls, and participant management in `votiy-web/tests/component/events.test.jsx`
-- [ ] T059 [P] [US3] Extend the failing CUF-001 browser flow through OPEN/ADMIN_MANAGED event creation and persistence in `tests/e2e/new-host-events.spec.js`
-- [ ] T060 [P] [US3] Write the failing CUF-003 direct-link, self-registration, provisional-account, and host participant-management browser flow in `tests/e2e/event-registration.spec.js`
+- [X] T054 [P] [US3] Write failing unit tests for event validation, Unicode preservation, public IDs, immutable ownership, registration-policy decisions, provisional-account reuse, participant transitions, and idempotency in `votiy-api/tests/unit/event-service.test.js` and `votiy-api/tests/unit/event-registration-service.test.js`
+- [X] T055 [P] [US3] Write failing GraphQL contract tests for all event queries/mutations and stable authorization/error unions in `votiy-api/tests/contract/event.contract.test.js`
+- [X] T056 [P] [US3] Write failing persistence contract tests for event/access validators and unique/compound/partial indexes in `votiy-api/tests/contract/event-persistence.contract.test.js`
+- [X] T057 [P] [US3] Write failing real-Mongo integration tests for ownership, multiple events, duplicate retries, direct-link reads, OPEN self-registration, ADMIN_MANAGED denial, provisional accounts, referral metadata, removal, and concurrent policy changes in `votiy-api/tests/integration/event-lifecycle.test.js`
+- [X] T058 [P] [US3] Write failing component tests for public home, dashboard, event detail, empty/loading/error states, registration-policy controls, and participant management in `votiy-web/tests/component/events.test.jsx`
+- [X] T059 [P] [US3] Extend the failing CUF-001 browser flow through OPEN/ADMIN_MANAGED event creation and persistence in `tests/e2e/new-host-events.spec.js`
+- [X] T060 [P] [US3] Write the failing CUF-003 direct-link, self-registration, provisional-account, and host participant-management browser flow in `tests/e2e/event-registration.spec.js`
 
 ### Implementation for User Story 3
 
-- [ ] T061 [P] [US3] Implement Event and EventRegistration document mapping, validation, state transitions, and authorization policy in `votiy-api/src/domain/event.js` and `votiy-api/src/domain/event-registration.js`
-- [ ] T062 [P] [US3] Implement event and participant-registration persistence with owner/public-ID lookups and atomic account reuse/creation in `votiy-api/src/repositories/event-repository.js` and `votiy-api/src/repositories/event-registration-repository.js`
-- [ ] T063 [US3] Implement verified-owner event creation, ADMIN_MANAGED default policy, unguessable public IDs, multiple-event listing, and idempotent retries in `votiy-api/src/services/event-service.js`
-- [ ] T064 [US3] Implement direct-link reads, owner policy changes, OPEN self-registration, ADMIN_MANAGED creator registration, provisional account creation/reuse, referral metadata persistence, listing, and removal without notifications in `votiy-api/src/services/event-registration-service.js`
-- [ ] T065 [US3] Wire event and participant-registration queries/mutations with creator authorization and domain audit events in `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T066 [P] [US3] Add checked-in event and access GraphQL operations in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T067 [US3] Build the accessible event creation form with private default, optional fields, client/server validation, duplicate-submit protection, and success/failure states in `votiy-web/src/features/events/CreateEventPage.jsx`
-- [ ] T068 [US3] Build the hosted-events dashboard and event detail pages with persisted empty/loading/error states and registration-policy controls in `votiy-web/src/features/events/EventDashboardPage.jsx` and `votiy-web/src/features/events/OwnerEventPage.jsx`
-- [ ] T069 [US3] Build anonymous and signed-in direct-link event detail rendering with OPEN self-registration state in `votiy-web/src/features/events/EventPage.jsx`
-- [ ] T070 [US3] Build creator participant add/list/remove flows for email and phone identifiers, showing provisional status without sending links in `votiy-web/src/features/events/EventParticipantsPanel.jsx`
-- [ ] T071 [US3] Emit event creation, policy change, participant add/remove, provisional-account creation, self-registration, and authorization-denial audit/log/metric events in `votiy-api/src/services/event-service.js` and `votiy-api/src/services/event-registration-service.js`
+- [X] T061 [P] [US3] Implement Event and EventRegistration document mapping, validation, state transitions, and authorization policy in `votiy-api/src/domain/event.js` and `votiy-api/src/domain/event-registration.js`
+- [X] T062 [P] [US3] Implement event and participant-registration persistence with owner/public-ID lookups and atomic account reuse/creation in `votiy-api/src/repositories/event-repository.js` and `votiy-api/src/repositories/event-registration-repository.js`
+- [X] T063 [US3] Implement verified-owner event creation, ADMIN_MANAGED default policy, unguessable public IDs, multiple-event listing, and idempotent retries in `votiy-api/src/services/event-service.js`
+- [X] T064 [US3] Implement direct-link reads, owner policy changes, OPEN self-registration, ADMIN_MANAGED creator registration, provisional account creation/reuse, referral metadata persistence, listing, and removal without notifications in `votiy-api/src/services/event-registration-service.js`
+- [X] T065 [US3] Wire event and participant-registration queries/mutations with creator authorization and domain audit events in `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T066 [P] [US3] Add checked-in event and access GraphQL operations in `votiy-web/src/features/events/events.graphql.js`
+- [X] T067 [US3] Build the accessible event creation form with private default, optional fields, client/server validation, duplicate-submit protection, and success/failure states in `votiy-web/src/features/events/CreateEventPage.jsx`
+- [X] T068 [US3] Build the hosted-events dashboard and event detail pages with persisted empty/loading/error states and registration-policy controls in `votiy-web/src/features/events/EventDashboardPage.jsx` and `votiy-web/src/features/events/OwnerEventPage.jsx`
+- [X] T069 [US3] Build anonymous and signed-in direct-link event detail rendering with OPEN self-registration state in `votiy-web/src/features/events/EventPage.jsx`
+- [X] T070 [US3] Build creator participant add/list/remove flows for email and phone identifiers, showing provisional status without sending links in `votiy-web/src/features/events/EventParticipantsPanel.jsx`
+- [X] T071 [US3] Emit event creation, policy change, participant add/remove, provisional-account creation, self-registration, and authorization-denial audit/log/metric events in `votiy-api/src/services/event-service.js` and `votiy-api/src/services/event-registration-service.js`
 
 **Checkpoint**: All three user stories and CUF-001 through CUF-003 pass independently with authorization enforced by the API.
 

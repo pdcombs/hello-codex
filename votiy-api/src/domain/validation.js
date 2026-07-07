@@ -44,3 +44,28 @@ export const participantIdentifierSchema = z.object({
   message: 'Provide exactly one email address or phone number',
   path: ['email'],
 })
+
+export const setEventRegistrationPolicyInputSchema = z.object({
+  eventId: z.string().min(1),
+  registrationPolicy: z.enum(['ADMIN_MANAGED', 'OPEN']),
+}).strict()
+
+export const addEventParticipantInputSchema = z.object({
+  eventId: z.string().min(1),
+  email: emailSchema.optional(),
+  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').optional(),
+  idempotencyKey: idempotencyKeySchema,
+}).refine(({ email, phone }) => Boolean(email) !== Boolean(phone), {
+  message: 'Provide exactly one email address or phone number',
+  path: ['email'],
+})
+
+export const removeEventParticipantInputSchema = z.object({
+  eventId: z.string().min(1),
+  registrationId: z.string().min(1),
+}).strict()
+
+export const registerForEventInputSchema = z.object({
+  eventId: z.string().min(1),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()

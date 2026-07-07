@@ -1,4 +1,4 @@
-import { getOperationAST, graphql } from 'graphql'
+import { defaultFieldResolver, getOperationAST, graphql } from 'graphql'
 import { securityHeaders } from '../../app.js'
 import { getRequestContext } from '../../observability/request-context.js'
 import { validateGraphqlOperation } from './schema.js'
@@ -34,6 +34,12 @@ function isAllowedMutationOrigin(origin, appOrigin, isProduction) {
 function sendJson(response, statusCode, body, extraHeaders = {}) {
   response.writeHead(statusCode, { ...securityHeaders('application/json'), ...extraHeaders })
   response.end(JSON.stringify(body))
+}
+
+function rootValueFieldResolver(source, args, contextValue, info) {
+  const property = source?.[info.fieldName]
+  if (typeof property === 'function') return property(args, contextValue, info)
+  return defaultFieldResolver(source, args, contextValue, info)
 }
 
 async function readBody(request, maximumBytes) {
@@ -98,7 +104,9 @@ export function createGraphqlHandler({
 
       const result = await graphql({
         schema, source: body.query, rootValue, variableValues: body.variables,
-        operationName: body.operationName, contextValue: await contextFactory({ request, response, correlationId }),
+        operationName: body.operationName,
+        contextValue: await contextFactory({ request, response, correlationId }),
+        fieldResolver: rootValueFieldResolver,
       })
       return sendJson(response, 200, result)
     } catch (error) {

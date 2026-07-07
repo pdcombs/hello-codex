@@ -24,8 +24,8 @@ describe('application routes', () => {
 
   it('renders one event detail and its actions', () => {
     render(<MemoryRouter initialEntries={['/events/event-123']}><AppRoutes /></MemoryRouter>)
-    expect(screen.getByText('Event reference: event-123')).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Event actions' })).toBeVisible()
+    expect(screen.getByText('event-123')).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent('Loading event')
   })
 
   it('renders placeholder and not-found routes safely', () => {

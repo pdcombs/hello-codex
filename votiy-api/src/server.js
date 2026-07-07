@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import argon2 from 'argon2'
 import { createAccountResolvers } from './api/graphql/account-resolvers.js'
+import { createEventResolvers } from './api/graphql/event-resolvers.js'
 import { createGraphqlHandler } from './api/graphql/handler.js'
 import { createGraphqlSchema } from './api/graphql/schema.js'
 import { createSessionContext } from './api/graphql/session-context.js'
@@ -19,6 +20,8 @@ import { createProviderSender } from './email/provider-sender.js'
 import { createLogger } from './observability/logger.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
+import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
+import { createEventRepository } from './repositories/event-repository.js'
 import { createIdempotencyRepository } from './repositories/idempotency-repository.js'
 import { ensureCollectionsAndIndexes } from './repositories/indexes.js'
 import { createMongoConnection } from './repositories/mongo.js'
@@ -26,6 +29,8 @@ import { createSessionRepository } from './repositories/session-repository.js'
 import { createVerificationRepository } from './repositories/verification-repository.js'
 import { createRegistrationService } from './services/registration-service.js'
 import { createAuthenticationService } from './services/authentication-service.js'
+import { createEventRegistrationService } from './services/event-registration-service.js'
+import { createEventService } from './services/event-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
 
@@ -41,6 +46,8 @@ await ensureCollectionsAndIndexes(mongo.database)
 const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
 const sessionRepository = createSessionRepository(mongo.database)
+const eventRepository = createEventRepository(mongo.database)
+const eventRegistrationRepository = createEventRegistrationRepository(mongo.database)
 const idempotencyRepository = createIdempotencyRepository(mongo.database)
 const auditRepository = createAuditEventRepository(mongo.database)
 const transport =
@@ -101,6 +108,18 @@ const authenticationService = createAuthenticationService({
   sessionTtlSeconds: environment.sessionTtlSeconds,
   logger,
 })
+const eventService = createEventService({
+  eventRepository,
+  idempotencyRepository,
+  logger,
+})
+const eventRegistrationService = createEventRegistrationService({
+  eventRepository,
+  eventRegistrationRepository,
+  accountRepository,
+  idempotencyRepository,
+  logger,
+})
 const schema = await createGraphqlSchema()
 const rootValue = {
   ...createAccountResolvers({
@@ -110,19 +129,28 @@ const rootValue = {
     auditRepository,
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),
+  ...createEventResolvers({ eventService, eventRegistrationService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,
   rootValue,
   appOrigin: environment.appOrigin,
   isProduction: environment.isProduction,
-  contextFactory: ({ request, response, correlationId }) =>
-    createSessionContext({
+  contextFactory: async ({ request, response, correlationId }) => {
+    const context = createSessionContext({
       request,
       response,
       correlationId,
       environment,
-    }),
+    })
+    if (!context.session) return { ...context, viewer: null }
+    try {
+      const { account } = await authenticationService.viewer(context.session)
+      return { ...context, viewer: { account } }
+    } catch {
+      return { ...context, viewer: null }
+    }
+  },
 })
 const { healthHandler, readyHandler } = createHealthHandlers({ mongo })
 const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger })
