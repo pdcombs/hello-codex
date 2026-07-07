@@ -17,6 +17,16 @@ export function createVerificationRepository(database) {
         { $set: { consumedAt: now } },
       )
     },
+    createOrRefreshReusable({ accountId, tokenDigest, expiresAt, now }) {
+      return collection.findOneAndUpdate(
+        { tokenDigest },
+        {
+          $set: { accountId: id(accountId), tokenDigest, expiresAt, consumedAt: null },
+          $setOnInsert: { _id: new ObjectId(), createdAt: now, schemaVersion: 1 },
+        },
+        { upsert: true, returnDocument: 'after' },
+      )
+    },
     consumeActive(tokenDigest, now) {
       return collection.findOneAndUpdate(
         { tokenDigest, consumedAt: null, expiresAt: { $gt: now } },

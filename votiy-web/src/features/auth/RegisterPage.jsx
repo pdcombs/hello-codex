@@ -2,18 +2,30 @@ import { useRef, useState } from 'react'
 import { registerAccount } from './account.graphql.js'
 
 export default function RegisterPage({ register = registerAccount }) {
-  const [state, setState] = useState({ status: 'idle', error: null, fieldErrors: {}, account: null })
+  const [state, setState] = useState({
+    status: 'idle',
+    error: null,
+    fieldErrors: {},
+    account: null,
+    verificationToken: null,
+  })
   const lastInput = useRef(null)
 
   async function submit(input) {
     lastInput.current = input
-    setState({ status: 'loading', error: null, fieldErrors: {}, account: null })
+    setState({ status: 'loading', error: null, fieldErrors: {}, account: null, verificationToken: null })
     try {
       const result = await register(input)
-      setState({ status: 'success', error: null, fieldErrors: {}, account: result.account })
+      setState({
+        status: 'success',
+        error: null,
+        fieldErrors: {},
+        account: result.account,
+        verificationToken: result.verificationToken ?? null,
+      })
     } catch (error) {
       const fieldErrors = Object.fromEntries((error.fieldErrors ?? []).map((item) => [item.field, item.message]))
-      setState({ status: 'error', error, fieldErrors, account: null })
+      setState({ status: 'error', error, fieldErrors, account: null, verificationToken: null })
     }
   }
 
@@ -31,8 +43,19 @@ export default function RegisterPage({ register = registerAccount }) {
   if (state.status === 'success')
     return (
       <main className="page-shell">
-        <h1>Check your email</h1>
-        <p>We sent a verification link to {state.account.email}.</p>
+        <h1>{state.verificationToken ? 'Use your test verification token' : 'Check your email'}</h1>
+        <p>
+          {state.verificationToken
+            ? `Verification delivery was bypassed for ${state.account.email}.`
+            : `We sent a verification link to ${state.account.email}.`}
+        </p>
+        {state.verificationToken && (
+          <>
+            <label htmlFor="verification-token">Verification token</label>
+            <input id="verification-token" type="text" readOnly value={state.verificationToken} />
+            <p>Use this token on the verify-email screen to complete the normal verification flow.</p>
+          </>
+        )}
       </main>
     )
 

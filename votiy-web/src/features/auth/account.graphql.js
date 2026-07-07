@@ -4,13 +4,13 @@ const ACCOUNT_FIELDS = 'id email isVerified createdAt'
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
 
 export const REGISTER_ACCOUNT = `mutation Register($input: RegisterInput!) {
-  register(input: $input) { __typename ... on AccountSuccess { account { ${ACCOUNT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+  register(input: $input) { __typename ... on AccountSuccess { account { ${ACCOUNT_FIELDS} } verificationToken } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 export const VERIFY_EMAIL = `mutation VerifyEmail($input: VerifyEmailInput!) {
   verifyEmail(input: $input) { __typename ... on SessionSuccess { session { account { ${ACCOUNT_FIELDS} } } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 export const RESEND_VERIFICATION = `mutation ResendVerification {
-  resendVerification { __typename ... on AccountSuccess { account { ${ACCOUNT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+  resendVerification { __typename ... on AccountSuccess { account { ${ACCOUNT_FIELDS} } verificationToken } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 export const VIEWER = `query Viewer {
   viewer { __typename ... on SessionSuccess { session { account { ${ACCOUNT_FIELDS} } } } ... on OperationError { ${ERROR_FIELDS} } }

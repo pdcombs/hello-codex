@@ -1,7 +1,11 @@
 import { publicAccount } from '../../domain/account.js'
 import { ApplicationError, ErrorCode, toClientError } from '../../domain/errors.js'
 
-const successAccount = (account) => ({ __typename: 'AccountSuccess', account: publicAccount(account) })
+const successAccount = (account, verificationToken = null) => ({
+  __typename: 'AccountSuccess',
+  account: publicAccount(account),
+  verificationToken,
+})
 const successSession = (account) => ({
   __typename: 'SessionSuccess',
   session: { account: publicAccount(account) },
@@ -12,7 +16,7 @@ export function createAccountResolvers({ registrationService, verificationServic
   return Object.freeze({
     async register({ input }, context) {
       try {
-        const { account } = await registrationService.register(input)
+        const { account, verificationToken } = await registrationService.register(input)
         await auditRepository?.append({
           name: 'account.registered',
           actorAccountId: null,
@@ -22,7 +26,7 @@ export function createAccountResolvers({ registrationService, verificationServic
           correlationId: context.correlationId,
           metadata: { lifecycleStatus: 'completed' },
         })
-        return successAccount(account)
+        return successAccount(account, verificationToken)
       } catch (error) {
         return failure(error, context.correlationId)
       }
@@ -51,8 +55,8 @@ export function createAccountResolvers({ registrationService, verificationServic
         const viewer = context.session.accountId
           ? { account: { _id: context.session.accountId } }
           : await sessionService.viewer(context.session)
-        const { account } = await verificationService.resendVerification({ accountId: viewer.account._id })
-        return successAccount(account)
+        const { account, verificationToken } = await verificationService.resendVerification({ accountId: viewer.account._id })
+        return successAccount(account, verificationToken)
       } catch (error) {
         return failure(error, context.correlationId)
       }

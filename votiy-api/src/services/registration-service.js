@@ -22,6 +22,7 @@ export function createRegistrationService({
   digestToken,
   digestRequest,
   verificationTtlSeconds,
+  verificationBypassPolicy = { matches: () => false, tokenFor: null },
   now = () => new Date(),
   logger,
 }) {
@@ -37,7 +38,12 @@ export function createRegistrationService({
       if (prior) {
         if (prior.requestDigest !== requestDigest) throw new ApplicationError(ErrorCode.CONFLICT)
         const account = await accountRepository.findById(prior.resultReference.accountId)
-        return { account }
+        return {
+          account,
+          verificationToken: verificationBypassPolicy.matches(emailNormalized)
+            ? verificationBypassPolicy.tokenFor(emailNormalized)
+            : null,
+        }
       }
       if (await accountRepository.findByEmailNormalized(emailNormalized)) {
         logger?.info({ operation: 'account.register', outcome: 'duplicate' }, 'Registration suppressed')
@@ -46,6 +52,7 @@ export function createRegistrationService({
 
       const timestamp = now()
       const passwordHash = await passwordHasher.hash(input.password)
+      const bypassVerification = verificationBypassPolicy.matches(emailNormalized)
       let account
       try {
         account = await accountRepository.createPending({
@@ -64,18 +71,29 @@ export function createRegistrationService({
         throw cause
       }
 
-      const token = generateToken()
+      const token = bypassVerification ? verificationBypassPolicy.tokenFor(emailNormalized) : generateToken()
       await verificationRepository.supersedeActiveForAccount(account._id, timestamp)
-      await verificationRepository.create({
+      const verificationRecord = {
         accountId: account._id,
         tokenDigest: digestToken(token),
         expiresAt: new Date(timestamp.getTime() + verificationTtlSeconds * 1000),
         consumedAt: null,
         now: timestamp,
-      })
-      await emailSender.send({ email: emailNormalized, token })
+      }
+      if (bypassVerification) {
+        await verificationRepository.createOrRefreshReusable(verificationRecord)
+        logger?.info({
+          operation: 'email.verification.bypass',
+          outcome: 'success',
+          email: emailNormalized,
+          verificationToken: token,
+        }, 'Verification delivery bypassed for allowlisted account')
+      } else {
+        await verificationRepository.create(verificationRecord)
+        await emailSender.send({ email: emailNormalized, token })
+        logger?.info({ operation: 'email.verification.send', outcome: 'success' }, 'Verification email sent')
+      }
       logger?.info({ operation: 'account.register', outcome: 'success' }, 'Account registration completed')
-      logger?.info({ operation: 'email.verification.send', outcome: 'success' }, 'Verification email sent')
       await idempotencyRepository.create({
         ...identity,
         requestDigest,
@@ -83,7 +101,7 @@ export function createRegistrationService({
         expiresAt: new Date(timestamp.getTime() + 86_400_000),
         createdAt: timestamp,
       })
-      return { account }
+      return { account, verificationToken: bypassVerification ? token : null }
     },
   })
 }

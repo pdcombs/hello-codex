@@ -24,6 +24,7 @@ function createHarness(overrides = {}) {
     consumeActive: vi.fn().mockResolvedValue(verification),
     supersedeActiveForAccount: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ _id: 'verification-2' }),
+    createOrRefreshReusable: vi.fn().mockResolvedValue({ _id: 'verification-reusable-2' }),
   }
   const accountRepository = {
     findById: vi.fn().mockResolvedValue(account),
@@ -50,6 +51,7 @@ function createHarness(overrides = {}) {
     now: vi.fn().mockReturnValue(NOW),
     verificationTtlSeconds: 3_600,
     sessionTtlSeconds: 86_400,
+    verificationBypassPolicy: { matches: vi.fn().mockReturnValue(false), tokenFor: vi.fn() },
     ...overrides,
   }
 
@@ -151,5 +153,28 @@ describe('verification service', () => {
     })
     expect(harness.verificationRepository.create).not.toHaveBeenCalled()
     expect(harness.emailSender.send).not.toHaveBeenCalled()
+  })
+
+  it('refreshes a reusable bypass token and returns it without sending email for allowlisted test accounts', async () => {
+    const verificationBypassPolicy = {
+      matches: vi.fn().mockReturnValue(true),
+      tokenFor: vi.fn().mockReturnValue('test-verify:host@example.com'),
+    }
+    const harness = createHarness({ verificationBypassPolicy })
+
+    const result = await harness.service.resendVerification({ accountId: 'account-1' })
+
+    expect(verificationBypassPolicy.matches).toHaveBeenCalledWith('host@example.com')
+    expect(verificationBypassPolicy.tokenFor).toHaveBeenCalledWith('host@example.com')
+    expect(harness.verificationRepository.createOrRefreshReusable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'account-1',
+        tokenDigest: 'verification-token-digest',
+        expiresAt: new Date('2026-07-05T13:00:00.000Z'),
+      }),
+    )
+    expect(harness.verificationRepository.create).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
+    expect(result.verificationToken).toBe('test-verify:host@example.com')
   })
 })

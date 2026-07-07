@@ -3,6 +3,34 @@ import { securityHeaders } from '../../app.js'
 import { getRequestContext } from '../../observability/request-context.js'
 import { validateGraphqlOperation } from './schema.js'
 
+function parseOrigin(value) {
+  try {
+    return value ? new URL(value) : null
+  } catch {
+    return null
+  }
+}
+
+function isLoopbackHostname(hostname) {
+  return hostname === 'localhost' || hostname === '127.0.0.1'
+}
+
+function isAllowedMutationOrigin(origin, appOrigin, isProduction) {
+  if (origin === appOrigin) return true
+  if (isProduction) return false
+
+  const actual = parseOrigin(origin)
+  const expected = parseOrigin(appOrigin)
+  if (!actual || !expected) return false
+
+  return (
+    actual.protocol === expected.protocol
+    && actual.port === expected.port
+    && isLoopbackHostname(actual.hostname)
+    && isLoopbackHostname(expected.hostname)
+  )
+}
+
 function sendJson(response, statusCode, body, extraHeaders = {}) {
   response.writeHead(statusCode, { ...securityHeaders('application/json'), ...extraHeaders })
   response.end(JSON.stringify(body))
@@ -56,7 +84,7 @@ export function createGraphqlHandler({
 
       if (operation.operation === 'mutation') {
         const origin = request.headers.origin
-        if (origin !== appOrigin || request.headers['x-requested-with'] !== 'votiy-web') {
+        if (!isAllowedMutationOrigin(origin, appOrigin, isProduction) || request.headers['x-requested-with'] !== 'votiy-web') {
           return sendJson(response, 403, { error: 'Forbidden', correlationId })
         }
       }

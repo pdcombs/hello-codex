@@ -11,6 +11,7 @@ export function createVerificationService({
   digestSessionSecret,
   verificationTtlSeconds,
   sessionTtlSeconds,
+  verificationBypassPolicy = { matches: () => false, tokenFor: null },
   now = () => new Date(),
   logger,
 }) {
@@ -43,18 +44,30 @@ export function createVerificationService({
       if (!account) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
       if (account.verificationStatus === 'verified') throw new ApplicationError(ErrorCode.CONFLICT)
       const timestamp = now()
-      const token = generateToken()
+      const bypassVerification = verificationBypassPolicy.matches(account.emailNormalized)
+      const token = bypassVerification ? verificationBypassPolicy.tokenFor(account.emailNormalized) : generateToken()
       await verificationRepository.supersedeActiveForAccount(account._id, timestamp)
-      await verificationRepository.create({
+      const verificationRecord = {
         accountId: account._id,
         tokenDigest: digestToken(token),
         expiresAt: new Date(timestamp.getTime() + verificationTtlSeconds * 1000),
         consumedAt: null,
         now: timestamp,
-      })
-      await emailSender.send({ email: account.emailNormalized, token })
-      logger?.info({ operation: 'email.verification.resend', outcome: 'success' }, 'Verification email resent')
-      return { account }
+      }
+      if (bypassVerification) {
+        await verificationRepository.createOrRefreshReusable(verificationRecord)
+        logger?.info({
+          operation: 'email.verification.bypass',
+          outcome: 'success',
+          email: account.emailNormalized,
+          verificationToken: token,
+        }, 'Verification resend bypassed for allowlisted account')
+      } else {
+        await verificationRepository.create(verificationRecord)
+        await emailSender.send({ email: account.emailNormalized, token })
+        logger?.info({ operation: 'email.verification.resend', outcome: 'success' }, 'Verification email resent')
+      }
+      return { account, verificationToken: bypassVerification ? token : null }
     },
   })
 }

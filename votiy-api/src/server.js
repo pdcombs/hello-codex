@@ -11,6 +11,7 @@ import { createHealthHandlers } from './api/health.js'
 import { createApplication } from './app.js'
 import { assertAccountFeatureEnvironment, loadEnvironment } from './config/env.js'
 import { digestIdempotencyRequest, digestSecret, generateOpaqueToken } from './domain/security.js'
+import { createVerificationBypassPolicy } from './domain/verification-bypass.js'
 import { createEmailSender } from './email/email-sender.js'
 import { createFakeSender } from './email/fake-sender.js'
 import { createMailpitSender } from './email/mailpit-sender.js'
@@ -54,6 +55,10 @@ const emailSender = createEmailSender({
   from: environment.emailFrom,
 })
 const digestToken = (token) => digestSecret(token, environment.tokenPepper)
+const verificationBypassPolicy = createVerificationBypassPolicy({
+  emails: environment.verificationBypassEmails,
+  domains: environment.verificationBypassDomains,
+})
 const registrationService = createRegistrationService({
   accountRepository,
   verificationRepository,
@@ -64,6 +69,7 @@ const registrationService = createRegistrationService({
   digestToken,
   digestRequest: digestIdempotencyRequest,
   verificationTtlSeconds: environment.verificationTtlSeconds,
+  verificationBypassPolicy,
   logger,
 })
 const verificationService = createVerificationService({
@@ -77,6 +83,7 @@ const verificationService = createVerificationService({
   digestSessionSecret: digestToken,
   verificationTtlSeconds: environment.verificationTtlSeconds,
   sessionTtlSeconds: environment.sessionTtlSeconds,
+  verificationBypassPolicy,
   logger,
 })
 const sessionService = createSessionService({

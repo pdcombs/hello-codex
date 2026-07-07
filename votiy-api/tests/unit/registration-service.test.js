@@ -23,6 +23,7 @@ function createHarness(overrides = {}) {
   const verificationRepository = {
     supersedeActiveForAccount: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ _id: 'verification-1' }),
+    createOrRefreshReusable: vi.fn().mockResolvedValue({ _id: 'verification-reusable-1' }),
   }
   const idempotencyRepository = {
     find: vi.fn().mockResolvedValue(null),
@@ -42,6 +43,7 @@ function createHarness(overrides = {}) {
     digestRequest: vi.fn().mockReturnValue('same-request-digest'),
     now: vi.fn().mockReturnValue(NOW),
     verificationTtlSeconds: 3_600,
+    verificationBypassPolicy: { matches: vi.fn().mockReturnValue(false), tokenFor: vi.fn() },
     ...overrides,
   }
 
@@ -124,6 +126,29 @@ describe('registration service', () => {
     expect(JSON.stringify(harness.verificationRepository.create.mock.calls)).not.toContain('raw-verification-token')
   })
 
+  it('stores a reusable bypass token and returns it instead of sending email for allowlisted test accounts', async () => {
+    const verificationBypassPolicy = {
+      matches: vi.fn().mockReturnValue(true),
+      tokenFor: vi.fn().mockReturnValue('test-verify:new.host@example.com'),
+    }
+    const harness = createHarness({ verificationBypassPolicy })
+
+    const result = await harness.service.register(INPUT)
+
+    expect(verificationBypassPolicy.matches).toHaveBeenCalledWith('new.host@example.com')
+    expect(verificationBypassPolicy.tokenFor).toHaveBeenCalledWith('new.host@example.com')
+    expect(harness.verificationRepository.createOrRefreshReusable).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: 'account-1',
+        tokenDigest: 'verification-token-digest',
+        expiresAt: new Date('2026-07-05T13:00:00.000Z'),
+      }),
+    )
+    expect(harness.verificationRepository.create).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
+    expect(result.verificationToken).toBe('test-verify:new.host@example.com')
+  })
+
   it('suppresses a normalized duplicate without hashing, writing, or sending email', async () => {
     const harness = createHarness()
     harness.accountRepository.findByEmailNormalized.mockResolvedValue({ _id: 'existing-account' })
@@ -149,6 +174,25 @@ describe('registration service', () => {
     expect(harness.accountRepository.findById).toHaveBeenCalledWith('account-1')
     expect(harness.passwordHasher.hash).not.toHaveBeenCalled()
     expect(harness.verificationRepository.create).not.toHaveBeenCalled()
+    expect(harness.emailSender.send).not.toHaveBeenCalled()
+  })
+
+  it('returns the deterministic bypass token for an idempotent retry of an allowlisted test registration', async () => {
+    const verificationBypassPolicy = {
+      matches: vi.fn().mockReturnValue(true),
+      tokenFor: vi.fn().mockReturnValue('test-verify:new.host@example.com'),
+    }
+    const harness = createHarness({ verificationBypassPolicy })
+    harness.idempotencyRepository.find.mockResolvedValue({
+      requestDigest: 'same-request-digest',
+      resultReference: { accountId: 'account-1' },
+    })
+    harness.accountRepository.findById = vi.fn().mockResolvedValue(harness.account)
+
+    const result = await harness.service.register(INPUT)
+
+    expect(result.verificationToken).toBe('test-verify:new.host@example.com')
+    expect(harness.verificationRepository.createOrRefreshReusable).not.toHaveBeenCalled()
     expect(harness.emailSender.send).not.toHaveBeenCalled()
   })
 

@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
 const LOCAL_TOKEN_PEPPER = 'local-development-token-pepper-change-before-production'
+const csv = z.string().default('').transform((value) =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean))
 
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -9,7 +14,7 @@ const environmentSchema = z.object({
     'mongodb://root:localpassword@127.0.0.1:27017/votiy?authSource=admin',
   ),
   MONGODB_DATABASE: z.string().trim().min(1).max(64).default('votiy'),
-  APP_ORIGIN: z.string().url().default('http://localhost:5173'),
+  APP_ORIGIN: z.string().url().default('http://127.0.0.1:5173'),
   SESSION_COOKIE_NAME: z.string().regex(/^[A-Za-z0-9_-]+$/).default('votiy_session'),
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(1_209_600),
   SESSION_IDLE_TTL_SECONDS: z.coerce.number().int().positive().default(604_800),
@@ -21,6 +26,8 @@ const environmentSchema = z.object({
   SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(1025),
   EMAIL_PROVIDER_ENDPOINT: z.union([z.literal(''), z.string().url()]).default(''),
   EMAIL_PROVIDER_API_KEY: z.string().default(''),
+  VERIFICATION_BYPASS_EMAILS: csv,
+  VERIFICATION_BYPASS_DOMAINS: csv,
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 })
 
@@ -72,6 +79,8 @@ export function loadEnvironment(source = process.env) {
     smtpPort: result.data.SMTP_PORT,
     emailProviderEndpoint: result.data.EMAIL_PROVIDER_ENDPOINT,
     emailProviderApiKey: result.data.EMAIL_PROVIDER_API_KEY,
+    verificationBypassEmails: result.data.VERIFICATION_BYPASS_EMAILS,
+    verificationBypassDomains: result.data.VERIFICATION_BYPASS_DOMAINS,
     logLevel: result.data.LOG_LEVEL,
   })
 }

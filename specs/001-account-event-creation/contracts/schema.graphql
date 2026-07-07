@@ -80,7 +80,10 @@ type OwnedEventConnection {
   nextCursor: String
 }
 
-type AccountSuccess { account: Account! }
+type AccountSuccess {
+  account: Account!
+  verificationToken: String
+}
 type SessionSuccess { session: SessionPayload! }
 type SignOutSuccess { signedOut: Boolean! }
 type EventSuccess { event: Event! }

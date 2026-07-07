@@ -39,7 +39,12 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:5173>.
+Open <http://127.0.0.1:5173>.
+
+For test-only accounts, you can bypass email delivery while still exercising the verification flow by
+setting `VERIFICATION_BYPASS_EMAILS` or `VERIFICATION_BYPASS_DOMAINS` in `votiy-api/.env.local`. When a
+registration matches that allowlist, the register screen shows the verification token instead of sending
+an email.
 
 ## Production
 

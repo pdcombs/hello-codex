@@ -50,13 +50,14 @@ describe('registration page', () => {
     expect(screen.getByRole('button', { name: 'Creating account…' })).toBeDisabled()
     expect(screen.getByRole('status')).toHaveTextContent('Creating your account')
     expect(register).toHaveBeenCalledOnce()
-    pending.resolve({ account: { email: 'host@example.com', isVerified: false } })
+    pending.resolve({ account: { email: 'host@example.com', isVerified: false }, verificationToken: null })
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeVisible()
   })
 
   it('shows verification guidance after successful registration', async () => {
     const register = vi.fn().mockResolvedValue({
       account: { email: 'host@example.com', isVerified: false },
+      verificationToken: null,
     })
     const { user } = renderPage(register)
 
@@ -97,7 +98,7 @@ describe('registration page', () => {
     const register = vi
       .fn()
       .mockRejectedValueOnce(new GraphqlClientError('Votiy could not be reached. Please try again.'))
-      .mockResolvedValueOnce({ account: { email: 'host@example.com', isVerified: false } })
+      .mockResolvedValueOnce({ account: { email: 'host@example.com', isVerified: false }, verificationToken: null })
     const { user } = renderPage(register)
 
     await completeForm(user)
@@ -106,5 +107,19 @@ describe('registration page', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeVisible()
     expect(register).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the verification token on screen for bypassed test accounts', async () => {
+    const register = vi.fn().mockResolvedValue({
+      account: { email: 'host@example.test', isVerified: false },
+      verificationToken: 'test-verify:host@example.test',
+    })
+    const { user } = renderPage(register)
+
+    await completeForm(user, { email: 'host@example.test' })
+
+    expect(await screen.findByRole('heading', { name: 'Use your test verification token' })).toBeVisible()
+    expect(screen.getByDisplayValue('test-verify:host@example.test')).toBeVisible()
+    expect(screen.getByText(/Verification delivery was bypassed/i)).toBeVisible()
   })
 })

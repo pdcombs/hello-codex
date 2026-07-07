@@ -10,6 +10,7 @@ const REGISTER = `
       __typename
       ... on AccountSuccess {
         account { id email isVerified createdAt }
+        verificationToken
       }
       ... on OperationError {
         code message correlationId
@@ -40,6 +41,7 @@ const RESEND_VERIFICATION = `
       __typename
       ... on AccountSuccess {
         account { id email isVerified createdAt }
+        verificationToken
       }
       ... on OperationError {
         code message correlationId
@@ -73,14 +75,14 @@ const ACCOUNT = Object.freeze({
 
 function createHarness(overrides = {}) {
   const registrationService = {
-    register: vi.fn().mockResolvedValue({ account: ACCOUNT }),
+    register: vi.fn().mockResolvedValue({ account: ACCOUNT, verificationToken: null }),
   }
   const verificationService = {
     verifyEmail: vi.fn().mockResolvedValue({
       account: { ...ACCOUNT, isVerified: true },
       sessionSecret: 'raw-session-secret',
     }),
-    resendVerification: vi.fn().mockResolvedValue({ account: ACCOUNT }),
+    resendVerification: vi.fn().mockResolvedValue({ account: ACCOUNT, verificationToken: null }),
   }
   const sessionService = {
     viewer: vi.fn().mockResolvedValue({ account: { ...ACCOUNT, isVerified: true } }),
@@ -143,6 +145,7 @@ describe('account GraphQL contract', () => {
         isVerified: false,
         createdAt: '2026-07-05T12:00:00.000Z',
       },
+      verificationToken: null,
     })
   })
 
@@ -183,6 +186,7 @@ describe('account GraphQL contract', () => {
     expect(result.data.resendVerification).toMatchObject({
       __typename: 'AccountSuccess',
       account: { id: 'account-1', isVerified: false },
+      verificationToken: null,
     })
   })
 

@@ -19,6 +19,7 @@ describe('application routes', () => {
   it('switches the home page to the hosted-events dashboard for signed-in users', () => {
     render(<MemoryRouter><AppRoutes viewer={{ email: 'host@example.com' }} /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Your hosted events' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
   })
 
   it('renders one event detail and its actions', () => {

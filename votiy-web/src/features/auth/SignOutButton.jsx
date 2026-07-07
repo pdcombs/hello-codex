@@ -17,7 +17,7 @@ export default function SignOutButton({ signOut = signOutAccount }) {
     }
   }
   return (
-    <button type="button" disabled={loading} onClick={leave}>
+    <button className="nav-action" type="button" disabled={loading} onClick={leave}>
       {loading ? 'Signing out…' : 'Sign out'}
     </button>
   )

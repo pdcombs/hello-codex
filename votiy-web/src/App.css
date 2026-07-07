@@ -1,3 +1,9 @@
+:root {
+  --nav-top-offset: 22px;
+  --nav-height: 66px;
+  --nav-clearance: calc(var(--nav-top-offset) + var(--nav-height) + 32px);
+}
+
 #root {
   min-height: 100vh;
 }
@@ -9,10 +15,16 @@
   background: #050506;
 }
 
+.page-shell {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: var(--nav-clearance) 0 88px;
+}
+
 .glass-nav {
   position: fixed;
   z-index: 20;
-  top: 22px;
+  top: var(--nav-top-offset);
   left: 50%;
   width: min(1180px, calc(100% - 40px));
   height: 66px;
@@ -55,6 +67,7 @@
 nav {
   display: flex;
   gap: 34px;
+  align-items: center;
 }
 
 nav a {
@@ -68,6 +81,17 @@ nav a {
 
 nav a:hover {
   color: #fff;
+}
+
+.nav-action {
+  min-width: auto;
+  padding: 9px 14px;
+  justify-content: center;
+  gap: 0;
+  border-radius: 14px;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .system-status {
@@ -436,12 +460,39 @@ footer {
 }
 
 @media (max-width: 900px) {
+  .glass-nav {
+    grid-template-columns: auto 1fr;
+    padding: 0 12px;
+  }
+
   nav {
+    justify-self: end;
+    gap: 12px;
+  }
+
+  nav a {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-action {
+    padding: 8px 12px;
+    font-size: 0.58rem;
+  }
+
+  .system-status {
     display: none;
   }
 
-  .glass-nav {
-    grid-template-columns: 1fr auto;
+  .brand {
+    gap: 9px;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
   }
 
   .hero-copy {
@@ -474,9 +525,31 @@ footer {
 }
 
 @media (max-width: 600px) {
+  :root {
+    --nav-top-offset: 12px;
+    --nav-clearance: calc(var(--nav-top-offset) + var(--nav-height) + 24px);
+  }
+
   .glass-nav {
-    top: 12px;
     width: calc(100% - 24px);
+    grid-template-columns: 1fr;
+    height: auto;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .page-shell {
+    width: calc(100% - 32px);
+    padding-bottom: 72px;
+  }
+
+  nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-action {
+    padding-inline: 12px;
   }
 
   .system-status {

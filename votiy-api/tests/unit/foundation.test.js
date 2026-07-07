@@ -8,6 +8,7 @@ import {
   generateOpaqueToken,
   normalizeEmail,
 } from '../../src/domain/security.js'
+import { createVerificationBypassPolicy } from '../../src/domain/verification-bypass.js'
 import {
   eventInputSchema,
   participantIdentifierSchema,
@@ -34,6 +35,15 @@ describe('environment configuration', () => {
   it('rejects an idle session lifetime longer than the absolute lifetime', () => {
     expect(() => loadEnvironment({ SESSION_TTL_SECONDS: '60', SESSION_IDLE_TTL_SECONDS: '61' }))
       .toThrow('SESSION_IDLE_TTL_SECONDS')
+  })
+
+  it('parses verification bypass allowlists from comma-separated environment values', () => {
+    const environment = loadEnvironment({
+      VERIFICATION_BYPASS_EMAILS: 'one@example.test, two@example.test ',
+      VERIFICATION_BYPASS_DOMAINS: 'example.test, internal.test ',
+    })
+    expect(environment.verificationBypassEmails).toEqual(['one@example.test', 'two@example.test'])
+    expect(environment.verificationBypassDomains).toEqual(['example.test', 'internal.test'])
   })
 })
 
@@ -129,5 +139,19 @@ describe('input validation', () => {
       phone: '+14155552671',
     }).success).toBe(false)
     expect(participantIdentifierSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('verification bypass policy', () => {
+  it('matches allowlisted emails and domains and returns a deterministic token', () => {
+    const policy = createVerificationBypassPolicy({
+      emails: ['qa@example.test'],
+      domains: ['internal.test'],
+    })
+    expect(policy.enabled).toBe(true)
+    expect(policy.matches('QA@example.test')).toBe(true)
+    expect(policy.matches('person@internal.test')).toBe(true)
+    expect(policy.matches('person@example.com')).toBe(false)
+    expect(policy.tokenFor('QA@example.test')).toBe('test-verify:qa@example.test')
   })
 })

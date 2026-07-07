@@ -33,6 +33,32 @@ describe('GraphQL handler', () => {
     expect(denied.status).toBe(403)
   })
 
+  it('accepts loopback aliases during local development mutations', async () => {
+    const handler = createGraphqlHandler({ schema, rootValue, appOrigin: 'http://localhost:5173' })
+    const accepted = response()
+    await handler(request({ query: 'mutation { change }' }, {
+      origin: 'http://127.0.0.1:5173',
+      'x-requested-with': 'votiy-web',
+    }), accepted)
+    expect(accepted.status).toBe(200)
+    expect(accepted.body).toEqual({ data: { change: true } })
+  })
+
+  it('keeps strict origin matching in production', async () => {
+    const handler = createGraphqlHandler({
+      schema,
+      rootValue,
+      appOrigin: 'http://localhost:5173',
+      isProduction: true,
+    })
+    const denied = response()
+    await handler(request({ query: 'mutation { change }' }, {
+      origin: 'http://127.0.0.1:5173',
+      'x-requested-with': 'votiy-web',
+    }), denied)
+    expect(denied.status).toBe(403)
+  })
+
   it('enforces request bounds and rate-limit hooks', async () => {
     const limited = createGraphqlHandler({
       schema, rootValue, appOrigin: 'http://localhost:5173', maximumBodyBytes: 10,
