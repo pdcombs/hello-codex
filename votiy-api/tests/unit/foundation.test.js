@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { assertAccountFeatureEnvironment, loadEnvironment } from '../../src/config/env.js'
 import { ApplicationError, ErrorCode, toClientError } from '../../src/domain/errors.js'
+import { createFakeSender } from '../../src/email/fake-sender.js'
 import {
   constantTimeEqual,
   digestIdempotencyRequest,
@@ -30,7 +31,7 @@ describe('environment configuration', () => {
   it('rejects unsafe production settings when account features are wired', () => {
     const environment = loadEnvironment({ NODE_ENV: 'production' })
     expect(() => assertAccountFeatureEnvironment(environment)).toThrow(
-      'Invalid production configuration: TOKEN_PEPPER, EMAIL_TRANSPORT, EMAIL_PROVIDER_ENDPOINT, EMAIL_PROVIDER_API_KEY, APP_ORIGIN | detected=',
+      'Invalid production configuration: TOKEN_PEPPER, EMAIL_TRANSPORT, APP_ORIGIN | detected=',
     )
   })
 
@@ -46,6 +47,16 @@ describe('environment configuration', () => {
     })
     expect(environment.verificationBypassEmails).toEqual(['one@example.test', 'two@example.test'])
     expect(environment.verificationBypassDomains).toEqual(['example.test', 'internal.test'])
+  })
+
+  it('allows temporary fake email transport in production when other required settings are present', () => {
+    const environment = loadEnvironment({
+      NODE_ENV: 'production',
+      APP_ORIGIN: 'https://hello-codex-dc65.onrender.com',
+      TOKEN_PEPPER: 'a'.repeat(32),
+      EMAIL_TRANSPORT: 'fake',
+    })
+    expect(assertAccountFeatureEnvironment(environment).emailTransport).toBe('fake')
   })
 })
 
@@ -155,5 +166,29 @@ describe('verification bypass policy', () => {
     expect(policy.matches('person@internal.test')).toBe(true)
     expect(policy.matches('person@example.com')).toBe(false)
     expect(policy.tokenFor('QA@example.test')).toBe('test-verify:qa@example.test')
+  })
+})
+
+describe('fake email transport', () => {
+  it('captures deliveries and logs the verification details for temporary production debugging', async () => {
+    const logger = { info: vi.fn() }
+    const sender = createFakeSender({ logger, deliveredAt: () => new Date('2026-07-07T01:00:00.000Z') })
+
+    const result = await sender.send({
+      to: 'host@example.com',
+      subject: 'Verify your Votiy account',
+      text: 'Verify your Votiy account: https://hello-codex-dc65.onrender.com/verify-email?token=test',
+      token: 'test',
+    })
+
+    expect(result.deliveredAt.toISOString()).toBe('2026-07-07T01:00:00.000Z')
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'email.fake.send',
+        to: 'host@example.com',
+        token: 'test',
+      }),
+      'Captured fake email delivery',
+    )
   })
 })

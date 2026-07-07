@@ -47,7 +47,7 @@ const transport =
   environment.emailTransport === 'provider'
     ? createProviderSender({ endpoint: environment.emailProviderEndpoint, apiKey: environment.emailProviderApiKey })
     : environment.emailTransport === 'fake'
-      ? createFakeSender()
+      ? createFakeSender({ logger })
       : createMailpitSender({ host: environment.smtpHost, port: environment.smtpPort })
 const emailSender = createEmailSender({
   transport,

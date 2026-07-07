@@ -53,6 +53,10 @@ Render builds React and serves it from the Node API. Set these secret environmen
 - `MONGODB_URI`: MongoDB Atlas connection string for the restricted application user
 - `NODE_ENV`: `production`
 
+For temporary MVP deployments without a real email provider, production can run with
+`EMAIL_TRANSPORT=fake`. In that mode, verification emails are not sent externally; the API logs the
+verification link and token so you can complete the flow manually from Render logs.
+
 The existing Render service name and production MongoDB database remain unchanged during this repository
 rename. Local development reads `MONGODB_DATABASE=votiy` from the ignored `votiy-api/.env.local` file;
 production continues to use `hello_world` because that local file is never committed or deployed.

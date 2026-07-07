@@ -49,9 +49,9 @@ export function assertAccountFeatureEnvironment(environment) {
   const problems = []
 
   if (environment.tokenPepper === LOCAL_TOKEN_PEPPER) problems.push('TOKEN_PEPPER')
-  if (environment.emailTransport !== 'provider') problems.push('EMAIL_TRANSPORT')
-  if (!environment.emailProviderEndpoint) problems.push('EMAIL_PROVIDER_ENDPOINT')
-  if (!environment.emailProviderApiKey) problems.push('EMAIL_PROVIDER_API_KEY')
+  if (!['fake', 'provider'].includes(environment.emailTransport)) problems.push('EMAIL_TRANSPORT')
+  if (environment.emailTransport === 'provider' && !environment.emailProviderEndpoint) problems.push('EMAIL_PROVIDER_ENDPOINT')
+  if (environment.emailTransport === 'provider' && !environment.emailProviderApiKey) problems.push('EMAIL_PROVIDER_API_KEY')
   if (!environment.appOrigin.startsWith('https://')) problems.push('APP_ORIGIN')
 
   if (problems.length > 0) {

@@ -19,7 +19,7 @@ services:
       - key: TOKEN_PEPPER
         generateValue: true
       - key: EMAIL_TRANSPORT
-        value: provider
+        value: fake
       - key: EMAIL_FROM
         value: Votiy <no-reply@votiy.app>
       - key: EMAIL_PROVIDER_ENDPOINT
