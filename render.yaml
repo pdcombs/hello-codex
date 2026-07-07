@@ -15,7 +15,7 @@ services:
       - key: MONGODB_DATABASE
         value: votiy
       - key: APP_ORIGIN
-        value: https://hello-codex.onrender.com
+        value: https://hello-codex-dc65.onrender.com
       - key: TOKEN_PEPPER
         generateValue: true
       - key: EMAIL_TRANSPORT
