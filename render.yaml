@@ -14,3 +14,15 @@ services:
         sync: false
       - key: MONGODB_DATABASE
         value: votiy
+      - key: APP_ORIGIN
+        value: https://hello-codex.onrender.com
+      - key: TOKEN_PEPPER
+        generateValue: true
+      - key: EMAIL_TRANSPORT
+        value: provider
+      - key: EMAIL_FROM
+        value: Votiy <no-reply@votiy.app>
+      - key: EMAIL_PROVIDER_ENDPOINT
+        sync: false
+      - key: EMAIL_PROVIDER_API_KEY
+        sync: false
