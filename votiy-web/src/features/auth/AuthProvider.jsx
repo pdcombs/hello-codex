@@ -5,19 +5,30 @@ const AuthContext = createContext(null)
 
 export function AuthProvider({ children, initialViewer = null, viewerLoader = loadViewer }) {
   const [viewer, setViewer] = useState(initialViewer)
+  const [loading, setLoading] = useState(!initialViewer)
+  const [sessionExpired, setSessionExpired] = useState(false)
   useEffect(() => {
     if (initialViewer) return
     let active = true
     viewerLoader()
       .then(({ session }) => {
-        if (active) setViewer(session.account)
+        if (active) {
+          setViewer(session.account)
+          setLoading(false)
+        }
       })
-      .catch(() => {})
+      .catch((error) => {
+        if (active) {
+          setViewer(null)
+          setSessionExpired(error.code === 'AUTHENTICATION_REQUIRED')
+          setLoading(false)
+        }
+      })
     return () => {
       active = false
     }
   }, [initialViewer, viewerLoader])
-  const value = useMemo(() => ({ viewer, setViewer }), [viewer])
+  const value = useMemo(() => ({ viewer, setViewer, loading, sessionExpired }), [viewer, loading, sessionExpired])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

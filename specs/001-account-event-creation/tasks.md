@@ -98,20 +98,20 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T043 [P] [US2] Write failing unit tests for credential verification, session rotation, expiry, throttled last-seen updates, revocation, and safe failure messages in `votiy-api/tests/unit/authentication-service.test.js`
-- [ ] T044 [P] [US2] Write failing GraphQL and cookie contract tests for `signIn`, `signOut`, and `viewer` in `votiy-api/tests/contract/session.contract.test.js`
-- [ ] T045 [P] [US2] Write failing real-Mongo integration tests for sign-in, concurrent sessions, expiry, credential-version mismatch, and sign-out invalidation in `votiy-api/tests/integration/session-lifecycle.test.js`
-- [ ] T046 [P] [US2] Write failing component tests for sign-in, invalid credentials, expired session, protected navigation, and sign-out states in `votiy-web/tests/component/session.test.jsx`
-- [ ] T047 [P] [US2] Write the failing CUF-002 returning-host browser flow in `tests/e2e/returning-host.spec.js`
+- [X] T043 [P] [US2] Write failing unit tests for credential verification, session rotation, expiry, throttled last-seen updates, revocation, and safe failure messages in `votiy-api/tests/unit/authentication-service.test.js`
+- [X] T044 [P] [US2] Write failing GraphQL and cookie contract tests for `signIn`, `signOut`, and `viewer` in `votiy-api/tests/contract/session.contract.test.js`
+- [X] T045 [P] [US2] Write failing real-Mongo integration tests for sign-in, concurrent sessions, expiry, credential-version mismatch, and sign-out invalidation in `votiy-api/tests/integration/session-lifecycle.test.js`
+- [X] T046 [P] [US2] Write failing component tests for sign-in, invalid credentials, expired session, protected navigation, and sign-out states in `votiy-web/tests/component/session.test.jsx`
+- [X] T047 [P] [US2] Write the failing CUF-002 returning-host browser flow in `tests/e2e/returning-host.spec.js`
 
 ### Implementation for User Story 2
 
-- [ ] T048 [US2] Implement sign-in throttling, constant-behavior credential failures, verified-account checks, session rotation, viewer lookup, and sign-out in `votiy-api/src/services/authentication-service.js`
-- [ ] T049 [US2] Wire `signIn`, `signOut`, and `viewer` resolvers plus authentication audit outcomes in `votiy-api/src/api/graphql/session-resolvers.js`
-- [ ] T050 [P] [US2] Add checked-in session GraphQL operations in `votiy-web/src/features/auth/session.graphql.js`
-- [ ] T051 [US2] Build accessible sign-in and sign-out flows with loading, safe invalid-credential, expired-session, and recoverable-failure states in `votiy-web/src/features/auth/SignInPage.jsx` and `votiy-web/src/features/auth/SignOutButton.jsx`
-- [ ] T052 [US2] Update authenticated routing to refresh viewer state, redirect ended sessions, and preserve safe return destinations in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/app/AppRouter.jsx`
-- [ ] T053 [US2] Emit sign-in success/failure, session expiry, and sign-out logs/metrics with correlation IDs and no credentials in `votiy-api/src/services/authentication-service.js`
+- [X] T048 [US2] Implement sign-in throttling, constant-behavior credential failures, verified-account checks, session rotation, viewer lookup, and sign-out in `votiy-api/src/services/authentication-service.js`
+- [X] T049 [US2] Wire `signIn`, `signOut`, and `viewer` resolvers plus authentication audit outcomes in `votiy-api/src/api/graphql/session-resolvers.js`
+- [X] T050 [P] [US2] Add checked-in session GraphQL operations in `votiy-web/src/features/auth/session.graphql.js`
+- [X] T051 [US2] Build accessible sign-in and sign-out flows with loading, safe invalid-credential, expired-session, and recoverable-failure states in `votiy-web/src/features/auth/SignInPage.jsx` and `votiy-web/src/features/auth/SignOutButton.jsx`
+- [X] T052 [US2] Update authenticated routing to refresh viewer state, redirect ended sessions, and preserve safe return destinations in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/app/AppRouter.jsx`
+- [X] T053 [US2] Emit sign-in success/failure, session expiry, and sign-out logs/metrics with correlation IDs and no credentials in `votiy-api/src/services/authentication-service.js`
 
 **Checkpoint**: User Stories 1 and 2 both pass independently; a user can establish, resume, and safely end account access.
 

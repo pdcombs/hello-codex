@@ -20,5 +20,9 @@ export function createSessionRepository(database) {
     revokeByDigest(secretDigest, now) {
       return collection.updateOne({ secretDigest, revokedAt: null }, { $set: { revokedAt: now } })
     },
+    touchLastSeen(sessionId, previous, now, throttleMs = 300_000) {
+      if (now.getTime() - previous.getTime() < throttleMs) return Promise.resolve(false)
+      return collection.updateOne({ _id: id(sessionId), lastSeenAt: previous }, { $set: { lastSeenAt: now } })
+    },
   })
 }

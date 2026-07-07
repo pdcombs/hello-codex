@@ -1,6 +1,8 @@
-import { BrowserRouter, Link, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider.jsx'
 import RegisterPage from '../features/auth/RegisterPage.jsx'
+import SignInPage from '../features/auth/SignInPage.jsx'
+import SignOutButton from '../features/auth/SignOutButton.jsx'
 import VerifyEmailPage from '../features/auth/VerifyEmailPage.jsx'
 import EventDashboardPage from '../features/events/EventDashboardPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
@@ -15,6 +17,7 @@ function SiteHeader({ viewer }) {
       <nav aria-label="Primary navigation">
         <Link to="/">{viewer ? 'My events' : 'Home'}</Link>
         {!viewer && <Link to="/sign-in">Sign in</Link>}
+        {viewer && <SignOutButton />}
       </nav>
       <span className="system-status">Voting, together</span>
     </header>
@@ -64,6 +67,11 @@ function PlaceholderPage({ title }) {
   )
 }
 
+function Protected({ viewer, children }) {
+  const location = useLocation()
+  return viewer ? children : <Navigate to="/sign-in" replace state={{ from: location }} />
+}
+
 export function AppRoutes({ viewer = null, onVerified }) {
   return (
     <div className="app-shell">
@@ -71,10 +79,17 @@ export function AppRoutes({ viewer = null, onVerified }) {
       <Routes>
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
         <Route path="/events/:publicId" element={<EventDetailShell />} />
-        <Route path="/events/new" element={<PlaceholderPage title="Create an event" />} />
+        <Route
+          path="/events/new"
+          element={
+            <Protected viewer={viewer}>
+              <PlaceholderPage title="Create an event" />
+            </Protected>
+          }
+        />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage onVerified={onVerified} />} />
-        <Route path="/sign-in" element={<PlaceholderPage title="Sign in" />} />
+        <Route path="/sign-in" element={viewer ? <Navigate to="/" replace /> : <SignInPage />} />
         <Route path="*" element={<PlaceholderPage title="Page not found" />} />
       </Routes>
     </div>

@@ -6,6 +6,7 @@ import { createAccountResolvers } from './api/graphql/account-resolvers.js'
 import { createGraphqlHandler } from './api/graphql/handler.js'
 import { createGraphqlSchema } from './api/graphql/schema.js'
 import { createSessionContext } from './api/graphql/session-context.js'
+import { createSessionResolvers } from './api/graphql/session-resolvers.js'
 import { createHealthHandlers } from './api/health.js'
 import { createApplication } from './app.js'
 import { assertAccountFeatureEnvironment, loadEnvironment } from './config/env.js'
@@ -23,6 +24,7 @@ import { createMongoConnection } from './repositories/mongo.js'
 import { createSessionRepository } from './repositories/session-repository.js'
 import { createVerificationRepository } from './repositories/verification-repository.js'
 import { createRegistrationService } from './services/registration-service.js'
+import { createAuthenticationService } from './services/authentication-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
 
@@ -83,13 +85,25 @@ const sessionService = createSessionService({
   digestSessionSecret: digestToken,
   logger,
 })
-const schema = await createGraphqlSchema()
-const rootValue = createAccountResolvers({
-  registrationService,
-  verificationService,
-  sessionService,
-  auditRepository,
+const authenticationService = createAuthenticationService({
+  accountRepository,
+  sessionRepository,
+  passwordHasher: { verify: argon2.verify },
+  digestSessionSecret: digestToken,
+  generateSessionSecret: generateOpaqueToken,
+  sessionTtlSeconds: environment.sessionTtlSeconds,
+  logger,
 })
+const schema = await createGraphqlSchema()
+const rootValue = {
+  ...createAccountResolvers({
+    registrationService,
+    verificationService,
+    sessionService: authenticationService,
+    auditRepository,
+  }),
+  ...createSessionResolvers({ authenticationService, auditRepository }),
+}
 const graphqlHandler = createGraphqlHandler({
   schema,
   rootValue,
