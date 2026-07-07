@@ -1,91 +1,118 @@
 import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { buildSchema, graphql } from 'graphql'
-import { createApplication, securityHeaders } from './app.js'
+import argon2 from 'argon2'
+import { createAccountResolvers } from './api/graphql/account-resolvers.js'
+import { createGraphqlHandler } from './api/graphql/handler.js'
+import { createGraphqlSchema } from './api/graphql/schema.js'
+import { createSessionContext } from './api/graphql/session-context.js'
 import { createHealthHandlers } from './api/health.js'
-import { loadEnvironment } from './config/env.js'
+import { createApplication } from './app.js'
+import { assertAccountFeatureEnvironment, loadEnvironment } from './config/env.js'
+import { digestIdempotencyRequest, digestSecret, generateOpaqueToken } from './domain/security.js'
+import { createEmailSender } from './email/email-sender.js'
+import { createFakeSender } from './email/fake-sender.js'
+import { createMailpitSender } from './email/mailpit-sender.js'
+import { createProviderSender } from './email/provider-sender.js'
 import { createLogger } from './observability/logger.js'
+import { createAccountRepository } from './repositories/account-repository.js'
+import { createAuditEventRepository } from './repositories/audit-event-repository.js'
+import { createIdempotencyRepository } from './repositories/idempotency-repository.js'
 import { ensureCollectionsAndIndexes } from './repositories/indexes.js'
 import { createMongoConnection } from './repositories/mongo.js'
+import { createSessionRepository } from './repositories/session-repository.js'
+import { createVerificationRepository } from './repositories/verification-repository.js'
+import { createRegistrationService } from './services/registration-service.js'
+import { createSessionService } from './services/session-service.js'
+import { createVerificationService } from './services/verification-service.js'
 
-const environment = loadEnvironment()
+const environment = assertAccountFeatureEnvironment(loadEnvironment())
 const sourceDirectory = dirname(fileURLToPath(import.meta.url))
 const frontendDirectory = join(sourceDirectory, '..', '..', 'votiy-web', 'dist')
 const logger = createLogger({ level: environment.logLevel, environment: environment.nodeEnvironment })
 const mongo = createMongoConnection({ uri: environment.mongoUri, databaseName: environment.mongoDatabase })
-const wordsCollection = mongo.collection('words')
 
-const seedWords = ['aurora', 'breeze', 'comet', 'dandelion', 'ember', 'fjord', 'galaxy', 'horizon', 'island', 'jasmine']
-const schema = buildSchema('type Query { message: String! }')
-let lastWord
+await mongo.connect()
+await ensureCollectionsAndIndexes(mongo.database)
 
-async function ensureWordsExist() {
-  if (await wordsCollection.estimatedDocumentCount() === 0) {
-    await wordsCollection.insertMany(seedWords.map((value) => ({ value })))
-  }
-}
-
-async function randomWord() {
-  const documents = await wordsCollection.find({}, { projection: { _id: 0, value: 1 } }).toArray()
-  const words = documents.map(({ value }) => value)
-  if (words.length === 0) throw new Error('The word collection is empty')
-  const choices = words.filter((word) => word !== lastWord)
-  const pool = choices.length > 0 ? choices : words
-  lastWord = pool[Math.floor(Math.random() * pool.length)]
-  return lastWord
-}
-
-async function readJsonBody(request, maximumBytes = 2_000) {
-  const chunks = []
-  let bytes = 0
-  for await (const chunk of request) {
-    bytes += chunk.length
-    if (bytes > maximumBytes) throw new Error('Request too large')
-    chunks.push(chunk)
-  }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
-}
-
-async function graphqlHandler(request, response) {
-  if (request.method !== 'POST') {
-    response.writeHead(405, { ...securityHeaders('application/json'), Allow: 'POST' })
-    return response.end(JSON.stringify({ error: 'Method not allowed' }))
-  }
-
-  try {
-    const { query, variables } = await readJsonBody(request)
-    const result = await graphql({
-      schema,
-      source: query,
-      rootValue: { message: randomWord },
-      variableValues: variables,
-    })
-    response.writeHead(200, securityHeaders('application/json'))
-    response.end(JSON.stringify(result))
-  } catch {
-    response.writeHead(400, securityHeaders('application/json'))
-    response.end(JSON.stringify({ error: 'Invalid request' }))
-  }
-}
-
+const accountRepository = createAccountRepository(mongo.database)
+const verificationRepository = createVerificationRepository(mongo.database)
+const sessionRepository = createSessionRepository(mongo.database)
+const idempotencyRepository = createIdempotencyRepository(mongo.database)
+const auditRepository = createAuditEventRepository(mongo.database)
+const transport =
+  environment.emailTransport === 'provider'
+    ? createProviderSender({ endpoint: environment.emailProviderEndpoint, apiKey: environment.emailProviderApiKey })
+    : environment.emailTransport === 'fake'
+      ? createFakeSender()
+      : createMailpitSender({ host: environment.smtpHost, port: environment.smtpPort })
+const emailSender = createEmailSender({
+  transport,
+  appOrigin: environment.appOrigin,
+  from: environment.emailFrom,
+})
+const digestToken = (token) => digestSecret(token, environment.tokenPepper)
+const registrationService = createRegistrationService({
+  accountRepository,
+  verificationRepository,
+  idempotencyRepository,
+  emailSender,
+  passwordHasher: { hash: (password) => argon2.hash(password, { type: argon2.argon2id }) },
+  generateToken: generateOpaqueToken,
+  digestToken,
+  digestRequest: digestIdempotencyRequest,
+  verificationTtlSeconds: environment.verificationTtlSeconds,
+  logger,
+})
+const verificationService = createVerificationService({
+  accountRepository,
+  verificationRepository,
+  sessionRepository,
+  emailSender,
+  digestToken,
+  generateToken: generateOpaqueToken,
+  generateSessionSecret: generateOpaqueToken,
+  digestSessionSecret: digestToken,
+  verificationTtlSeconds: environment.verificationTtlSeconds,
+  sessionTtlSeconds: environment.sessionTtlSeconds,
+  logger,
+})
+const sessionService = createSessionService({
+  accountRepository,
+  sessionRepository,
+  digestSessionSecret: digestToken,
+  logger,
+})
+const schema = await createGraphqlSchema()
+const rootValue = createAccountResolvers({
+  registrationService,
+  verificationService,
+  sessionService,
+  auditRepository,
+})
+const graphqlHandler = createGraphqlHandler({
+  schema,
+  rootValue,
+  appOrigin: environment.appOrigin,
+  isProduction: environment.isProduction,
+  contextFactory: ({ request, response, correlationId }) =>
+    createSessionContext({
+      request,
+      response,
+      correlationId,
+      environment,
+    }),
+})
 const { healthHandler, readyHandler } = createHealthHandlers({ mongo })
 const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger })
 const server = createServer(application)
 const host = environment.isProduction ? '0.0.0.0' : '127.0.0.1'
 
-await mongo.connect()
-await ensureCollectionsAndIndexes(mongo.database)
-await ensureWordsExist()
-
-server.listen(environment.port, host, () => {
-  logger.info({ host, port: environment.port }, 'Votiy API started')
-})
+server.listen(environment.port, host, () => logger.info({ host, port: environment.port }, 'Votiy API started'))
 
 async function shutdown() {
   server.close()
   await mongo.close()
 }
-
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)

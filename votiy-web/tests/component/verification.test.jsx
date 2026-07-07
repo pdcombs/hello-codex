@@ -2,9 +2,15 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import { AuthProvider, useAuth } from '../../src/features/auth/AuthProvider.jsx'
 import VerifyEmailPage from '../../src/features/auth/VerifyEmailPage.jsx'
 import EventDashboardPage from '../../src/features/events/EventDashboardPage.jsx'
 import { GraphqlClientError } from '../../src/lib/graphql.js'
+
+function ViewerProbe() {
+  const { viewer } = useAuth()
+  return <p>{viewer?.email ?? 'anonymous'}</p>
+}
 
 function deferred() {
   let resolve
@@ -100,6 +106,17 @@ describe('verification page', () => {
 })
 
 describe('authenticated empty dashboard', () => {
+  it('uses an already-known viewer without requesting it again', () => {
+    const viewerLoader = vi.fn()
+    render(
+      <AuthProvider initialViewer={{ email: 'known@example.com' }} viewerLoader={viewerLoader}>
+        <ViewerProbe />
+      </AuthProvider>,
+    )
+    expect(screen.getByText('known@example.com')).toBeVisible()
+    expect(viewerLoader).not.toHaveBeenCalled()
+  })
+
   it('explains the empty state and offers event creation', () => {
     render(
       <MemoryRouter>
@@ -110,5 +127,19 @@ describe('authenticated empty dashboard', () => {
     expect(screen.getByRole('heading', { name: 'Your hosted events' })).toBeVisible()
     expect(screen.getByText('You have not created any voting events yet.')).toBeVisible()
     expect(screen.getByRole('link', { name: 'Create your first event' })).toHaveAttribute('href', '/events/new')
+  })
+
+  it('lists hosted events as links to their detail pages', () => {
+    render(
+      <MemoryRouter>
+        <EventDashboardPage
+          viewer={{ email: 'host@example.com' }}
+          events={[{ id: 'event-1', publicId: 'public-event-1', title: 'Team awards' }]}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Team awards' })).toHaveAttribute('href', '/events/public-event-1')
+    expect(screen.queryByText('You have not created any voting events yet.')).not.toBeInTheDocument()
   })
 })

@@ -70,7 +70,7 @@ export function createGraphqlHandler({
 
       const result = await graphql({
         schema, source: body.query, rootValue, variableValues: body.variables,
-        operationName: body.operationName, contextValue: await contextFactory({ request, correlationId }),
+        operationName: body.operationName, contextValue: await contextFactory({ request, response, correlationId }),
       })
       return sendJson(response, 200, result)
     } catch (error) {

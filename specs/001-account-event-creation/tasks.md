@@ -73,18 +73,18 @@
 
 ### Implementation for User Story 1
 
-- [ ] T031 [P] [US1] Implement Account and EmailVerification document mapping and validation, including host referral metadata on accounts, in `votiy-api/src/domain/account.js` and `votiy-api/src/domain/email-verification.js`
-- [ ] T032 [P] [US1] Implement opaque Session document mapping, cookie options, rotation, expiry, and revocation primitives in `votiy-api/src/domain/session.js`
-- [ ] T033 [P] [US1] Implement account, verification, session, and idempotency persistence operations in `votiy-api/src/repositories/account-repository.js`, `votiy-api/src/repositories/verification-repository.js`, `votiy-api/src/repositories/session-repository.js`, and `votiy-api/src/repositories/idempotency-repository.js`
-- [ ] T034 [P] [US1] Define the transactional email interface plus deterministic fake, Mailpit SMTP, and production-provider adapters in `votiy-api/src/email/email-sender.js`, `votiy-api/src/email/mailpit-sender.js`, and `votiy-api/src/email/provider-sender.js`
-- [ ] T035 [US1] Implement atomic registration, Argon2id hashing, safe duplicate guidance, idempotent retries, and verification-email issuance in `votiy-api/src/services/registration-service.js`
-- [ ] T036 [US1] Implement single-use verification, supersession, expiry, account transition, and authenticated session rotation in `votiy-api/src/services/verification-service.js`
-- [ ] T037 [US1] Implement viewer authentication and verified-session middleware with secure cookie issuance in `votiy-api/src/services/session-service.js` and `votiy-api/src/api/graphql/session-context.js`
-- [ ] T038 [US1] Wire account queries/mutations and registration/verification audit events in `votiy-api/src/api/graphql/account-resolvers.js`
-- [ ] T039 [P] [US1] Add checked-in account GraphQL operations in `votiy-web/src/features/auth/account.graphql.js`
-- [ ] T040 [US1] Build accessible registration and verification pages with loading, success, validation, replay, expiry, and service-failure states in `votiy-web/src/features/auth/RegisterPage.jsx` and `votiy-web/src/features/auth/VerifyEmailPage.jsx`
-- [ ] T041 [US1] Build authenticated viewer state, public-home-to-dashboard switching, and the empty hosted-events dashboard in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/features/events/EventDashboardPage.jsx`
-- [ ] T042 [US1] Emit registration, verification, email-send, and authentication-denial metrics/log events without email addresses or secrets in `votiy-api/src/services/registration-service.js` and `votiy-api/src/services/verification-service.js`
+- [X] T031 [P] [US1] Implement Account and EmailVerification document mapping and validation, including host referral metadata on accounts, in `votiy-api/src/domain/account.js` and `votiy-api/src/domain/email-verification.js`
+- [X] T032 [P] [US1] Implement opaque Session document mapping, cookie options, rotation, expiry, and revocation primitives in `votiy-api/src/domain/session.js`
+- [X] T033 [P] [US1] Implement account, verification, session, and idempotency persistence operations in `votiy-api/src/repositories/account-repository.js`, `votiy-api/src/repositories/verification-repository.js`, `votiy-api/src/repositories/session-repository.js`, and `votiy-api/src/repositories/idempotency-repository.js`
+- [X] T034 [P] [US1] Define the transactional email interface plus deterministic fake, Mailpit SMTP, and production-provider adapters in `votiy-api/src/email/email-sender.js`, `votiy-api/src/email/mailpit-sender.js`, and `votiy-api/src/email/provider-sender.js`
+- [X] T035 [US1] Implement atomic registration, Argon2id hashing, safe duplicate guidance, idempotent retries, and verification-email issuance in `votiy-api/src/services/registration-service.js`
+- [X] T036 [US1] Implement single-use verification, supersession, expiry, account transition, and authenticated session rotation in `votiy-api/src/services/verification-service.js`
+- [X] T037 [US1] Implement viewer authentication and verified-session middleware with secure cookie issuance in `votiy-api/src/services/session-service.js` and `votiy-api/src/api/graphql/session-context.js`
+- [X] T038 [US1] Wire account queries/mutations and registration/verification audit events in `votiy-api/src/api/graphql/account-resolvers.js`
+- [X] T039 [P] [US1] Add checked-in account GraphQL operations in `votiy-web/src/features/auth/account.graphql.js`
+- [X] T040 [US1] Build accessible registration and verification pages with loading, success, validation, replay, expiry, and service-failure states in `votiy-web/src/features/auth/RegisterPage.jsx` and `votiy-web/src/features/auth/VerifyEmailPage.jsx`
+- [X] T041 [US1] Build authenticated viewer state, public-home-to-dashboard switching, and the empty hosted-events dashboard in `votiy-web/src/features/auth/AuthProvider.jsx` and `votiy-web/src/features/events/EventDashboardPage.jsx`
+- [X] T042 [US1] Emit registration, verification, email-send, and authentication-denial metrics/log events without email addresses or secrets in `votiy-api/src/services/registration-service.js` and `votiy-api/src/services/verification-service.js`
 
 **Checkpoint**: User Story 1 passes its unit, contract, integration, component, and E2E tests independently and constitutes the first deployable MVP slice.
 
