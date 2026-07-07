@@ -29,7 +29,9 @@ describe('environment configuration', () => {
 
   it('rejects unsafe production settings when account features are wired', () => {
     const environment = loadEnvironment({ NODE_ENV: 'production' })
-    expect(() => assertAccountFeatureEnvironment(environment)).toThrow('Invalid production configuration')
+    expect(() => assertAccountFeatureEnvironment(environment)).toThrow(
+      'Invalid production configuration: TOKEN_PEPPER, EMAIL_TRANSPORT, EMAIL_PROVIDER_ENDPOINT, EMAIL_PROVIDER_API_KEY, APP_ORIGIN | detected=',
+    )
   })
 
   it('rejects an idle session lifetime longer than the absolute lifetime', () => {

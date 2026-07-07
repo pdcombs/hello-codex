@@ -7,6 +7,18 @@ const csv = z.string().default('').transform((value) =>
     .map((item) => item.trim())
     .filter(Boolean))
 
+function productionDiagnostics(environment) {
+  return JSON.stringify({
+    nodeEnvironment: environment.nodeEnvironment,
+    appOrigin: environment.appOrigin,
+    emailTransport: environment.emailTransport,
+    hasTokenPepper: Boolean(environment.tokenPepper && environment.tokenPepper !== LOCAL_TOKEN_PEPPER),
+    hasEmailProviderEndpoint: Boolean(environment.emailProviderEndpoint),
+    hasEmailProviderApiKey: Boolean(environment.emailProviderApiKey),
+    mongoDatabase: environment.mongoDatabase,
+  })
+}
+
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65_535).default(4000),
@@ -43,7 +55,9 @@ export function assertAccountFeatureEnvironment(environment) {
   if (!environment.appOrigin.startsWith('https://')) problems.push('APP_ORIGIN')
 
   if (problems.length > 0) {
-    throw new Error(`Invalid production configuration: ${problems.join(', ')}`)
+    throw new Error(
+      `Invalid production configuration: ${problems.join(', ')} | detected=${productionDiagnostics(environment)}`,
+    )
   }
 
   return environment
