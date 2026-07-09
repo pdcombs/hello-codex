@@ -24,15 +24,27 @@ export default function SignInPage({ signIn = signInAccount }) {
   return (
     <main className="page-shell">
       <h1>Sign in</h1>
-      <form onSubmit={submit}>
-        <label htmlFor="signin-email">Email</label>
-        <input id="signin-email" name="email" type="email" autoComplete="email" required />
-        <label htmlFor="signin-password">Password</label>
-        <input id="signin-password" name="password" type="password" autoComplete="current-password" required />
+      <form className="app-form" onSubmit={submit}>
+        <div className="form-row">
+          <label htmlFor="signin-email">Email</label>
+          <input id="signin-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
+        </div>
+        <div className="form-row">
+          <label htmlFor="signin-password">Password</label>
+          <input id="signin-password" name="password" type="password" autoComplete="current-password" placeholder="Password" required />
+        </div>
         <button disabled={state.loading}>{state.loading ? 'Signing in…' : 'Sign in'}</button>
       </form>
-      {state.loading && <p role="status">Signing in…</p>}
-      {state.error && <p role="alert">{state.error.message}</p>}
+      {state.loading && (
+        <p className="form-status" role="status">
+          Signing in…
+        </p>
+      )}
+      {state.error && (
+        <p className="form-error" role="alert">
+          {state.error.message}
+        </p>
+      )}
     </main>
   )
 }

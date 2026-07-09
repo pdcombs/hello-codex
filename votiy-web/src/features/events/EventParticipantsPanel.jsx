@@ -76,15 +76,15 @@ export default function EventParticipantsPanel({
     <SectionCard title="Participants">
       <p>Add by email or phone. Unfinished accounts stay provisional until that person completes sign up.</p>
 
-      <form className="participant-form" onSubmit={onAdd}>
+      <form className="app-form participant-form" onSubmit={onAdd}>
         <div className="field-grid">
-          <div>
+          <div className="form-row">
             <label htmlFor="participant-email">Email</label>
-            <input id="participant-email" name="email" type="email" />
+            <input id="participant-email" name="email" type="email" placeholder="participant@example.com" />
           </div>
-          <div>
+          <div className="form-row">
             <label htmlFor="participant-phone">Phone</label>
-            <input id="participant-phone" name="phone" type="tel" />
+            <input id="participant-phone" name="phone" type="tel" placeholder="(555) 123-4567" />
           </div>
         </div>
         <button type="submit" disabled={state.saving}>

@@ -33,30 +33,57 @@ export default function CreateEventPage({ create = createEvent }) {
       <p className="eyebrow">New voting event</p>
       <h1 data-page-title="true">Create an event</h1>
       <p>Start with a title, then choose how people get registered.</p>
-      <form onSubmit={onSubmit} noValidate>
-        <label htmlFor="event-title">Title</label>
-        <input id="event-title" name="title" type="text" required aria-describedby={state.fieldErrors.title ? 'event-title-error' : undefined} />
-        {state.fieldErrors.title && <p id="event-title-error">{state.fieldErrors.title}</p>}
+      <form className="app-form" onSubmit={onSubmit} noValidate>
+        <div className="form-row">
+          <label htmlFor="event-title">Title</label>
+          <input
+            id="event-title"
+            name="title"
+            type="text"
+            placeholder="Board election, budget vote, team poll"
+            required
+            aria-describedby={state.fieldErrors.title ? 'event-title-error' : undefined}
+          />
+        </div>
+        {state.fieldErrors.title && (
+          <p className="form-error" id="event-title-error">
+            {state.fieldErrors.title}
+          </p>
+        )}
 
-        <label htmlFor="event-description">Description</label>
-        <textarea id="event-description" name="description" rows="4" />
+        <div className="form-row form-row-stacked">
+          <label htmlFor="event-description">Description</label>
+          <textarea id="event-description" name="description" rows="4" placeholder="Add context voters should know." />
+        </div>
 
-        <label htmlFor="event-location">Location</label>
-        <input id="event-location" name="location" type="text" />
+        <div className="form-row">
+          <label htmlFor="event-location">Location</label>
+          <input id="event-location" name="location" type="text" placeholder="Remote, office, venue" />
+        </div>
 
-        <label htmlFor="event-policy">Registration policy</label>
-        <select id="event-policy" name="registrationPolicy" defaultValue="ADMIN_MANAGED">
-          <option value="ADMIN_MANAGED">Admin managed</option>
-          <option value="OPEN">Open</option>
-        </select>
+        <div className="form-row">
+          <label htmlFor="event-policy">Registration policy</label>
+          <select id="event-policy" name="registrationPolicy" defaultValue="ADMIN_MANAGED">
+            <option value="ADMIN_MANAGED">Admin managed</option>
+            <option value="OPEN">Open</option>
+          </select>
+        </div>
 
         <button type="submit" disabled={state.status === 'loading'}>
           {state.status === 'loading' ? 'Creating event…' : 'Create event'}
         </button>
       </form>
 
-      {state.status === 'loading' && <p role="status">Creating your event…</p>}
-      {state.status === 'error' && <p role="alert">{state.error.message}</p>}
+      {state.status === 'loading' && (
+        <p className="form-status" role="status">
+          Creating your event…
+        </p>
+      )}
+      {state.status === 'error' && (
+        <p className="form-error" role="alert">
+          {state.error.message}
+        </p>
+      )}
     </main>
   )
 }
