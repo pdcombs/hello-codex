@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import EmptyState from '../../components/EmptyState.jsx'
+import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import { loadOwnedEvents } from './events.graphql.js'
 
 export default function EventDashboardPage({ viewer, events = null, loader = loadOwnedEvents }) {
@@ -28,31 +30,28 @@ export default function EventDashboardPage({ viewer, events = null, loader = loa
   }, [events, loader])
 
   return (
-    <main className="page-shell">
+    <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">Welcome back{viewer?.email ? `, ${viewer.email}` : ''}</p>
-      <h1>Your hosted events</h1>
+      <h1 data-page-title="true">Your hosted events</h1>
       <p>Create and manage voting events from one place.</p>
       <div className="page-actions">
         <Link to="/events/new">Create event</Link>
       </div>
 
-      {state.status === 'loading' && <p role="status">Loading your events…</p>}
+      {state.status === 'loading' && <LoadingState message="Loading your events…" />}
 
-      {state.status === 'error' && (
-        <div role="alert">
-          <p>{state.error.message}</p>
-        </div>
-      )}
+      {state.status === 'error' && <ErrorState title="Events unavailable" message={state.error.message} />}
 
       {state.status === 'success' && state.events.length === 0 && (
-        <section aria-label="Empty events">
-          <p>You have not created any voting events yet.</p>
-          <Link to="/events/new">Create your first event</Link>
-        </section>
+        <EmptyState
+          title="No hosted events yet"
+          message="You have not created any voting events yet."
+          action={<Link to="/events/new">Create your first event</Link>}
+        />
       )}
 
       {state.status === 'success' && state.events.length > 0 && (
-        <ul aria-label="Hosted events">
+        <ul aria-label="Hosted events" className="record-list">
           {state.events.map((event) => (
             <li key={event.id}>
               <Link to={`/events/${event.publicId}`}>{event.title}</Link>

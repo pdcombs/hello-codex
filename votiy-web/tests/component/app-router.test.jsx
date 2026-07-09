@@ -34,6 +34,16 @@ describe('application routes', () => {
     rerender(<MemoryRouter key="missing" initialEntries={['/missing']}><AppRoutes /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Page not found' })).toBeVisible()
   })
+
+  it('redirects protected create-event route to sign in for visitors', () => {
+    render(<MemoryRouter initialEntries={['/events/new']}><AppRoutes /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  })
+
+  it('redirects signed-in visitors away from sign-in page', () => {
+    render(<MemoryRouter initialEntries={['/sign-in']}><AppRoutes viewer={{ email: 'host@example.com' }} /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: 'Your hosted events' })).toBeVisible()
+  })
 })
 
 describe('error boundary', () => {

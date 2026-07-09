@@ -155,14 +155,14 @@
 
 **Purpose**: Close repository-wide quality, accessibility, operations, and production-delivery obligations.
 
-- [ ] T072 [P] Add accessible responsive navigation, focus management, and shared loading/empty/error components in `votiy-web/src/components/` and global styles in `votiy-web/src/index.css`
-- [ ] T073 [P] Add backend dependency-outage, request-size, rate-limit, origin, log-redaction, and markup-like text security tests in `votiy-api/tests/integration/security-and-failures.test.js`
-- [ ] T074 [P] Add frontend accessibility checks and mobile/desktop viewport coverage for all critical pages in `votiy-web/tests/component/accessibility.test.jsx` and `tests/e2e/responsive-accessibility.spec.js`
-- [ ] T075 Close unit decision-path gaps and enforce repository-wide 80% line/branch coverage in `votiy-api/tests/unit/` and `votiy-web/tests/component/`
-- [ ] T076 Add production secrets/configuration declarations and readiness health check configuration in `render.yaml` without committing secret values
-- [ ] T077 Add post-deploy `/health`, `/ready`, public shell, synthetic direct-link event, and deployed-commit smoke checks in `.github/workflows/post-deploy.yml` and `tests/smoke/production-smoke.js`
-- [ ] T078 [P] Document Render/Atlas SLI queries, alert thresholds, correlation-ID diagnostics, and rollback steps in `docs/operations.md`
-- [ ] T079 Update setup, environment, test, delivery, and production smoke instructions in `README.md` and validate every journey in `specs/001-account-event-creation/quickstart.md`
+- [X] T072 [P] Add accessible responsive navigation, focus management, and shared loading/empty/error components in `votiy-web/src/components/` and global styles in `votiy-web/src/index.css`
+- [X] T073 [P] Add backend dependency-outage, request-size, rate-limit, origin, log-redaction, and markup-like text security tests in `votiy-api/tests/integration/security-and-failures.test.js`
+- [X] T074 [P] Add frontend accessibility checks and mobile/desktop viewport coverage for all critical pages in `votiy-web/tests/component/accessibility.test.jsx` and `tests/e2e/responsive-accessibility.spec.js`
+- [X] T075 Close unit decision-path gaps and enforce repository-wide 80% line/branch coverage in `votiy-api/tests/unit/` and `votiy-web/tests/component/`
+- [X] T076 Add production secrets/configuration declarations and readiness health check configuration in `render.yaml` without committing secret values
+- [X] T077 Add post-deploy `/health`, `/ready`, public shell, synthetic direct-link event, and deployed-commit smoke checks in `.github/workflows/post-deploy.yml` and `tests/smoke/production-smoke.js`
+- [X] T078 [P] Document Render/Atlas SLI queries, alert thresholds, correlation-ID diagnostics, and rollback steps in `docs/operations.md`
+- [X] T079 Update setup, environment, test, delivery, and production smoke instructions in `README.md` and validate every journey in `specs/001-account-event-creation/quickstart.md`
 
 ---
 

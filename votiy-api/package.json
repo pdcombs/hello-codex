@@ -11,7 +11,7 @@
     "test:unit": "vitest run tests/unit",
     "test:contract": "vitest run tests/contract",
     "test:integration": "vitest run tests/integration",
-    "test:coverage": "vitest run tests/unit tests/contract --coverage"
+    "test:coverage": "vitest run tests/unit tests/contract tests/integration --coverage"
   },
   "dependencies": {
     "argon2": "^0.44.0",

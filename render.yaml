@@ -5,7 +5,7 @@ services:
     plan: starter
     buildCommand: corepack pnpm --dir votiy-web install --frozen-lockfile && corepack pnpm --dir votiy-web build && corepack pnpm --dir votiy-api install --frozen-lockfile
     startCommand: corepack pnpm --dir votiy-api start
-    healthCheckPath: /health
+    healthCheckPath: /ready
     autoDeployTrigger: checksPass
     envVars:
       - key: NODE_ENV
@@ -16,12 +16,20 @@ services:
         value: votiy
       - key: APP_ORIGIN
         value: https://hello-codex-dc65.onrender.com
+      - key: SESSION_COOKIE_NAME
+        value: votiy_session
+      - key: SESSION_TTL_SECONDS
+        value: 1209600
+      - key: VERIFICATION_TTL_SECONDS
+        value: 86400
       - key: TOKEN_PEPPER
         generateValue: true
       - key: EMAIL_TRANSPORT
         value: fake
       - key: EMAIL_FROM
         value: Votiy <no-reply@votiy.app>
+      - key: LOG_LEVEL
+        value: info
       - key: EMAIL_PROVIDER_ENDPOINT
         sync: false
       - key: EMAIL_PROVIDER_API_KEY

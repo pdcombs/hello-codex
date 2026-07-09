@@ -73,7 +73,7 @@ describe('event lifecycle with real MongoDB', () => {
     const attendeeViewer = { account: await accountRepository.findById(attendee._id) }
     const selfRegistration = await eventRegistrationService.registerForEvent({
       eventId: open.event.id,
-      idempotencyKey: '784f55ee-5d4d-1fde-5e3e-2495635476e1',
+      idempotencyKey: '784f55ee-5d4d-1fde-8e3e-2495635476e1',
     }, attendeeViewer)
     expect(selfRegistration.registration.source).toBe('SELF')
 

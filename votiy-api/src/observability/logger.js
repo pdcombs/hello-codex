@@ -6,14 +6,14 @@ const redactPaths = [
   'email', '*.email', 'phone', '*.phone',
 ]
 
-export function createLogger({ level = 'info', environment = 'development' } = {}) {
+export function createLogger({ level = 'info', environment = 'development' } = {}, destination) {
   return pino({
     level,
     base: { service: 'votiy-api', environment },
     redact: { paths: redactPaths, censor: '[REDACTED]' },
     timestamp: pino.stdTimeFunctions.isoTime,
     messageKey: 'message',
-  })
+  }, destination)
 }
 
 export function logRequestCompletion(logger, { request, response, correlationId, startedAt }) {

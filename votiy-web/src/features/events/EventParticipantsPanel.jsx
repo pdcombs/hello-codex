@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import EmptyState from '../../components/EmptyState.jsx'
+import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
+import SectionCard from '../../components/SectionCard.jsx'
 import { addEventParticipant, loadEventRegistrations, removeEventParticipant } from './events.graphql.js'
 
 export default function EventParticipantsPanel({
@@ -70,31 +73,40 @@ export default function EventParticipantsPanel({
   }
 
   return (
-    <section aria-labelledby="participants-heading">
-      <h2 id="participants-heading">Participants</h2>
+    <SectionCard title="Participants">
       <p>Add by email or phone. Unfinished accounts stay provisional until that person completes sign up.</p>
 
-      <form onSubmit={onAdd}>
-        <label htmlFor="participant-email">Email</label>
-        <input id="participant-email" name="email" type="email" />
-        <label htmlFor="participant-phone">Phone</label>
-        <input id="participant-phone" name="phone" type="tel" />
+      <form className="participant-form" onSubmit={onAdd}>
+        <div className="field-grid">
+          <div>
+            <label htmlFor="participant-email">Email</label>
+            <input id="participant-email" name="email" type="email" />
+          </div>
+          <div>
+            <label htmlFor="participant-phone">Phone</label>
+            <input id="participant-phone" name="phone" type="tel" />
+          </div>
+        </div>
         <button type="submit" disabled={state.saving}>
           {state.saving ? 'Saving…' : 'Add participant'}
         </button>
       </form>
 
-      {state.status === 'loading' && <p role="status">Loading participants…</p>}
-      {state.error && <p role="alert">{state.error.message}</p>}
+      {state.status === 'loading' && <LoadingState message="Loading participants…" />}
+      {state.error && <ErrorState title="Participants unavailable" message={state.error.message} />}
 
-      {state.status === 'success' && state.registrations.length === 0 && <p>No participants registered yet.</p>}
+      {state.status === 'success' && state.registrations.length === 0 && (
+        <EmptyState title="No participants yet" message="No participants registered yet." />
+      )}
 
       {state.status === 'success' && state.registrations.length > 0 && (
-        <ul aria-label="Participants">
+        <ul aria-label="Participants" className="record-list">
           {state.registrations.map((registration) => (
             <li key={registration.id}>
-              <span>{registration.email ?? registration.phone ?? registration.accountId}</span>
-              <span>{registration.accountCompleted ? ' — account complete' : ' — provisional account'}</span>
+              <div>
+                <strong>{registration.email ?? registration.phone ?? registration.accountId}</strong>
+                <p>{registration.accountCompleted ? 'Account complete' : 'Provisional account'}</p>
+              </div>
               <button type="button" onClick={() => onRemove(registration.id)} disabled={state.saving}>
                 Remove
               </button>
@@ -102,7 +114,7 @@ export default function EventParticipantsPanel({
           ))}
         </ul>
       )}
-    </section>
+    </SectionCard>
   )
 }
 

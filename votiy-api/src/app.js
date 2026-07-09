@@ -22,6 +22,10 @@ export function securityHeaders(contentType) {
   }
 }
 
+function commitHeader() {
+  return process.env.APP_COMMIT_SHA ?? process.env.RENDER_GIT_COMMIT ?? null
+}
+
 function safeFrontendPath(frontendDirectory, requestUrl) {
   const pathname = new URL(requestUrl, 'http://localhost').pathname
   const requestedPath = pathname === '/' ? '/index.html' : pathname
@@ -59,6 +63,8 @@ export function createApplication({ frontendDirectory, graphqlHandler, healthHan
     const correlationId = correlationIdFromRequest(request)
     const startedAt = process.hrtime.bigint()
     response.setHeader('X-Correlation-ID', correlationId)
+    const commit = commitHeader()
+    if (commit) response.setHeader('X-App-Commit', commit)
     if (logger) response.once('finish', () => logRequestCompletion(logger, { request, response, correlationId, startedAt }))
 
     return runWithRequestContext({ correlationId, startedAt }, async () => {

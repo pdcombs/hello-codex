@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
+import SectionCard from '../../components/SectionCard.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
 import { loadEventByPublicId, setEventRegistrationPolicy } from './events.graphql.js'
@@ -45,17 +47,16 @@ export default function OwnerEventPage({
 
   if (state.status === 'loading') {
     return (
-      <main className="page-shell">
-        <p role="status">Loading event…</p>
+      <main id="main-content" className="page-shell" tabIndex="-1">
+        <LoadingState message="Loading event…" />
       </main>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <main className="page-shell" role="alert">
-        <h1>Event unavailable</h1>
-        <p>{state.error.message}</p>
+      <main id="main-content" className="page-shell" tabIndex="-1">
+        <ErrorState title="Event unavailable" message={state.error.message} />
       </main>
     )
   }
@@ -65,25 +66,28 @@ export default function OwnerEventPage({
   }
 
   return (
-    <main className="page-shell">
+    <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">Hosted event</p>
-      <h1>{state.event.title}</h1>
+      <h1 data-page-title="true">{state.event.title}</h1>
       {state.event.description && <p>{state.event.description}</p>}
       {state.event.location && <p>{`Location: ${state.event.location}`}</p>}
       <p>{`Event link: /events/${state.event.publicId}`}</p>
 
-      <section aria-labelledby="registration-policy-heading">
-        <h2 id="registration-policy-heading">Registration policy</h2>
+      <SectionCard
+        title="Registration policy"
+        actions={
+          <div className="page-actions">
+            <button type="button" onClick={() => changePolicy('ADMIN_MANAGED')} disabled={state.saving}>
+              Make admin managed
+            </button>
+            <button type="button" onClick={() => changePolicy('OPEN')} disabled={state.saving}>
+              Make open
+            </button>
+          </div>
+        }
+      >
         <p>{`Current policy: ${state.event.registrationPolicy === 'OPEN' ? 'Open' : 'Admin managed'}`}</p>
-        <div className="page-actions">
-          <button type="button" onClick={() => changePolicy('ADMIN_MANAGED')} disabled={state.saving}>
-            Make admin managed
-          </button>
-          <button type="button" onClick={() => changePolicy('OPEN')} disabled={state.saving}>
-            Make open
-          </button>
-        </div>
-      </section>
+      </SectionCard>
 
       {state.error && <p role="alert">{state.error.message}</p>}
 

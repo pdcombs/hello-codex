@@ -6,11 +6,11 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "concurrently -k -n api,web -c magenta,cyan \"pnpm --dir votiy-api dev\" \"pnpm --dir votiy-web dev\"",
-    "test": "pnpm test:unit && pnpm test:e2e",
-    "test:unit": "pnpm --dir votiy-api test && pnpm --dir votiy-web test",
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"corepack pnpm --dir votiy-api dev\" \"corepack pnpm --dir votiy-web dev\"",
+    "test": "corepack pnpm test:unit && corepack pnpm test:e2e",
+    "test:unit": "corepack pnpm --dir votiy-api test && corepack pnpm --dir votiy-web test",
     "test:e2e": "playwright test",
-    "build": "pnpm --dir votiy-web build",
+    "build": "corepack pnpm --dir votiy-web build",
     "format:check": "prettier --check package.json votiy-api/package.json votiy-web/package.json"
   },
   "devDependencies": {

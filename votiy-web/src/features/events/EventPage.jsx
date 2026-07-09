@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
+import SectionCard from '../../components/SectionCard.jsx'
 import { registerForEvent, loadEventByPublicId } from './events.graphql.js'
 
 export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent }) {
@@ -39,32 +41,30 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
 
   if (state.status === 'loading') {
     return (
-      <main className="page-shell">
-        <p role="status">Loading event…</p>
+      <main id="main-content" className="page-shell" tabIndex="-1">
+        <LoadingState message="Loading event…" />
       </main>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <main className="page-shell" role="alert">
-        <h1>Event unavailable</h1>
-        <p>{state.error.message}</p>
+      <main id="main-content" className="page-shell" tabIndex="-1">
+        <ErrorState title="Event unavailable" message={state.error.message} />
       </main>
     )
   }
 
   return (
-    <main className="page-shell">
+    <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">Voting event</p>
-      <h1>{state.event.title}</h1>
+      <h1 data-page-title="true">{state.event.title}</h1>
       {state.event.description && <p>{state.event.description}</p>}
       {state.event.location && <p>{`Location: ${state.event.location}`}</p>}
       <p>{`Registration policy: ${labelForPolicy(state.event.registrationPolicy)}`}</p>
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
-        <section aria-labelledby="self-register-heading">
-          <h2 id="self-register-heading">Join this event</h2>
+        <SectionCard title="Join this event">
           {!viewer && <p>Sign in with a verified account to register yourself for this event.</p>}
           {viewer && state.registrationState !== 'success' && (
             <button type="button" onClick={onRegister} disabled={state.registrationState === 'loading'}>
@@ -73,14 +73,13 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
           )}
           {state.registrationState === 'success' && <p>You are registered for this event.</p>}
           {state.registrationState === 'error' && <p role="alert">{state.error.message}</p>}
-        </section>
+        </SectionCard>
       )}
 
       {state.event.registrationPolicy === 'ADMIN_MANAGED' && !state.event.isOwner && (
-        <section>
-          <h2>Registration managed by the host</h2>
+        <SectionCard title="Registration managed by the host">
           <p>The host controls participant registration for this event.</p>
-        </section>
+        </SectionCard>
       )}
     </main>
   )

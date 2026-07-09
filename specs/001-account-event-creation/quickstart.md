@@ -57,6 +57,7 @@ A failure in any gate must return a non-zero exit and prevent deployment.
 7. Create an OPEN event with title, description, and location.
 8. Confirm both appear in the hosted-events dashboard and remain after sign-out/sign-in.
 9. Repeat a creation request with the same idempotency key and confirm only one event exists.
+10. Confirm keyboard focus lands on the dashboard heading after route changes.
 
 ### CUF-002 — Returning Host
 
@@ -65,6 +66,7 @@ A failure in any gate must return a non-zero exit and prevent deployment.
 3. Open one event and confirm you land on that event's detail page with only that event's actions.
 4. Sign out and confirm protected host pages reject the ended session.
 5. Try an invalid password and confirm the response does not disclose whether an email is registered.
+6. Confirm sign-out stays visible and reachable on narrow screens.
 
 ### CUF-003 — Viewing and Participant Registration Policy
 
@@ -79,6 +81,7 @@ A failure in any gate must return a non-zero exit and prevent deployment.
 6. Add either identifier to another event and confirm the existing provisional account is reused.
 7. Remove one participant and confirm its registration is marked removed without deleting the account.
 8. Change the registration policy and confirm the next registration request uses the current policy.
+9. Check public home, register, and sign-in pages at desktop and mobile widths.
 
 ## Failure and Security Checks
 
@@ -90,6 +93,7 @@ A failure in any gate must return a non-zero exit and prevent deployment.
 - MongoDB unavailability makes `/ready` fail and produces a generic correlated client failure.
 - Logs contain correlation IDs and audit outcomes but no passwords, cookies, raw tokens, email addresses,
   or phone numbers.
+- Oversized GraphQL requests, hostile mutation origins, and throttled requests fail with bounded errors.
 
 ## Production Smoke Validation
 

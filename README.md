@@ -14,6 +14,8 @@ Quality gates require layered unit, contract, integration, and UI end-to-end tes
 `main` pipeline deploys the tested commit to production, runs post-deploy smoke checks, and relies on
 structured observability signals for rapid diagnosis and rollback.
 
+Operational runbook lives in [docs/operations.md](./docs/operations.md).
+
 ## Local development
 
 Start MongoDB:
@@ -41,6 +43,16 @@ pnpm dev
 
 Open <http://127.0.0.1:5173>.
 
+Run quality gates:
+
+```bash
+pnpm --dir votiy-api test:coverage
+pnpm --dir votiy-web test:coverage
+pnpm --dir votiy-api test:integration
+pnpm test:e2e --project=chromium
+pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"
+```
+
 For test-only accounts, you can bypass email delivery while still exercising the verification flow by
 setting `VERIFICATION_BYPASS_EMAILS` or `VERIFICATION_BYPASS_DOMAINS` in `votiy-api/.env.local`. When a
 registration matches that allowlist, the register screen shows the verification token instead of sending
@@ -52,13 +64,24 @@ Render builds React and serves it from the Node API. Set these secret environmen
 
 - `MONGODB_URI`: MongoDB Atlas connection string for the restricted application user
 - `NODE_ENV`: `production`
+- `TOKEN_PEPPER`
+- `EMAIL_PROVIDER_ENDPOINT` and `EMAIL_PROVIDER_API_KEY` when using real provider delivery
 
 For temporary MVP deployments without a real email provider, production can run with
 `EMAIL_TRANSPORT=fake`. In that mode, verification emails are not sent externally; the API logs the
 verification link and token so you can complete the flow manually from Render logs.
 
-The existing Render service name and production MongoDB database remain unchanged during this repository
-rename. Local development reads `MONGODB_DATABASE=votiy` from the ignored `votiy-api/.env.local` file;
-production continues to use `hello_world` because that local file is never committed or deployed.
+Render service config lives in [render.yaml](./render.yaml). It now uses `/ready` for health gating and
+declares app origin, cookie name, token TTLs, and log level without committing secret values.
 
 The service exposes `/health` for health checks and `/graphql` for same-origin requests from the application.
+
+## Production smoke
+
+Post-deploy smoke workflow hits:
+
+- `/health`
+- `/ready`
+- public home page
+- optional synthetic public event path
+- deployed commit header when available

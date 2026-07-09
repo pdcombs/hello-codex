@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider.jsx'
 import RegisterPage from '../features/auth/RegisterPage.jsx'
@@ -12,26 +13,30 @@ import AppErrorBoundary from './AppErrorBoundary.jsx'
 
 function SiteHeader({ viewer }) {
   return (
-    <header className="glass-nav">
-      <Link className="brand" to="/" aria-label="Votiy home">
-        <span className="brand-mark">V</span>
-        <span>VOTIY</span>
-      </Link>
-      <nav aria-label="Primary navigation">
-        <Link to="/">{viewer ? 'My events' : 'Home'}</Link>
-        {!viewer && <Link to="/sign-in">Sign in</Link>}
-        {viewer && <SignOutButton />}
-      </nav>
-      <span className="system-status">Voting, together</span>
-    </header>
+    <>
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <header className="glass-nav">
+        <Link className="brand" to="/" aria-label="Votiy home">
+          <span className="brand-mark">V</span>
+          <span>VOTIY</span>
+        </Link>
+        <nav aria-label="Primary navigation">
+          <Link to="/">{viewer ? 'My events' : 'Home'}</Link>
+          {viewer && <Link to="/events/new">Create event</Link>}
+          {!viewer && <Link to="/sign-in">Sign in</Link>}
+          {viewer && <SignOutButton />}
+        </nav>
+        <span className="system-status">Voting, together</span>
+      </header>
+    </>
   )
 }
 
 export function PublicHomePage() {
   return (
-    <main className="page-shell">
+    <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">Make every voice count</p>
-      <h1>Voting events without the spreadsheet chaos.</h1>
+      <h1 data-page-title="true">Voting events without the spreadsheet chaos.</h1>
       <p>Create an event, register participants, and keep every decision in one clear place.</p>
       <div className="page-actions">
         <Link to="/register">Create your account</Link>
@@ -49,7 +54,7 @@ export function EventDetailShell({ viewer }) {
   const { publicId } = useParams()
   return (
     <>
-      <main className="page-shell">
+      <main id="main-content" className="page-shell compact-page-shell" tabIndex="-1">
         <Link to={viewer ? '/' : '/'}>{viewer ? '← Back to events' : '← Back to home'}</Link>
         <p className="eyebrow">Event reference</p>
         <p>{publicId}</p>
@@ -99,7 +104,19 @@ export function AppRoutes({ viewer = null, onVerified }) {
 
 function AuthenticatedRoutes() {
   const { viewer, setViewer } = useAuth()
+  useRouteFocus()
   return <AppRoutes viewer={viewer} onVerified={setViewer} />
+}
+
+function useRouteFocus() {
+  const location = useLocation()
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector('[data-page-title="true"]') ?? document.getElementById('main-content')
+      target?.focus?.()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [location.pathname, location.search])
 }
 
 export default function AppRouter({ viewer = null }) {

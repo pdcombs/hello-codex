@@ -20,7 +20,7 @@ export default defineConfig({
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: 'pnpm dev',
+    command: './votiy-web/node_modules/.bin/vite --config votiy-web/vite.config.js',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

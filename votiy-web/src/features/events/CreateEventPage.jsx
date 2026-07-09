@@ -29,9 +29,9 @@ export default function CreateEventPage({ create = createEvent }) {
   }
 
   return (
-    <main className="page-shell">
+    <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">New voting event</p>
-      <h1>Create an event</h1>
+      <h1 data-page-title="true">Create an event</h1>
       <p>Start with a title, then choose how people get registered.</p>
       <form onSubmit={onSubmit} noValidate>
         <label htmlFor="event-title">Title</label>

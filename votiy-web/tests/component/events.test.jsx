@@ -86,6 +86,49 @@ describe('event UI', () => {
     expect(await screen.findByText('You are registered for this event.')).toBeVisible()
   })
 
+  it('shows sign-in guidance or registration errors for open events', async () => {
+    const baseEvent = {
+      id: 'evt-1',
+      publicId: 'board-vote',
+      title: 'Board vote',
+      description: null,
+      location: null,
+      registrationPolicy: 'OPEN',
+      isOwner: false,
+    }
+
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route path="/events/:publicId" element={<EventPage viewer={null} loader={() => Promise.resolve({ event: baseEvent })} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/Sign in with a verified account/)).toBeVisible()
+
+    rerender(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route
+            path="/events/:publicId"
+            element={
+              <EventPage
+                viewer={{ id: 'acct-1' }}
+                loader={() => Promise.resolve({ event: baseEvent })}
+                register={() => Promise.reject(new GraphqlClientError('Registration failed.'))}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Register for event' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Registration failed.')
+  })
+
   it('lets the owner change policy and manage participants', async () => {
     const loader = vi.fn().mockResolvedValue({
       event: {
@@ -153,6 +196,86 @@ describe('event UI', () => {
     expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', registrationId: 'reg-1' })
   })
 
+  it('shows owner page errors when loading or policy update fails', async () => {
+    const failingLoader = vi.fn().mockRejectedValue(new GraphqlClientError('Could not load event.'))
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route path="/events/:publicId" element={<OwnerEventPage viewer={{ id: 'acct-1' }} loader={failingLoader} />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load event.')
+
+    rerender(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route
+            path="/events/:publicId"
+            element={
+              <OwnerEventPage
+                viewer={{ id: 'acct-1' }}
+                loader={() =>
+                  Promise.resolve({
+                    event: {
+                      id: 'evt-1',
+                      publicId: 'board-vote',
+                      title: 'Board vote',
+                      description: null,
+                      location: null,
+                      registrationPolicy: 'ADMIN_MANAGED',
+                      isOwner: true,
+                    },
+                  })
+                }
+                updatePolicy={() => Promise.reject(new GraphqlClientError('Could not update policy.'))}
+                participantsLoader={() => Promise.resolve({ registrations: [] })}
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Make open' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not update policy.')
+  })
+
+  it('falls back to public event rendering for non-owner event detail', async () => {
+    render(
+      <MemoryRouter initialEntries={['/events/board-vote']}>
+        <Routes>
+          <Route
+            path="/events/:publicId"
+            element={
+              <OwnerEventPage
+                viewer={{ id: 'acct-1' }}
+                loader={() =>
+                  Promise.resolve({
+                    event: {
+                      id: 'evt-1',
+                      publicId: 'board-vote',
+                      title: 'Board vote',
+                      description: null,
+                      location: null,
+                      registrationPolicy: 'ADMIN_MANAGED',
+                      isOwner: false,
+                    },
+                  })
+                }
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Board vote' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Registration managed by the host' })).toBeVisible()
+  })
+
   it('surfaces event errors in accessible alerts', async () => {
     render(
       <MemoryRouter>
@@ -179,5 +302,44 @@ describe('event UI', () => {
     )
 
     expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+  })
+
+  it('surfaces participant add and remove failures', async () => {
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [{ id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: false }] })}
+          addParticipant={() => Promise.reject(new GraphqlClientError('Could not add participant.'))}
+          removeParticipant={() => Promise.reject(new GraphqlClientError('Could not remove participant.'))}
+        />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText(/guest@example.com/)).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not add participant.')
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove participant.')
+  })
+
+  it('replaces existing participant row when add returns same registration id', async () => {
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [{ id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: false }] })}
+          addParticipant={() => Promise.resolve({ registration: { id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: true } })}
+          removeParticipant={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText(/guest@example.com/)).toBeVisible()
+    await user.type(screen.getByLabelText('Email'), 'guest@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(await screen.findByText('Account complete')).toBeVisible()
   })
 })
