@@ -67,7 +67,7 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
         <SectionCard title="Join this event">
           {!viewer && <p>Sign in with a verified account to register yourself for this event.</p>}
           {viewer && state.registrationState !== 'success' && (
-            <button type="button" onClick={onRegister} disabled={state.registrationState === 'loading'}>
+            <button className="primary-action" type="button" onClick={onRegister} disabled={state.registrationState === 'loading'}>
               {state.registrationState === 'loading' ? 'Registering…' : 'Register for event'}
             </button>
           )}

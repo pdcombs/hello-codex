@@ -32,11 +32,13 @@ export default function EventDashboardPage({ viewer, events = null, loader = loa
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
       <p className="eyebrow">Welcome back{viewer?.email ? `, ${viewer.email}` : ''}</p>
-      <h1 data-page-title="true">Your hosted events</h1>
-      <p>Create and manage voting events from one place.</p>
-      <div className="page-actions">
-        <Link to="/events/new">Create event</Link>
+      <div className="page-title-row">
+        <h1 data-page-title="true">Your hosted events</h1>
+        <Link className="primary-action" to="/events/new">
+          Create event
+        </Link>
       </div>
+      <p>Create and manage voting events from one place.</p>
 
       {state.status === 'loading' && <LoadingState message="Loading your events…" />}
 
@@ -46,7 +48,11 @@ export default function EventDashboardPage({ viewer, events = null, loader = loa
         <EmptyState
           title="No hosted events yet"
           message="You have not created any voting events yet."
-          action={<Link to="/events/new">Create your first event</Link>}
+          action={
+            <Link className="primary-action" to="/events/new">
+              Create your first event
+            </Link>
+          }
         />
       )}
 

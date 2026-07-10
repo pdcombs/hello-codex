@@ -54,7 +54,9 @@ export default function VerifyEmailPage({
       <main className="page-shell">
         <h1>Email verified</h1>
         <p>Your account is ready.</p>
-        <Link to="/">View your events</Link>
+        <Link className="primary-action" to="/">
+          View your events
+        </Link>
       </main>
     )
   const invalid = state.error?.code === 'INVALID_OR_EXPIRED_TOKEN'
@@ -63,11 +65,11 @@ export default function VerifyEmailPage({
       <h1>We could not verify that link</h1>
       <p role="alert">{state.error?.message ?? 'The verification request could not be completed.'}</p>
       {invalid ? (
-        <button type="button" onClick={resend} disabled={resendStatus === 'loading'}>
+        <button className="primary-action" type="button" onClick={resend} disabled={resendStatus === 'loading'}>
           Send a new verification email
         </button>
       ) : (
-        <button type="button" onClick={verify}>
+        <button className="primary-action" type="button" onClick={verify}>
           Try verification again
         </button>
       )}
