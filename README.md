@@ -18,11 +18,15 @@ Operational runbook lives in [docs/operations.md](./docs/operations.md).
 
 ## Local development
 
-Start MongoDB:
+Start MongoDB and Mailpit from the repository root, then wait for both containers to become healthy:
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
+docker compose ps
 ```
+
+Do not start the API until `votiy-mongodb` shows `healthy`. If Docker Desktop was stopped, start it
+first and rerun these commands.
 
 Start the Votiy API:
 
@@ -31,6 +35,13 @@ cd votiy-api
 pnpm install
 cp .env.example .env.local
 pnpm dev
+```
+
+If `.env.local` already exists from an older setup, make sure its local MongoDB connection matches
+the Compose credentials:
+
+```dotenv
+MONGODB_URI=mongodb://root:localpassword@127.0.0.1:27017/votiy?authSource=admin
 ```
 
 Start the Votiy React web app in another terminal:
@@ -42,6 +53,33 @@ pnpm dev
 ```
 
 Open <http://127.0.0.1:5173>.
+
+### Local MongoDB troubleshooting
+
+`MongoServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017` means no MongoDB process is
+reachable on the local port. From the repository root, check and restart the container:
+
+```bash
+open -a Docker # macOS only; wait until Docker Desktop says it is running
+docker compose ps
+docker compose up -d --wait votiy-database
+docker compose logs --tail=50 votiy-database
+```
+
+Wait for the container status to show `healthy`, then restart `pnpm dev` in `votiy-api`. Verify the
+database directly with:
+
+```bash
+docker compose exec votiy-database mongosh \
+  --username root \
+  --password localpassword \
+  --authenticationDatabase admin \
+  --eval "db.adminCommand('ping')"
+```
+
+If the error changes to `Authentication failed`, recopy `.env.example` to `.env.local` or update the
+existing `MONGODB_URI` to the Compose connection string shown above. Do not use these local credentials
+in production.
 
 Run quality gates:
 
