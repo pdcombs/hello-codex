@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
 import { registerForEvent, loadEventByPublicId } from './events.graphql.js'
@@ -57,11 +57,30 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
 
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
-      <p className="eyebrow">Voting event</p>
-      <h1 data-page-title="true">{state.event.title}</h1>
-      {state.event.description && <p>{state.event.description}</p>}
-      {state.event.location && <p>{`Location: ${state.event.location}`}</p>}
-      <p>{`Registration policy: ${labelForPolicy(state.event.registrationPolicy)}`}</p>
+      <div className="event-title-row">
+        <Link className="secondary-action" to="/">Back to home</Link>
+        <h1 data-page-title="true">{state.event.title}</h1>
+      </div>
+
+      <div className="event-summary">
+        {state.event.description && <p className="event-description">{state.event.description}</p>}
+        <dl className="event-meta">
+          {state.event.location && (
+            <div>
+              <dt>Location</dt>
+              <dd>{state.event.location}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Registration</dt>
+            <dd>{labelForPolicy(state.event.registrationPolicy)}</dd>
+          </div>
+          <div>
+            <dt>Event link</dt>
+            <dd><a href={`/events/${state.event.publicId}`}>{`/events/${state.event.publicId}`}</a></dd>
+          </div>
+        </dl>
+      </div>
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
         <SectionCard title="Join this event">

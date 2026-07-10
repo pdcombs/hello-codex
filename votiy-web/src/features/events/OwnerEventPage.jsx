@@ -1,49 +1,36 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
-import SectionCard from '../../components/SectionCard.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
-import { loadEventByPublicId, setEventRegistrationPolicy } from './events.graphql.js'
+import { loadEventByPublicId } from './events.graphql.js'
 
 export default function OwnerEventPage({
   viewer,
   loader = loadEventByPublicId,
-  updatePolicy = setEventRegistrationPolicy,
   participantsLoader,
   addParticipant,
   removeParticipant,
 }) {
   const { publicId } = useParams()
-  const [state, setState] = useState({ status: 'loading', error: null, event: null, saving: false })
+  const [state, setState] = useState({ status: 'loading', error: null, event: null })
 
   useEffect(() => {
     let active = true
-    setState({ status: 'loading', error: null, event: null, saving: false })
+    setState({ status: 'loading', error: null, event: null })
     loader(publicId)
       .then((result) => {
         if (!active) return
-        setState({ status: 'success', error: null, event: result.event, saving: false })
+        setState({ status: 'success', error: null, event: result.event })
       })
       .catch((error) => {
         if (!active) return
-        setState({ status: 'error', error, event: null, saving: false })
+        setState({ status: 'error', error, event: null })
       })
     return () => {
       active = false
     }
   }, [publicId, loader])
-
-  async function changePolicy(registrationPolicy) {
-    if (!state.event || state.saving) return
-    setState((current) => ({ ...current, saving: true, error: null }))
-    try {
-      const result = await updatePolicy({ eventId: state.event.id, registrationPolicy })
-      setState({ status: 'success', error: null, event: result.event, saving: false })
-    } catch (error) {
-      setState((current) => ({ ...current, saving: false, error }))
-    }
-  }
 
   if (state.status === 'loading') {
     return (
@@ -67,27 +54,30 @@ export default function OwnerEventPage({
 
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
-      <p className="eyebrow">Hosted event</p>
-      <h1 data-page-title="true">{state.event.title}</h1>
-      {state.event.description && <p>{state.event.description}</p>}
-      {state.event.location && <p>{`Location: ${state.event.location}`}</p>}
-      <p>{`Event link: /events/${state.event.publicId}`}</p>
+      <div className="event-title-row">
+        <Link className="secondary-action" to="/">Back to events</Link>
+        <h1 data-page-title="true">{state.event.title}</h1>
+      </div>
 
-      <SectionCard
-        title="Registration policy"
-        actions={
-          <div className="page-actions">
-            <button type="button" onClick={() => changePolicy('ADMIN_MANAGED')} disabled={state.saving}>
-              Make admin managed
-            </button>
-            <button type="button" onClick={() => changePolicy('OPEN')} disabled={state.saving}>
-              Make open
-            </button>
+      <div className="event-summary">
+        {state.event.description && <p className="event-description">{state.event.description}</p>}
+        <dl className="event-meta">
+          {state.event.location && (
+            <div>
+              <dt>Location</dt>
+              <dd>{state.event.location}</dd>
+            </div>
+          )}
+          <div>
+            <dt>Registration</dt>
+            <dd>{state.event.registrationPolicy === 'OPEN' ? 'Open' : 'Admin managed'}</dd>
           </div>
-        }
-      >
-        <p>{`Current policy: ${state.event.registrationPolicy === 'OPEN' ? 'Open' : 'Admin managed'}`}</p>
-      </SectionCard>
+          <div>
+            <dt>Event link</dt>
+            <dd><a href={`/events/${state.event.publicId}`}>{`/events/${state.event.publicId}`}</a></dd>
+          </div>
+        </dl>
+      </div>
 
       {state.error && <p role="alert">{state.error.message}</p>}
 

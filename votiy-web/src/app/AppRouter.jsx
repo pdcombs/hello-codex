@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider.jsx'
 import RegisterPage from '../features/auth/RegisterPage.jsx'
 import SignInPage from '../features/auth/SignInPage.jsx'
@@ -51,17 +51,7 @@ export function HostedEventsDashboard({ viewer }) {
 }
 
 export function EventDetailShell({ viewer }) {
-  const { publicId } = useParams()
-  return (
-    <>
-      <main id="main-content" className="page-shell compact-page-shell" tabIndex="-1">
-        <Link to={viewer ? '/' : '/'}>{viewer ? '← Back to events' : '← Back to home'}</Link>
-        <p className="eyebrow">Event reference</p>
-        <p>{publicId}</p>
-      </main>
-      {viewer ? <OwnerEventPage viewer={viewer} /> : <EventPage viewer={viewer} />}
-    </>
-  )
+  return viewer ? <OwnerEventPage viewer={viewer} /> : <EventPage viewer={viewer} />
 }
 
 function PlaceholderPage({ title }) {

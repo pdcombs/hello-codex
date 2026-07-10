@@ -129,7 +129,7 @@ describe('event UI', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Registration failed.')
   })
 
-  it('lets the owner change policy and manage participants', async () => {
+  it('shows compact event details and lets the owner manage participants', async () => {
     const loader = vi.fn().mockResolvedValue({
       event: {
         id: 'evt-1',
@@ -138,17 +138,6 @@ describe('event UI', () => {
         description: null,
         location: null,
         registrationPolicy: 'ADMIN_MANAGED',
-        isOwner: true,
-      },
-    })
-    const updatePolicy = vi.fn().mockResolvedValue({
-      event: {
-        id: 'evt-1',
-        publicId: 'board-vote',
-        title: 'Board vote',
-        description: null,
-        location: null,
-        registrationPolicy: 'OPEN',
         isOwner: true,
       },
     })
@@ -171,7 +160,6 @@ describe('event UI', () => {
               <OwnerEventPage
                 viewer={{ id: 'acct-1' }}
                 loader={loader}
-                updatePolicy={updatePolicy}
                 participantsLoader={participantsLoader}
                 addParticipant={addParticipant}
                 removeParticipant={removeParticipant}
@@ -183,9 +171,9 @@ describe('event UI', () => {
     )
 
     const user = userEvent.setup()
-    expect(await screen.findByText('Current policy: Admin managed')).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Make open' }))
-    expect(await screen.findByText('Current policy: Open')).toBeVisible()
+    expect(await screen.findByText('Admin managed')).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Back to events' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Make open' })).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
@@ -196,9 +184,9 @@ describe('event UI', () => {
     expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', registrationId: 'reg-1' })
   })
 
-  it('shows owner page errors when loading or policy update fails', async () => {
+  it('shows owner page errors when loading fails', async () => {
     const failingLoader = vi.fn().mockRejectedValue(new GraphqlClientError('Could not load event.'))
-    const { rerender } = render(
+    render(
       <MemoryRouter initialEntries={['/events/board-vote']}>
         <Routes>
           <Route path="/events/:publicId" element={<OwnerEventPage viewer={{ id: 'acct-1' }} loader={failingLoader} />} />
@@ -207,40 +195,6 @@ describe('event UI', () => {
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not load event.')
-
-    rerender(
-      <MemoryRouter initialEntries={['/events/board-vote']}>
-        <Routes>
-          <Route
-            path="/events/:publicId"
-            element={
-              <OwnerEventPage
-                viewer={{ id: 'acct-1' }}
-                loader={() =>
-                  Promise.resolve({
-                    event: {
-                      id: 'evt-1',
-                      publicId: 'board-vote',
-                      title: 'Board vote',
-                      description: null,
-                      location: null,
-                      registrationPolicy: 'ADMIN_MANAGED',
-                      isOwner: true,
-                    },
-                  })
-                }
-                updatePolicy={() => Promise.reject(new GraphqlClientError('Could not update policy.'))}
-                participantsLoader={() => Promise.resolve({ registrations: [] })}
-              />
-            }
-          />
-        </Routes>
-      </MemoryRouter>,
-    )
-
-    const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: 'Make open' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not update policy.')
   })
 
   it('falls back to public event rendering for non-owner event detail', async () => {
