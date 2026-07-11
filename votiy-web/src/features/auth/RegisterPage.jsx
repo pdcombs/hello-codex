@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { FormField, FormSurface } from '../../components/Form.jsx'
 import { registerAccount } from './account.graphql.js'
 
 export default function RegisterPage({ register = registerAccount }) {
@@ -50,13 +51,12 @@ export default function RegisterPage({ register = registerAccount }) {
             : `We sent a verification link to ${state.account.email}.`}
         </p>
         {state.verificationToken && (
-          <div className="app-form">
-            <div className="form-row">
-              <label htmlFor="verification-token">Verification token</label>
+          <FormSurface as="div">
+            <FormField label="Verification token" htmlFor="verification-token">
               <input id="verification-token" type="text" readOnly value={state.verificationToken} />
-            </div>
+            </FormField>
             <p>Use this token on the verify-email screen to complete the normal verification flow.</p>
-          </div>
+          </FormSurface>
         )}
       </main>
     )
@@ -65,45 +65,31 @@ export default function RegisterPage({ register = registerAccount }) {
     <main className="page-shell">
       <h1>Create your account</h1>
       <p>Start hosting clear, organized voting events.</p>
-      <form className="app-form" onSubmit={onSubmit} noValidate>
-        <div className="form-row">
-          <label htmlFor="register-email">Email</label>
+      <FormSurface onSubmit={onSubmit} noValidate>
+        <FormField label="Email" htmlFor="register-email" error={state.fieldErrors.email}>
           <input
             id="register-email"
             name="email"
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            aria-describedby={state.fieldErrors.email ? 'register-email-error' : undefined}
             required
           />
-        </div>
-        {state.fieldErrors.email && (
-          <p className="form-error" id="register-email-error">
-            {state.fieldErrors.email}
-          </p>
-        )}
-        <div className="form-row">
-          <label htmlFor="register-password">Password</label>
+        </FormField>
+        <FormField label="Password" htmlFor="register-password" error={state.fieldErrors.password}>
           <input
             id="register-password"
             name="password"
             type="password"
             autoComplete="new-password"
             placeholder="Minimum 8 characters"
-            aria-describedby={state.fieldErrors.password ? 'register-password-error' : undefined}
             required
           />
-        </div>
-        {state.fieldErrors.password && (
-          <p className="form-error" id="register-password-error">
-            {state.fieldErrors.password}
-          </p>
-        )}
+        </FormField>
         <button type="submit" disabled={state.status === 'loading'}>
           {state.status === 'loading' ? 'Creating account…' : 'Create account'}
         </button>
-      </form>
+      </FormSurface>
       {state.status === 'loading' && (
         <p className="form-status" role="status">
           Creating your account…

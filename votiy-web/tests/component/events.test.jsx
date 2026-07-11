@@ -272,6 +272,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText(/guest@example.com/)).toBeVisible()
+    await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not add participant.')
     await user.click(screen.getByRole('button', { name: 'Remove' }))
@@ -295,5 +296,103 @@ describe('event UI', () => {
     await user.type(screen.getByLabelText('Email'), 'guest@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByText('Account complete')).toBeVisible()
+  })
+
+  it('highlights participant fields and identifies validation failures', async () => {
+    const addParticipant = vi.fn()
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [] })}
+          addParticipant={addParticipant}
+          removeParticipant={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Phone')).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByRole('alert')).toHaveTextContent('Email: Enter an email address.')
+    expect(screen.getByText('Optional')).toBeVisible()
+    expect(addParticipant).not.toHaveBeenCalled()
+  })
+
+  it('shows API field errors and accepts email without phone', async () => {
+    const addParticipant = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new GraphqlClientError('Check the highlighted fields and try again.', {
+          code: 'VALIDATION_FAILED',
+          fieldErrors: [{ field: 'email', code: 'invalid_format', message: 'Enter a valid email address' }],
+        }),
+      )
+      .mockResolvedValueOnce({
+        registration: { id: 'reg-2', accountId: 'acct-2', email: 'email-only@example.com', phone: null, accountCompleted: false },
+      })
+
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [] })}
+          addParticipant={addParticipant}
+          removeParticipant={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.type(screen.getByLabelText('Email'), 'valid@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('alert')).toHaveTextContent('Email: Enter a valid email address')
+
+    await user.clear(screen.getByLabelText('Email'))
+    await user.type(screen.getByLabelText('Email'), 'email-only@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(addParticipant).toHaveBeenCalledWith(expect.objectContaining({ email: 'email-only@example.com', phone: null }))
+    expect(await screen.findByText('email-only@example.com')).toBeVisible()
+  })
+
+  it('submits both email and phone for one participant', async () => {
+    const addParticipant = vi.fn().mockResolvedValue({
+      registration: {
+        id: 'reg-both',
+        accountId: 'acct-both',
+        email: 'both@example.com',
+        phone: '+15551234567',
+        accountCompleted: false,
+      },
+    })
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel
+          eventId="evt-1"
+          loader={() => Promise.resolve({ registrations: [] })}
+          addParticipant={addParticipant}
+          removeParticipant={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.type(screen.getByLabelText('Email'), 'both@example.com')
+    await user.type(screen.getByLabelText('Phone'), '(555) 123-4567')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+
+    expect(addParticipant).toHaveBeenCalledWith(expect.objectContaining({
+      email: 'both@example.com',
+      phone: '+15551234567',
+    }))
+    expect(await screen.findByText('both@example.com')).toBeVisible()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toHaveValue('')
+    expect(screen.getByLabelText('Phone')).toHaveValue('')
   })
 })

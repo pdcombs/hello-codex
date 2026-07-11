@@ -1,7 +1,4 @@
 :root {
-  --nav-top-offset: 22px;
-  --nav-height: 66px;
-  --nav-clearance: calc(var(--nav-top-offset) + var(--nav-height) + 32px);
   --color-app-bg: #212121;
   --color-app-bg-soft: #2f2f2f;
   --color-surface: #2b2b2b;
@@ -30,7 +27,7 @@
 .page-shell {
   width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: var(--nav-clearance) 0 88px;
+  padding: 32px 0 88px;
 }
 
 .skip-link {
@@ -50,12 +47,11 @@
 }
 
 .glass-nav {
-  position: fixed;
-  z-index: 20;
-  top: var(--nav-top-offset);
-  left: 50%;
+  position: relative;
+  z-index: 1;
   width: min(1180px, calc(100% - 40px));
   height: 66px;
+  margin: 22px auto 0;
   padding: 0 12px 0 18px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -66,7 +62,6 @@
   box-shadow: var(--shadow-soft), inset 0 1px rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(28px) saturate(145%);
   -webkit-backdrop-filter: blur(28px) saturate(145%);
-  transform: translateX(-50%);
 }
 
 .brand {
@@ -284,12 +279,6 @@ main:focus {
   border-color: rgba(255, 116, 116, 0.35);
 }
 
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
 .app-form {
   width: min(720px, 100%);
   margin-top: 28px;
@@ -322,10 +311,6 @@ main:focus {
   border-bottom: 0;
 }
 
-.field-grid .form-row {
-  border-bottom: 0;
-}
-
 .form-row-stacked {
   align-items: start;
 }
@@ -338,6 +323,30 @@ main:focus {
   color: rgba(244, 244, 245, 0.78);
   font-size: 0.92rem;
   font-weight: 640;
+}
+
+.form-row label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.form-optional {
+  padding: 3px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-soft);
+  font-size: 0.58rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-field-error {
+  grid-column: 2;
+  margin: -8px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .form-row input,
@@ -405,6 +414,21 @@ main:focus {
   box-shadow: inset 0 0 0 1px #0a84ff, 0 0 0 4px rgba(10, 132, 255, 0.12);
 }
 
+.form-row-invalid label,
+.form-field-error {
+  color: #ffb4b4;
+}
+
+.form-row-invalid input,
+.form-row-invalid textarea,
+.form-row-invalid select,
+.form-row-invalid:focus-within input,
+.form-row-invalid:focus-within textarea,
+.form-row-invalid:focus-within select {
+  background: rgba(99, 38, 38, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 116, 116, 0.72), 0 0 0 4px rgba(255, 116, 116, 0.1);
+}
+
 .app-form > button {
   width: fit-content;
   margin-top: 22px;
@@ -437,10 +461,6 @@ main:focus {
   border: 1px solid rgba(255, 116, 116, 0.28);
   border-radius: 18px;
   background: rgba(99, 38, 38, 0.18);
-}
-
-.participant-form {
-  gap: 0;
 }
 
 .page-actions {
@@ -960,13 +980,9 @@ footer {
 }
 
 @media (max-width: 600px) {
-  :root {
-    --nav-top-offset: 12px;
-    --nav-clearance: calc(var(--nav-top-offset) + var(--nav-height) + 24px);
-  }
-
   .glass-nav {
     width: calc(100% - 24px);
+    margin-top: 12px;
     grid-template-columns: 1fr;
     height: auto;
     padding: 12px 14px;
@@ -975,7 +991,7 @@ footer {
 
   .page-shell {
     width: calc(100% - 32px);
-    padding-bottom: 72px;
+    padding: 24px 0 72px;
   }
 
   nav {
@@ -986,10 +1002,6 @@ footer {
 
   .nav-action {
     padding-inline: 12px;
-  }
-
-  .field-grid {
-    grid-template-columns: 1fr;
   }
 
   .page-title-row {
@@ -1027,6 +1039,11 @@ footer {
     padding: 14px 0;
     grid-template-columns: 1fr;
     gap: 9px;
+  }
+
+  .form-field-error {
+    grid-column: 1;
+    margin-top: -2px;
   }
 
   .form-row-stacked label {

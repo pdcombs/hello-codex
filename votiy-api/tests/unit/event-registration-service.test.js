@@ -100,11 +100,31 @@ describe('event registration service', () => {
     harness.accountRepository.findByEmailNormalized.mockResolvedValue(null)
     const provisional = await harness.service.addParticipant({
       eventId: 'event-1',
+      email: 'phone-owner@example.com',
       phone: '+14155550123',
       idempotencyKey: '123e4567-e89b-12d3-a456-426614174000',
     }, OWNER)
     expect(harness.accountRepository.createProvisional).toHaveBeenCalled()
     expect(provisional.provisionalCreated).toBe(true)
+
+    await expect(harness.service.addParticipant({
+      eventId: 'event-1',
+      email: 'email-only@example.com',
+      phone: null,
+      idempotencyKey: '93b45d0b-f436-4956-9c31-7442fbe3086d',
+    }, OWNER)).resolves.toMatchObject({ provisionalCreated: true })
+
+    harness.accountRepository.findByEmailNormalized.mockResolvedValue(null)
+    await harness.service.addParticipant({
+      eventId: 'event-1',
+      email: 'both@example.com',
+      phone: '+14155550124',
+      idempotencyKey: 'c56a4180-65aa-42ec-a945-5fd21dec0538',
+    }, OWNER)
+    expect(harness.accountRepository.createProvisional).toHaveBeenLastCalledWith(expect.objectContaining({
+      emailNormalized: 'both@example.com',
+      phoneNormalized: '+14155550124',
+    }))
   })
 
   it('lists and removes registrations for owner only', async () => {

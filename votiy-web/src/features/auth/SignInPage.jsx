@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { FormField, FormSurface } from '../../components/Form.jsx'
 import { useAuth } from './AuthProvider.jsx'
 import { signInAccount } from './session.graphql.js'
 
@@ -24,17 +25,15 @@ export default function SignInPage({ signIn = signInAccount }) {
   return (
     <main className="page-shell">
       <h1>Sign in</h1>
-      <form className="app-form" onSubmit={submit}>
-        <div className="form-row">
-          <label htmlFor="signin-email">Email</label>
+      <FormSurface onSubmit={submit}>
+        <FormField label="Email" htmlFor="signin-email">
           <input id="signin-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
-        </div>
-        <div className="form-row">
-          <label htmlFor="signin-password">Password</label>
+        </FormField>
+        <FormField label="Password" htmlFor="signin-password">
           <input id="signin-password" name="password" type="password" autoComplete="current-password" placeholder="Password" required />
-        </div>
+        </FormField>
         <button disabled={state.loading}>{state.loading ? 'Signing in…' : 'Sign in'}</button>
-      </form>
+      </FormSurface>
       {state.loading && (
         <p className="form-status" role="status">
           Signing in…

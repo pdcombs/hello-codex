@@ -146,7 +146,7 @@ provisional accounts.
 - Every Event is readable by anyone with `publicId`.
 - An `open` Event permits a verified account to register itself. An `admin_managed` Event permits only its
   owner to register participants.
-- Host registration reuses an Account matching the normalized email or phone, or atomically creates a
+- Host registration requires email and accepts an optional phone; it reuses an Account matching a supplied normalized identifier or atomically creates a
   provisional unverified Account, stores the host's account ID in `referredByAccountId`, and immediately
   references the participant account's ID from EventRegistration.
 - Deleting accounts/events is out of scope; repositories do not expose deletion operations for them.

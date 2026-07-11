@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { FormField, FormSurface } from '../../components/Form.jsx'
 import { createEvent } from './events.graphql.js'
 
 export default function CreateEventPage({ create = createEvent }) {
@@ -33,46 +34,36 @@ export default function CreateEventPage({ create = createEvent }) {
       <p className="eyebrow">New voting event</p>
       <h1 data-page-title="true">Create an event</h1>
       <p>Start with a title, then choose how people get registered.</p>
-      <form className="app-form" onSubmit={onSubmit} noValidate>
-        <div className="form-row">
-          <label htmlFor="event-title">Title</label>
+      <FormSurface onSubmit={onSubmit} noValidate>
+        <FormField label="Title" htmlFor="event-title" error={state.fieldErrors.title}>
           <input
             id="event-title"
             name="title"
             type="text"
             placeholder="Board election, budget vote, team poll"
             required
-            aria-describedby={state.fieldErrors.title ? 'event-title-error' : undefined}
           />
-        </div>
-        {state.fieldErrors.title && (
-          <p className="form-error" id="event-title-error">
-            {state.fieldErrors.title}
-          </p>
-        )}
+        </FormField>
 
-        <div className="form-row form-row-stacked">
-          <label htmlFor="event-description">Description</label>
+        <FormField label="Description" htmlFor="event-description" stacked>
           <textarea id="event-description" name="description" rows="4" placeholder="Add context voters should know." />
-        </div>
+        </FormField>
 
-        <div className="form-row">
-          <label htmlFor="event-location">Location</label>
+        <FormField label="Location" htmlFor="event-location">
           <input id="event-location" name="location" type="text" placeholder="Remote, office, venue" />
-        </div>
+        </FormField>
 
-        <div className="form-row">
-          <label htmlFor="event-policy">Registration policy</label>
+        <FormField label="Registration policy" htmlFor="event-policy">
           <select id="event-policy" name="registrationPolicy" defaultValue="ADMIN_MANAGED">
             <option value="ADMIN_MANAGED">Admin managed</option>
             <option value="OPEN">Open</option>
           </select>
-        </div>
+        </FormField>
 
         <button type="submit" disabled={state.status === 'loading'}>
           {state.status === 'loading' ? 'Creating event…' : 'Create event'}
         </button>
-      </form>
+      </FormSurface>
 
       {state.status === 'loading' && (
         <p className="form-status" role="status">

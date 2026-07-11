@@ -117,7 +117,7 @@ dashboard associated with their account.
    they can register themself as a participant.
 7. **Given** an event with ADMIN_MANAGED registration, **When** a signed-in user attempts to self-register,
    **Then** no participant registration is created and the event creator must register them.
-8. **Given** the creator registers a participant by email or phone and no matching account exists, **When**
+8. **Given** the creator registers a participant by email with an optional phone and no matching account exists, **When**
    registration succeeds, **Then** a provisional account is created and the event registration references
    that account's ID, with the host recorded as the account's referrer.
 9. **Given** a signed-in host opens an event from their dashboard, **When** the event detail page loads,
@@ -220,11 +220,11 @@ dashboard associated with their account.
   is ADMIN_MANAGED and allow only the event creator to register participants instead.
 - **FR-022**: The system MUST enforce the event's current participant-registration policy and the actor's
   creator authority at the server boundary on every participant-registration request.
-- **FR-023**: When the event creator registers a participant by email or phone, the system MUST reuse the
+- **FR-023**: When the event creator registers a participant by required email and optional phone, the system MUST reuse the
   matching account or atomically create a provisional account when none exists.
 - **FR-024**: The system MUST write every event registration with the registered account's immutable ID,
   including registrations for provisional accounts.
-- **FR-025**: A provisional account MUST retain its unverified email or phone identifier but MUST NOT
+- **FR-025**: A provisional account MUST retain its unverified email and any supplied phone identifier but MUST NOT
   authenticate or exercise completed-account privileges in this MVP.
 - **FR-026**: Host-managed participant registration MUST NOT send a verification, notification,
   invitation, or account-completion message.
@@ -237,7 +237,7 @@ dashboard associated with their account.
 
 ### Key Entities
 
-- **Account**: A platform identity with a normalized unique email address or phone number, optional host
+- **Account**: A platform identity with a normalized unique email address and optional phone number, optional host
   referral metadata, provisional-or-completed lifecycle state, identifier-verification state, optional
   credential security information, creation time, and session eligibility. A host-created provisional
   account has no credentials, records the host's account ID as its referrer, remains unverified, and is

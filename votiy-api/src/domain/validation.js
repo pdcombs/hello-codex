@@ -38,11 +38,9 @@ export const eventInputSchema = z.object({
 }).strict()
 
 export const participantIdentifierSchema = z.object({
-  email: emailSchema.optional(),
-  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').optional(),
-}).refine(({ email, phone }) => Boolean(email) !== Boolean(phone), {
-  message: 'Provide exactly one email address or phone number',
-  path: ['email'],
+  email: emailSchema,
+  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').nullish()
+    .transform((value) => value ?? undefined),
 })
 
 export const setEventRegistrationPolicyInputSchema = z.object({
@@ -52,12 +50,10 @@ export const setEventRegistrationPolicyInputSchema = z.object({
 
 export const addEventParticipantInputSchema = z.object({
   eventId: z.string().min(1),
-  email: emailSchema.optional(),
-  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').optional(),
+  email: emailSchema,
+  phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').nullish()
+    .transform((value) => value ?? undefined),
   idempotencyKey: idempotencyKeySchema,
-}).refine(({ email, phone }) => Boolean(email) !== Boolean(phone), {
-  message: 'Provide exactly one email address or phone number',
-  path: ['email'],
 })
 
 export const removeEventParticipantInputSchema = z.object({

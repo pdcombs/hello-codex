@@ -144,13 +144,14 @@ describe('input validation', () => {
     }).success).toBe(false)
   })
 
-  it('requires exactly one participant identifier', () => {
+  it('requires participant email and accepts an optional phone', () => {
     expect(participantIdentifierSchema.safeParse({ email: 'person@example.com' }).success).toBe(true)
-    expect(participantIdentifierSchema.safeParse({ phone: '+14155552671' }).success).toBe(true)
+    expect(participantIdentifierSchema.safeParse({ phone: '+14155552671' }).success).toBe(false)
     expect(participantIdentifierSchema.safeParse({
       email: 'person@example.com',
       phone: '+14155552671',
-    }).success).toBe(false)
+    }).success).toBe(true)
+    expect(participantIdentifierSchema.safeParse({ email: 'person@example.com', phone: null }).success).toBe(true)
     expect(participantIdentifierSchema.safeParse({}).success).toBe(false)
   })
 })
