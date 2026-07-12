@@ -37,3 +37,9 @@
 - Clarified 2026-07-11: every account has a required display name; existing email accounts use the prefix before `@`, with stable fallbacks for legacy phone-only accounts.
 - Clarified 2026-07-11: all active and removed registrations are migrated while status and active-view filtering are preserved.
 - Workflow 2026-07-11: the sole contributor works directly on `main` and commits/pushes after task-specific validation.
+- Phase 7 validation 2026-07-12: API coverage passed at 91.93% lines/80.68% branches; web coverage
+  passed at 95.42% lines/80.09% branches; local production smoke, desktop/mobile public-shell,
+  registration, build, lint, migration, contract, and integration gates passed. Full desktop and
+  mobile E2E each passed 4 scenarios and skipped 9 synthetic credential-dependent scenarios because
+  `E2E_HOST_*`, `E2E_PARTICIPANT_*`, and `E2E_OPEN_EVENT_PUBLIC_ID` were not supplied. Those skipped
+  decision paths remain covered by unit, contract, integration, and component suites.

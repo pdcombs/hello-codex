@@ -58,6 +58,10 @@ volume reset.
   - `event:"request.completed" status:503`
   - `operation:"authentication.sign_in" outcome:"denied"`
   - `operation:"event.create" outcome:"success"`
+  - `operation:"event.category_add" outcome:"success"`
+  - `operation:"event.category_rename" outcome:"success"`
+  - `operation:"event.setup_view" outcome:"failure"`
+  - `event:"migration.stage.completed" migration:"002-event-categories-entries"`
 - Atlas:
   - connection count and wait queue
   - primary CPU and memory
@@ -73,9 +77,22 @@ volume reset.
 - Atlas connection pressure above 80% of pool capacity
 - post-deploy smoke failure on latest `main` deploy
 - grouped setup-view p95 above 2 seconds or failure rate above 2% for 10 minutes
+- setup mutation errors above 5% for 10 minutes across participant and category operations
+- any `002-event-categories-entries` migration failure or `/ready` migration dependency failure
 
 Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
 category titles, entry titles, display names, email addresses, or phone numbers.
+
+## Setup diagnostics and privacy checks
+
+- Mutation error rate: count `OperationError` results for `addEventParticipant`, `registerForEvent`,
+  `addEventCategory`, and `renameEventCategory`, divided by total matching operations.
+- Setup read latency: query `event:"event.setup_view.completed" outcome:"success"` and graph p50/p95
+  `durationMs`.
+- Migration outcome: require successful `accounts`, `events`, and `registrations` stage logs before
+  readiness; alert on missing stages or startup failure.
+- Privacy audit: periodically search logs for `@`, E.164-like phone values, and known synthetic titles
+  or display names. Any match outside explicitly redacted fields is an incident.
 
 ## Correlation ID diagnostics
 
@@ -92,3 +109,7 @@ category titles, entry titles, display names, email addresses, or phone numbers.
 3. Re-run `/health`, `/ready`, home page, and synthetic public event smoke.
 4. Revert or patch bad `main` commit.
 5. Push fix, watch CI, then confirm post-deploy smoke green.
+
+For event-setup rollback, do not reverse migration 002: version-2 documents remain readable by
+transitional code. Roll back application commit, confirm `/ready`, verify grouped public reads and
+host participant summaries, then forward-fix. Never delete categories or entries during rollback.

@@ -158,12 +158,12 @@ description: "Implementation tasks for event categories and entries"
 
 **Purpose**: Close quality, delivery, migration, observability, and documentation requirements across all stories.
 
-- [ ] T060 [P] Close decision-path and 80% line/branch coverage gaps in `votiy-api/tests/unit/`, `votiy-api/tests/contract/`, and `votiy-web/tests/component/`
-- [ ] T061 [P] Add production migration/setup read smoke checks and exact-commit diagnostics in `tests/smoke/production-smoke.js` and `.github/workflows/ci.yml`
-- [ ] T062 [P] Document setup SLI queries, 5% mutation-error alert, migration alert, privacy checks, and rollback steps in `docs/operations.md`
-- [ ] T063 Validate keyboard, focus, labels, error announcements, and mobile layouts in `tests/e2e/responsive-accessibility.spec.js`
-- [ ] T064 Validate stale-client reload diagnostics, remove display-name/contact/title logging, and verify audit event allowlists in `votiy-api/src/observability/logger.js` and `votiy-api/src/repositories/audit-event-repository.js`
-- [ ] T065 Execute every scenario and quality gate in `specs/002-event-categories-entries/quickstart.md` and record any deviations in `specs/002-event-categories-entries/checklists/requirements.md`
+- [X] T060 [P] Close decision-path and 80% line/branch coverage gaps in `votiy-api/tests/unit/`, `votiy-api/tests/contract/`, and `votiy-web/tests/component/`
+- [X] T061 [P] Add production migration/setup read smoke checks and exact-commit diagnostics in `tests/smoke/production-smoke.js` and `.github/workflows/ci.yml`
+- [X] T062 [P] Document setup SLI queries, 5% mutation-error alert, migration alert, privacy checks, and rollback steps in `docs/operations.md`
+- [X] T063 Validate keyboard, focus, labels, error announcements, and mobile layouts in `tests/e2e/responsive-accessibility.spec.js`
+- [X] T064 Validate stale-client reload diagnostics, remove display-name/contact/title logging, and verify audit event allowlists in `votiy-api/src/observability/logger.js` and `votiy-api/src/repositories/audit-event-repository.js`
+- [X] T065 Execute every scenario and quality gate in `specs/002-event-categories-entries/quickstart.md` and record any deviations in `specs/002-event-categories-entries/checklists/requirements.md`
 
 ---
 

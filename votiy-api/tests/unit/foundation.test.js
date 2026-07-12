@@ -171,7 +171,7 @@ describe('verification bypass policy', () => {
 })
 
 describe('fake email transport', () => {
-  it('captures deliveries and logs the verification details for temporary production debugging', async () => {
+  it('captures deliveries without logging verification details', async () => {
     const logger = { info: vi.fn() }
     const sender = createFakeSender({ logger, deliveredAt: () => new Date('2026-07-07T01:00:00.000Z') })
 
@@ -186,10 +186,11 @@ describe('fake email transport', () => {
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'email.fake.send',
-        to: 'host@example.com',
-        token: 'test',
+        outcome: 'success',
       }),
       'Captured fake email delivery',
     )
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain('host@example.com')
+    expect(JSON.stringify(logger.info.mock.calls)).not.toContain('token=test')
   })
 })

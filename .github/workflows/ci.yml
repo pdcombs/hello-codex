@@ -13,18 +13,21 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     services:
-      mongodb:
-        image: mongo:8.0
-        ports: ["27017:27017"]
       mailpit:
         image: axllent/mailpit:v1.27
         ports: ["1025:1025", "8025:8025"]
     env:
-      MONGODB_URI: mongodb://127.0.0.1:27017/votiy
-      MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+      MONGODB_URI: mongodb://127.0.0.1:27017/votiy?replicaSet=rs0
+      MONGODB_TEST_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
       APP_ORIGIN: http://127.0.0.1:5173
     steps:
       - uses: actions/checkout@v4
+      - name: Start MongoDB replica set
+        run: |
+          docker run -d --name votiy-ci-mongodb -p 27017:27017 mongo:8.0 mongod --replSet rs0 --bind_ip_all
+          until docker exec votiy-ci-mongodb mongosh --quiet --eval "db.adminCommand('ping').ok"; do sleep 2; done
+          docker exec votiy-ci-mongodb mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'127.0.0.1:27017'}]})"
+          until docker exec votiy-ci-mongodb mongosh --quiet --eval "quit(db.adminCommand('hello').isWritablePrimary ? 0 : 1)"; do sleep 2; done
       - uses: pnpm/action-setup@v4
         with:
           version: 11.7.0
@@ -46,7 +49,7 @@ jobs:
       - run: pnpm --dir votiy-api test:contract
       - run: pnpm --dir votiy-api test:integration
       - run: pnpm --dir votiy-web build
-      - run: node --check votiy-api/server.js
+      - run: node --check votiy-api/src/server.js
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e --project=chromium
       - run: pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"

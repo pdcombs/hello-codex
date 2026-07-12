@@ -132,11 +132,30 @@ describe('security and failure behavior', () => {
         phone: '+15555550123',
         token: 'raw-token',
         nested: { token: 'inner-token' },
+        displayName: 'Private Person',
+        title: 'Private Entry',
+        verificationToken: 'verification-secret',
+        to: 'recipient@example.test',
+        subject: 'Private subject',
+        text: 'Private message',
       }, 'security log')
     })
     expect(logged).toContain('[REDACTED]')
     expect(logged).not.toContain('host@example.com')
     expect(logged).not.toContain('super-secret')
     expect(logged).not.toContain('raw-token')
+    expect(logged).not.toContain('Private Person')
+    expect(logged).not.toContain('Private Entry')
+    expect(logged).not.toContain('verification-secret')
+    expect(logged).not.toContain('recipient@example.test')
+  })
+
+  it('returns actionable stale-client reload diagnostics', async () => {
+    const schema = await createGraphqlSchema()
+    const handler = createGraphqlHandler({ schema, rootValue: {}, appOrigin: 'http://127.0.0.1:5173' })
+    const res = response()
+    await handler(request({ body: { query: '{ eventByPublicId(publicId: "x") { missingLegacyField } }' } }), res)
+    expect(res.statusCode).toBe(400)
+    expect(JSON.parse(res.body).errors[0].message).toBe('App update required. Reload this page and try again.')
   })
 })

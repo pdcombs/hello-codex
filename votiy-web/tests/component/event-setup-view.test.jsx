@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import EventCategoryList from '../../src/features/events/EventCategoryList.jsx'
 import EventSetupTabs from '../../src/features/events/EventSetupTabs.jsx'
+import { readEntries } from '../../src/features/events/participant-entry-form.js'
 
 const categories = [
   { id: 'cat-1', title: 'Desserts', entries: [{ id: 'entry-1', title: 'Apple Pie', ownerDisplayName: 'Peyton' }] },
@@ -17,6 +18,13 @@ describe('grouped event setup view', () => {
     expect(screen.getByText('Owned by Peyton')).toBeVisible()
     expect(screen.getByText('No entries in this category.')).toBeVisible()
     expect(document.body.textContent).not.toMatch(/@|\+1555/)
+  })
+
+  it('handles omitted category and entry form data safely', () => {
+    const { unmount } = render(<EventCategoryList />)
+    expect(screen.getByText('No categories available.')).toBeVisible()
+    unmount()
+    expect(readEntries(new FormData(), 1)).toEqual([{ title: '', categoryId: '' }])
   })
 
   it('provides accessible responsive setup and participant tabs', async () => {

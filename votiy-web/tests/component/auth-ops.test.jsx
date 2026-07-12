@@ -90,6 +90,33 @@ describe('checked-in GraphQL operations and auth UI', () => {
     expect(graphqlRequest.mock.calls[1][0].query).not.toContain('categories')
   })
 
+  it('retries all legacy schema compatibility paths', async () => {
+    graphqlRequest
+      .mockRejectedValueOnce(new Error('Field "displayName" is not defined by type "RegisterInput".'))
+      .mockResolvedValueOnce({ register: { account: { email: 'legacy@example.com' } } })
+      .mockRejectedValueOnce(new Error('Cannot query field "categories" on type "Event".'))
+      .mockResolvedValueOnce({ eventByPublicId: { event: { id: 'legacy-event' } } })
+      .mockRejectedValueOnce(new Error('Cannot query field "entryCount" on type "EventRegistration".'))
+      .mockResolvedValueOnce({ eventRegistrations: { registrations: [] } })
+      .mockResolvedValueOnce({ registerForEvent: { registration: { id: 'legacy-registration' } } })
+
+    await accountOps.registerAccount({ displayName: 'Legacy', email: 'legacy@example.com', password: 'password', idempotencyKey: '1' })
+    await eventOps.loadEventByPublicId('legacy-event')
+    await eventOps.loadEventRegistrations('legacy-event')
+    await eventOps.registerForEvent({ eventId: 'legacy-event', idempotencyKey: '2' }, { legacy: true })
+
+    expect(graphqlRequest.mock.calls[1][0].variables.input).not.toHaveProperty('displayName')
+    expect(graphqlRequest.mock.calls[3][0].query).not.toContain('categories')
+    expect(graphqlRequest.mock.calls[5][0].query).not.toContain('entryCount')
+    expect(graphqlRequest.mock.calls[6][0].variables).toEqual({ eventId: 'legacy-event', idempotencyKey: '2' })
+  })
+
+  it('normalizes missing category entry arrays and preserves legacy events', () => {
+    expect(eventOps.normalizeEventSetup({ event: { categories: [{ id: 'cat-1' }] } }).event.categories[0].entries).toEqual([])
+    const legacy = { event: { id: 'legacy' } }
+    expect(eventOps.normalizeEventSetup(legacy)).toBe(legacy)
+  })
+
   it('renders sign-out button and calls sign-out action', async () => {
     const signOut = vi.fn().mockResolvedValue({ signedOut: true })
     render(
