@@ -43,7 +43,7 @@ describe('GraphQL schema contract', () => {
       .toThrow('introspection is disabled')
   })
 
-  it('stages a valid event-setup contract without activating it', async () => {
+  it('activates the validated event-setup contract', async () => {
     const stagedSchema = buildSchema(await readFile(eventSetupContract, 'utf8'))
     const runtimeSchema = await createGraphqlSchema()
 
@@ -53,7 +53,7 @@ describe('GraphQL schema contract', () => {
       addEventCategory: expect.any(Object),
       renameEventCategory: expect.any(Object),
     })
-    expect(runtimeSchema.getType('EventCategory')).toBeUndefined()
-    expect(runtimeSchema.getMutationType().getFields().addEventCategory).toBeUndefined()
+    expect(runtimeSchema.getType('EventCategory')).toBeDefined()
+    expect(runtimeSchema.getMutationType().getFields().addEventCategory).toBeDefined()
   })
 })

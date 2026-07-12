@@ -4,6 +4,7 @@ import { createRegistrationService } from '../../src/services/registration-servi
 
 const NOW = new Date('2026-07-05T12:00:00.000Z')
 const INPUT = Object.freeze({
+  displayName: 'New Host',
   email: '  New.Host@Example.COM  ',
   password: 'a sufficiently long password',
   idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
@@ -68,6 +69,7 @@ describe('registration service', () => {
     expect(harness.passwordHasher.hash).toHaveBeenCalledWith(INPUT.password)
     expect(harness.accountRepository.createPending).toHaveBeenCalledWith(
       expect.objectContaining({
+        displayName: 'New Host',
         emailNormalized: 'new.host@example.com',
         phoneNormalized: null,
         referredByAccountId: null,

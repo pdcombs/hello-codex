@@ -4,13 +4,17 @@ import { FormField, FormSurface } from '../../components/Form.jsx'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
 import { addEventParticipant, loadEventRegistrations, removeEventParticipant } from './events.graphql.js'
+import ParticipantEntryFields from './ParticipantEntryFields.jsx'
+import { readEntries } from './participant-entry-form.js'
 
 export default function EventParticipantsPanel({
   eventId,
   loader = loadEventRegistrations,
   addParticipant = addEventParticipant,
   removeParticipant = removeEventParticipant,
+  categories = [],
 }) {
+  const [entryCount, setEntryCount] = useState(1)
   const [state, setState] = useState({
     status: 'loading',
     saving: false,
@@ -40,10 +44,12 @@ export default function EventParticipantsPanel({
     if (state.saving) return
     const formElement = event.currentTarget
     const form = new FormData(formElement)
+    const displayName = clean(form.get('displayName'))
     const email = clean(form.get('email'))
     const phoneInput = clean(form.get('phone'))
     const phone = normalizePhone(phoneInput)
-    const fieldErrors = validateIdentifier(email, phoneInput, phone)
+    const entries = readEntries(form, entryCount)
+    const fieldErrors = { ...validateIdentifier(email, phoneInput, phone), ...validateEntries(displayName, entries) }
     if (Object.keys(fieldErrors).length > 0) {
       setState((current) => ({ ...current, saving: false, error: null, fieldErrors }))
       return
@@ -52,8 +58,10 @@ export default function EventParticipantsPanel({
     try {
       const result = await addParticipant({
         eventId,
+        displayName,
         email,
         phone,
+        entries,
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-participant`,
       })
       setState((current) => ({
@@ -63,6 +71,7 @@ export default function EventParticipantsPanel({
         registrations: upsertRegistration(current.registrations, result.registration),
       }))
       formElement.reset()
+      setEntryCount(1)
     } catch (error) {
       const fieldErrors = Object.fromEntries((error.fieldErrors ?? []).map((item) => [item.field, item.message]))
       setState((current) => ({ ...current, saving: false, error, fieldErrors }))
@@ -88,9 +97,13 @@ export default function EventParticipantsPanel({
       <p>Add by email, with an optional phone number. Unfinished accounts stay provisional until that person completes sign up.</p>
 
       <FormSurface onSubmit={onAdd} noValidate>
+        <FormField label="Display name" htmlFor="participant-display-name" error={state.fieldErrors.displayName}>
+          <input id="participant-display-name" name="displayName" type="text" required />
+        </FormField>
         <FormField label="Email" htmlFor="participant-email" error={state.fieldErrors.email}>
           <input id="participant-email" name="email" type="email" placeholder="participant@example.com" />
         </FormField>
+        <ParticipantEntryFields categories={categories} count={entryCount} errors={state.fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />
         <FormField label="Phone" htmlFor="participant-phone" optional error={state.fieldErrors.phone}>
           <input id="participant-phone" name="phone" type="tel" placeholder="(555) 123-4567" />
         </FormField>
@@ -116,8 +129,8 @@ export default function EventParticipantsPanel({
           {state.registrations.map((registration) => (
             <li key={registration.id}>
               <div>
-                <strong>{registration.email ?? registration.phone ?? registration.accountId}</strong>
-                <p>{registration.accountCompleted ? 'Account complete' : 'Provisional account'}</p>
+                <strong>{registration.displayName ?? registration.email ?? registration.phone ?? registration.accountId}</strong>
+                <p><span>{registration.entryCount ?? 0} entries</span> · <span>{registration.accountCompleted ? 'Account complete' : 'Provisional account'}</span></p>
               </div>
               <button type="button" onClick={() => onRemove(registration.id)} disabled={state.saving}>
                 Remove
@@ -149,6 +162,16 @@ function validateIdentifier(email, phoneInput, normalizedPhone) {
   return {}
 }
 
+function validateEntries(displayName, entries) {
+  const errors = {}
+  if (!displayName) errors.displayName = 'Enter a display name.'
+  entries.forEach((entry, index) => {
+    if (!entry.title) errors[`entries.${index}.title`] = 'Enter an entry title.'
+    if (!entry.categoryId) errors[`entries.${index}.categoryId`] = 'Choose a category.'
+  })
+  return errors
+}
+
 function normalizePhone(value) {
   if (!value) return null
   const digits = value.replace(/\D/g, '')
@@ -159,9 +182,9 @@ function normalizePhone(value) {
 }
 
 function fieldErrorSummary(fieldErrors) {
+  const labels = { email: 'Email', phone: 'Phone', displayName: 'Display name' }
   return Object.entries(fieldErrors)
-    .filter(([field]) => field === 'email' || field === 'phone')
-    .map(([field, message]) => `${field === 'email' ? 'Email' : 'Phone'}: ${message}`)
+    .map(([field, message]) => `${labels[field] ?? field}: ${message}`)
     .join(' ')
 }
 

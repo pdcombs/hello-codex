@@ -1,6 +1,6 @@
 import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
 
-const ACCOUNT_FIELDS = 'id email isVerified createdAt'
+const ACCOUNT_FIELDS = 'id displayName email isVerified createdAt'
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
 
 export const REGISTER_ACCOUNT = `mutation Register($input: RegisterInput!) {

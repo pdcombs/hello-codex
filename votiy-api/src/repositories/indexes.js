@@ -211,3 +211,15 @@ export async function ensureCollectionsAndIndexes(database) {
     await database.collection(name).createIndexes(definition.indexes)
   }
 }
+
+export async function enforceEventSetupValidators(database) {
+  for (const name of ['accounts', 'events', 'eventRegistrations']) {
+    const strictSchema = collectionDefinitions[name].validator.$jsonSchema.oneOf[1]
+    await database.command({
+      collMod: name,
+      validator: { $jsonSchema: strictSchema },
+      validationLevel: 'strict',
+      validationAction: 'error',
+    })
+  }
+}

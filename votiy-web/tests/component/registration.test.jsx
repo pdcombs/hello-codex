@@ -24,7 +24,8 @@ function renderPage(register = vi.fn()) {
   return { register, user: userEvent.setup() }
 }
 
-async function completeForm(user, { email = 'host@example.com', password = 'a sufficiently long password' } = {}) {
+async function completeForm(user, { displayName = 'Host', email = 'host@example.com', password = 'a sufficiently long password' } = {}) {
+  await user.type(screen.getByRole('textbox', { name: 'Display name' }), displayName)
   await user.type(screen.getByRole('textbox', { name: 'Email' }), email)
   await user.type(screen.getByLabelText('Password'), password)
   await user.click(screen.getByRole('button', { name: 'Create account' }))
@@ -35,6 +36,7 @@ describe('registration page', () => {
     renderPage()
 
     expect(screen.getByRole('heading', { name: 'Create your account' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Display name' })).toBeRequired()
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAttribute('autocomplete', 'email')
     expect(screen.getByLabelText('Password')).toHaveAttribute('autocomplete', 'new-password')
     expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled()
@@ -66,6 +68,7 @@ describe('registration page', () => {
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeVisible()
     expect(screen.getByText(/host@example\.com/i)).toBeVisible()
     expect(register).toHaveBeenCalledWith({
+      displayName: 'Host',
       email: 'host@example.com',
       password: 'a sufficiently long password',
       idempotencyKey: expect.any(String),

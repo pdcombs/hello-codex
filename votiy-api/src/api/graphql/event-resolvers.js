@@ -8,6 +8,12 @@ const failure = (error, correlationId) => ({ __typename: 'OperationError', ...to
 
 export function createEventResolvers({ eventService, eventRegistrationService, auditRepository }) {
   return Object.freeze({
+    addEventCategory(_args, context) {
+      return failure(new Error('Event category mutations are not available yet'), context.correlationId)
+    },
+    renameEventCategory(_args, context) {
+      return failure(new Error('Event category mutations are not available yet'), context.correlationId)
+    },
     async ownedEvents({ first, after }, context) {
       try {
         const result = await eventService.ownedEvents({ viewer: context.viewer, first, after })
@@ -66,9 +72,9 @@ export function createEventResolvers({ eventService, eventRegistrationService, a
         return failure(error, context.correlationId)
       }
     },
-    async registerForEvent({ eventId, idempotencyKey }, context) {
+    async registerForEvent({ input }, context) {
       try {
-        const result = await eventRegistrationService.registerForEvent({ eventId, idempotencyKey }, context.viewer)
+        const result = await eventRegistrationService.registerForEvent(input, context.viewer)
         await auditRepository?.append({
           name: 'participant.self_registered',
           actorAccountId: context.viewer?.account?._id ?? null,
@@ -77,6 +83,11 @@ export function createEventResolvers({ eventService, eventRegistrationService, a
           outcome: 'success',
           correlationId: context.correlationId,
           metadata: { registrationSource: result.registration.source },
+        })
+        await auditRepository?.append({
+          name: 'participant.entries_created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'eventRegistration', subjectId: result.registration.id, outcome: 'success',
+          correlationId: context.correlationId, metadata: { entryCount: result.registration.entryCount },
         })
         return successRegistration(result.registration)
       } catch (error) {
@@ -105,6 +116,11 @@ export function createEventResolvers({ eventService, eventRegistrationService, a
           outcome: 'success',
           correlationId: context.correlationId,
           metadata: { registrationSource: result.registration.source },
+        })
+        await auditRepository?.append({
+          name: 'participant.entries_created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'eventRegistration', subjectId: result.registration.id, outcome: 'success',
+          correlationId: context.correlationId, metadata: { entryCount: result.registration.entryCount },
         })
         return successRegistration(result.registration)
       } catch (error) {

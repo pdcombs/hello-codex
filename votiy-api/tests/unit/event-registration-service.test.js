@@ -17,6 +17,7 @@ function createHarness(overrides = {}) {
     ownerAccountId: 'owner-1',
     publicId: 'public-event-1',
     registrationPolicy: 'open',
+    categories: [{ _id: 'category-1', isDefault: true }],
   }
   const registration = {
     _id: 'registration-1',
@@ -28,13 +29,16 @@ function createHarness(overrides = {}) {
   }
   const eventRepository = {
     findById: vi.fn().mockResolvedValue(event),
+    requireCategoryIds: vi.fn().mockResolvedValue(event),
   }
   const eventRegistrationRepository = {
     findById: vi.fn().mockResolvedValue(registration),
     findByEventAndAccount: vi.fn().mockResolvedValue(null),
     listByEvent: vi.fn().mockResolvedValue([registration]),
     create: vi.fn().mockResolvedValue(registration),
+    createWithEntries: vi.fn().mockImplementation(async (input) => ({ ...registration, accountId: input.accountId, registrationSource: input.registrationSource })),
     revive: vi.fn().mockResolvedValue({ ...registration, status: 'registered' }),
+    reviveWithEntries: vi.fn().mockResolvedValue({ ...registration, status: 'registered' }),
     remove: vi.fn().mockResolvedValue({ ...registration, status: 'removed', removedAt: NOW }),
   }
   const accountRepository = {
@@ -77,6 +81,7 @@ describe('event registration service', () => {
     })
     const result = await harness.service.registerForEvent({
       eventId: 'event-1',
+      entries: [{ title: 'Self entry', categoryId: 'category-1' }],
       idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
     }, viewer)
 
@@ -84,6 +89,7 @@ describe('event registration service', () => {
     harness.eventRepository.findById.mockResolvedValue({ ...harness.event, registrationPolicy: 'admin_managed' })
     await expect(harness.service.registerForEvent({
       eventId: 'event-1',
+      entries: [{ title: 'Self entry', categoryId: 'category-1' }],
       idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
     }, viewer)).rejects.toMatchObject({ code: ErrorCode.FORBIDDEN })
   })
@@ -92,7 +98,9 @@ describe('event registration service', () => {
     const harness = createHarness()
     const reused = await harness.service.addParticipant({
       eventId: 'event-1',
+      displayName: 'Member',
       email: 'member@example.com',
+      entries: [{ title: 'Member entry', categoryId: 'category-1' }],
       idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
     }, OWNER)
     expect(reused.provisionalCreated).toBe(false)
@@ -100,8 +108,10 @@ describe('event registration service', () => {
     harness.accountRepository.findByEmailNormalized.mockResolvedValue(null)
     const provisional = await harness.service.addParticipant({
       eventId: 'event-1',
+      displayName: 'Phone Owner',
       email: 'phone-owner@example.com',
       phone: '+14155550123',
+      entries: [{ title: 'Phone entry', categoryId: 'category-1' }],
       idempotencyKey: '123e4567-e89b-12d3-a456-426614174000',
     }, OWNER)
     expect(harness.accountRepository.createProvisional).toHaveBeenCalled()
@@ -109,22 +119,26 @@ describe('event registration service', () => {
 
     await expect(harness.service.addParticipant({
       eventId: 'event-1',
+      displayName: 'Email Only',
       email: 'email-only@example.com',
       phone: null,
+      entries: [{ title: 'Email entry', categoryId: 'category-1' }],
       idempotencyKey: '93b45d0b-f436-4956-9c31-7442fbe3086d',
     }, OWNER)).resolves.toMatchObject({ provisionalCreated: true })
 
     harness.accountRepository.findByEmailNormalized.mockResolvedValue(null)
     await harness.service.addParticipant({
       eventId: 'event-1',
+      displayName: 'Both',
       email: 'both@example.com',
       phone: '+14155550124',
+      entries: [{ title: 'Both entry', categoryId: 'category-1' }],
       idempotencyKey: 'c56a4180-65aa-42ec-a945-5fd21dec0538',
     }, OWNER)
     expect(harness.accountRepository.createProvisional).toHaveBeenLastCalledWith(expect.objectContaining({
       emailNormalized: 'both@example.com',
       phoneNormalized: '+14155550124',
-    }))
+    }), { session: null })
   })
 
   it('lists and removes registrations for owner only', async () => {

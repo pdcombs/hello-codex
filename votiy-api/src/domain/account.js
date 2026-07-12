@@ -18,7 +18,7 @@ export function withAccountVersion2(account, displayName) {
   return assertAccount({ ...account, displayName: trimmed, schemaVersion: 2 })
 }
 
-export function createPendingAccount({ emailNormalized, passwordHash, referredByAccountId = null, now = new Date() }) {
+export function createPendingAccount({ displayName = null, emailNormalized, passwordHash, referredByAccountId = null, now = new Date() }) {
   const document = {
     _id: new ObjectId(),
     emailNormalized,
@@ -31,12 +31,14 @@ export function createPendingAccount({ emailNormalized, passwordHash, referredBy
     credentialVersion: 0,
     createdAt: now,
     updatedAt: now,
-    schemaVersion: 1,
+    ...(displayName ? { displayName: displayName.trim() } : {}),
+    schemaVersion: displayName ? 2 : 1,
   }
   return assertAccount(document)
 }
 
 export function createProvisionalAccount({
+  displayName = null,
   emailNormalized = null,
   phoneNormalized = null,
   referredByAccountId,
@@ -54,7 +56,8 @@ export function createProvisionalAccount({
     credentialVersion: 0,
     createdAt: now,
     updatedAt: now,
-    schemaVersion: 1,
+    ...(displayName ? { displayName: displayName.trim() } : {}),
+    schemaVersion: displayName ? 2 : 1,
   }
   return assertAccount(document)
 }

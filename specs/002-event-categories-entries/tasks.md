@@ -54,23 +54,23 @@ description: "Implementation tasks for event categories and entries"
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Write failing host/self registration service tests for display name, required entry inputs, default category, authorization, atomicity, and idempotency in `votiy-api/tests/unit/event-registration-service.test.js`
-- [ ] T017 [P] [US1] Write failing account/event contract tests for required display names, required host/self entry inputs, and nested field errors in `votiy-api/tests/contract/account.contract.test.js` and `votiy-api/tests/contract/event-setup.contract.test.js`
-- [ ] T018 [P] [US1] Write failing real-Mongo transaction tests for host/self registration, provisional display names, embedded entries, rollback, revival, and retry in `votiy-api/tests/integration/participant-entries.test.js`
-- [ ] T019 [P] [US1] Write failing React tests for account display name, host/self entry rows, default category, preserved errors, and optional phone in `votiy-web/tests/component/registration.test.jsx` and `votiy-web/tests/component/participant-entries.test.jsx`
-- [ ] T020 [P] [US1] Write failing CUF-001 E2E coverage for display-named account signup, host multi-entry registration, and OPEN-event self-registration entry collection in `tests/e2e/event-setup.spec.js`
+- [X] T016 [P] [US1] Write failing host/self registration service tests for display name, required entry inputs, default category, authorization, atomicity, and idempotency in `votiy-api/tests/unit/event-registration-service.test.js`
+- [X] T017 [P] [US1] Write failing account/event contract tests for required display names, required host/self entry inputs, and nested field errors in `votiy-api/tests/contract/account.contract.test.js` and `votiy-api/tests/contract/event-setup.contract.test.js`
+- [X] T018 [P] [US1] Write failing real-Mongo transaction tests for host/self registration, provisional display names, embedded entries, rollback, revival, and retry in `votiy-api/tests/integration/participant-entries.test.js`
+- [X] T019 [P] [US1] Write failing React tests for account display name, host/self entry rows, default category, preserved errors, and optional phone in `votiy-web/tests/component/registration.test.jsx` and `votiy-web/tests/component/participant-entries.test.jsx`
+- [X] T020 [P] [US1] Write failing CUF-001 E2E coverage for display-named account signup, host multi-entry registration, and OPEN-event self-registration entry collection in `tests/e2e/event-setup.spec.js`
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Add account display-name and required host/self participant-entry schemas with nested field-error paths in `votiy-api/src/domain/validation.js`
-- [ ] T022 [US1] Extend event repositories to load and validate same-event category IDs inside transaction sessions in `votiy-api/src/repositories/event-repository.js`
-- [ ] T023 [US1] Create/revive host and self registrations only with complete embedded entry arrays in `votiy-api/src/repositories/event-registration-repository.js`
-- [ ] T024 [US1] Implement display-name account signup plus atomic host/self account/entries/idempotency orchestration and rollback in `votiy-api/src/services/registration-service.js` and `votiy-api/src/services/event-registration-service.js`
-- [ ] T025 [US1] Extend account/event projections and registration resolution, activate default-category event creation, and add safe unavailable category-mutation placeholders in `votiy-api/src/services/event-service.js`, `votiy-api/src/repositories/event-repository.js`, `votiy-api/src/api/graphql/account-resolvers.js`, and `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T026 [US1] Extend account/event web operations and errors for display names and nested entry inputs in `votiy-web/src/features/auth/account.graphql.js` and `votiy-web/src/features/events/events.graphql.js`
-- [ ] T027 [US1] Add gated display-name signup/participant fields and reusable entry/category controls while preserving old submissions when disabled in `votiy-web/src/features/auth/RegisterPage.jsx`, `votiy-web/src/features/events/ParticipantEntryFields.jsx`, `votiy-web/src/components/Form.jsx`, and `votiy-web/src/config/features.js`
-- [ ] T028 [US1] Integrate gated entry rows, default category, atomic submission, and preserved failures into host and OPEN self-registration in `votiy-web/src/features/events/EventParticipantsPanel.jsx` and `votiy-web/src/features/events/EventPage.jsx`
-- [ ] T029 [US1] Emit privacy-safe audit signals, rerun migration, enforce strict validators, add actionable stale-client reload errors, and atomically activate the combined schema plus web gate in `votiy-api/src/api/graphql/event-resolvers.js`, `votiy-api/src/repositories/audit-event-repository.js`, `votiy-api/src/repositories/indexes.js`, `votiy-api/src/server.js`, `votiy-api/src/api/graphql/schema.js`, and `votiy-web/src/config/features.js`
+- [X] T021 [US1] Add account display-name and required host/self participant-entry schemas with nested field-error paths in `votiy-api/src/domain/validation.js`
+- [X] T022 [US1] Extend event repositories to load and validate same-event category IDs inside transaction sessions in `votiy-api/src/repositories/event-repository.js`
+- [X] T023 [US1] Create/revive host and self registrations only with complete embedded entry arrays in `votiy-api/src/repositories/event-registration-repository.js`
+- [X] T024 [US1] Implement display-name account signup plus atomic host/self account/entries/idempotency orchestration and rollback in `votiy-api/src/services/registration-service.js` and `votiy-api/src/services/event-registration-service.js`
+- [X] T025 [US1] Extend account/event projections and registration resolution, activate default-category event creation, and add safe unavailable category-mutation placeholders in `votiy-api/src/services/event-service.js`, `votiy-api/src/repositories/event-repository.js`, `votiy-api/src/api/graphql/account-resolvers.js`, and `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T026 [US1] Extend account/event web operations and errors for display names and nested entry inputs in `votiy-web/src/features/auth/account.graphql.js` and `votiy-web/src/features/events/events.graphql.js`
+- [X] T027 [US1] Add gated display-name signup/participant fields and reusable entry/category controls while preserving old submissions when disabled in `votiy-web/src/features/auth/RegisterPage.jsx`, `votiy-web/src/features/events/ParticipantEntryFields.jsx`, `votiy-web/src/components/Form.jsx`, and `votiy-web/src/config/features.js`
+- [X] T028 [US1] Integrate gated entry rows, default category, atomic submission, and preserved failures into host and OPEN self-registration in `votiy-web/src/features/events/EventParticipantsPanel.jsx` and `votiy-web/src/features/events/EventPage.jsx`
+- [X] T029 [US1] Emit privacy-safe audit signals, rerun migration, enforce strict validators, add actionable stale-client reload errors, and atomically activate the combined schema plus web gate in `votiy-api/src/api/graphql/event-resolvers.js`, `votiy-api/src/repositories/audit-event-repository.js`, `votiy-api/src/repositories/indexes.js`, `votiy-api/src/server.js`, `votiy-api/src/api/graphql/schema.js`, and `votiy-web/src/config/features.js`
 
 **Checkpoint**: User Story 1 is independently usable with seeded/default categories and passes all five test layers.
 

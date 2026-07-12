@@ -1,7 +1,8 @@
 import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
 
-const EVENT_FIELDS = 'id publicId title description location registrationPolicy isOwner createdAt updatedAt'
-const REGISTRATION_FIELDS = 'id accountId email phone accountCompleted status source createdAt'
+const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName createdAt'
+const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } }`
+const REGISTRATION_FIELDS = `id accountId email phone displayName entryCount entries { ${ENTRY_FIELDS} } accountCompleted status source createdAt`
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
 
 export const OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
@@ -44,8 +45,8 @@ export const SET_EVENT_REGISTRATION_POLICY = `mutation SetEventRegistrationPolic
   }
 }`
 
-export const REGISTER_FOR_EVENT = `mutation RegisterForEvent($eventId: ID!, $idempotencyKey: ID!) {
-  registerForEvent(eventId: $eventId, idempotencyKey: $idempotencyKey) {
+export const REGISTER_FOR_EVENT = `mutation RegisterForEvent($input: RegisterForEventInput!) {
+  registerForEvent(input: $input) {
     __typename
     ... on EventRegistrationSuccess { registration { ${REGISTRATION_FIELDS} } }
     ... on OperationError { ${ERROR_FIELDS} }
@@ -108,7 +109,7 @@ export async function setEventRegistrationPolicy(input) {
 export async function registerForEvent(input) {
   const data = await graphqlRequest({
     query: REGISTER_FOR_EVENT,
-    variables: input,
+    variables: { input },
     operationName: 'RegisterForEvent',
   })
   return unwrapGraphqlResult(data.registerForEvent)

@@ -24,7 +24,7 @@ import { createAuditEventRepository } from './repositories/audit-event-repositor
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
 import { createEventRepository } from './repositories/event-repository.js'
 import { createIdempotencyRepository } from './repositories/idempotency-repository.js'
-import { ensureCollectionsAndIndexes } from './repositories/indexes.js'
+import { enforceEventSetupValidators, ensureCollectionsAndIndexes } from './repositories/indexes.js'
 import { createMongoConnection } from './repositories/mongo.js'
 import { createSessionRepository } from './repositories/session-repository.js'
 import { createVerificationRepository } from './repositories/verification-repository.js'
@@ -44,6 +44,7 @@ const mongo = createMongoConnection({ uri: environment.mongoUri, databaseName: e
 await mongo.connect()
 await ensureCollectionsAndIndexes(mongo.database)
 await runEventSetupMigration({ database: mongo.database, logger })
+await enforceEventSetupValidators(mongo.database)
 
 const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
@@ -120,6 +121,7 @@ const eventRegistrationService = createEventRegistrationService({
   eventRegistrationRepository,
   accountRepository,
   idempotencyRepository,
+  withTransaction: mongo.withTransaction,
   logger,
 })
 const schema = await createGraphqlSchema()

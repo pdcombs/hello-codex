@@ -5,7 +5,7 @@ import { registerInputSchema } from '../domain/validation.js'
 function validationError(error) {
   return new ApplicationError(ErrorCode.VALIDATION_FAILED, {
     fieldErrors: error.issues.map((issue) => ({
-      field: String(issue.path[0] ?? 'input'),
+      field: issue.path.length ? issue.path.join('.') : 'input',
       code: issue.code,
       message: issue.message,
     })),
@@ -32,7 +32,7 @@ export function createRegistrationService({
       if (!parsed.success) throw validationError(parsed.error)
       const input = parsed.data
       const emailNormalized = normalizeEmail(input.email)
-      const requestDigest = digestRequest({ emailNormalized, password: input.password })
+      const requestDigest = digestRequest({ displayName: input.displayName, emailNormalized, password: input.password })
       const identity = { scope: emailNormalized, operation: 'register', key: input.idempotencyKey }
       const prior = await idempotencyRepository.find(identity)
       if (prior) {
@@ -56,6 +56,7 @@ export function createRegistrationService({
       let account
       try {
         account = await accountRepository.createPending({
+          displayName: input.displayName,
           emailNormalized,
           phoneNormalized: null,
           referredByAccountId: null,

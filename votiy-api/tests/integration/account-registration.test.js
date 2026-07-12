@@ -75,6 +75,7 @@ describe('account registration with real MongoDB', () => {
 
   async function register(email = 'host@example.com') {
     return registrationService.register({
+      displayName: 'Host',
       email,
       password: 'a sufficiently long password',
       idempotencyKey: randomUUID(),
@@ -150,6 +151,7 @@ describe('account registration with real MongoDB', () => {
 
   it('returns the original result for an idempotent retry without duplicate email or records', async () => {
     const input = {
+      displayName: 'Host',
       email: 'host@example.com',
       password: 'a sufficiently long password',
       idempotencyKey: randomUUID(),

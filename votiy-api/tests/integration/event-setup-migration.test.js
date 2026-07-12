@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import { Writable } from 'node:stream'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { runEventSetupMigration } from '../../src/migrations/002-event-categories-entries.js'
-import { ensureCollectionsAndIndexes } from '../../src/repositories/indexes.js'
+import { enforceEventSetupValidators, ensureCollectionsAndIndexes } from '../../src/repositories/indexes.js'
 import { createTestMongo } from '../support/mongo.js'
 import { createLogger } from '../../src/observability/logger.js'
 
@@ -64,5 +64,9 @@ describe('event setup migration', () => {
     expect(logs).not.toContain('Peyton@example.test')
     expect(logs).not.toContain('+15555550100')
     expect(logs).not.toContain('Peyton Event')
+    await expect(enforceEventSetupValidators(mongo.database)).resolves.toBeUndefined()
+    expect(await mongo.database.collection('accounts').countDocuments({ schemaVersion: 1 })).toBe(0)
+    expect(await mongo.database.collection('events').countDocuments({ schemaVersion: 1 })).toBe(0)
+    expect(await mongo.database.collection('eventRegistrations').countDocuments({ schemaVersion: 1 })).toBe(0)
   })
 })

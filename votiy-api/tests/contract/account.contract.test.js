@@ -68,6 +68,7 @@ const VIEWER = `
 
 const ACCOUNT = Object.freeze({
   id: 'account-1',
+  displayName: 'Host',
   email: 'host@example.com',
   isVerified: false,
   createdAt: new Date('2026-07-05T12:00:00.000Z'),
@@ -123,6 +124,7 @@ describe('account GraphQL contract', () => {
   it('registers through the service and returns the public pending-account shape', async () => {
     const harness = createHarness()
     const input = {
+      displayName: 'Host',
       email: ' Host@Example.COM ',
       password: 'a sufficiently long password',
       idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
@@ -230,6 +232,7 @@ describe('account GraphQL contract', () => {
       contextValue: harness.contextValue,
       variableValues: {
         input: {
+          displayName: 'Host',
           email: 'host@example.com',
           password: 'too short!',
           idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
@@ -261,6 +264,7 @@ describe('account GraphQL contract', () => {
       'register',
       {
         input: {
+          displayName: 'Host',
           email: 'host@example.com',
           password: 'valid password',
           idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',
@@ -326,6 +330,7 @@ describe('account GraphQL contract', () => {
       contextValue: harness.contextValue,
       variableValues: {
         input: {
+          displayName: 'Host',
           email: 'host@example.com',
           password: 'a sufficiently long password',
           idempotencyKey: 'de305d54-75b4-431b-adb2-eb6b9e546014',

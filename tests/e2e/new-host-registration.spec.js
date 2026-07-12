@@ -38,6 +38,7 @@ test('CUF-001 visitor registers, verifies through Mailpit, and reaches an empty 
   await page.getByRole('link', { name: 'Create your account' }).click()
   await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible()
 
+  await page.getByRole('textbox', { name: 'Display name' }).fill('New Host')
   await page.getByRole('textbox', { name: 'Email' }).fill(email)
   await page.getByLabel('Password').fill('a sufficiently long password')
   await page.getByRole('button', { name: 'Create account' }).click()

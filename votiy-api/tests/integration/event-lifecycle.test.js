@@ -33,6 +33,7 @@ describe('event lifecycle with real MongoDB', () => {
       idempotencyRepository,
     })
     owner = await accountRepository.createPending({
+      displayName: 'Host',
       emailNormalized: 'host@example.com',
       passwordHash: 'hash',
       referredByAccountId: null,
@@ -65,6 +66,7 @@ describe('event lifecycle with real MongoDB', () => {
     expect(read.event.title).toBe('Volunteer dinner')
 
     const attendee = await accountRepository.createPending({
+      displayName: 'Attendee',
       emailNormalized: 'attendee@example.com',
       passwordHash: 'hash',
       referredByAccountId: null,
@@ -73,6 +75,7 @@ describe('event lifecycle with real MongoDB', () => {
     const attendeeViewer = { account: await accountRepository.findById(attendee._id) }
     const selfRegistration = await eventRegistrationService.registerForEvent({
       eventId: open.event.id,
+      entries: [{ title: 'Attendee entry', categoryId: open.event.categories[0].id }],
       idempotencyKey: '784f55ee-5d4d-1fde-8e3e-2495635476e1',
     }, attendeeViewer)
     expect(selfRegistration.registration.source).toBe('SELF')
@@ -82,6 +85,7 @@ describe('event lifecycle with real MongoDB', () => {
       displayName: 'Hosted Participant',
       email: 'hosted-participant@example.test',
       phone: '+14155550123',
+      entries: [{ title: 'Hosted entry', categoryId: adminManaged.event.categories[0].id }],
       idempotencyKey: '82cc7674-c717-40d8-a158-f54db62ac41e',
     }, viewer)
     expect(hostRegistration.registration.accountCompleted).toBe(false)

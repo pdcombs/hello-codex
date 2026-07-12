@@ -86,6 +86,7 @@ export default function OwnerEventPage({
         loader={participantsLoader}
         addParticipant={addParticipant}
         removeParticipant={removeParticipant}
+        categories={state.event.categories}
       />
     </main>
   )

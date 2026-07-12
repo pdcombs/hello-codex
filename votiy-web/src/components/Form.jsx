@@ -30,3 +30,7 @@ export function FormField({ label, htmlFor, stacked = false, optional = false, e
     </div>
   )
 }
+
+export function FormGroup({ legend, children }) {
+  return <fieldset className="form-group"><legend>{legend}</legend>{children}</fieldset>
+}

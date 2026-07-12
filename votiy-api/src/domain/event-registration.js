@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { createEntry } from './event-entry.js'
+import { toEntryView } from './event-entry.js'
 
 const STATUSES = new Set(['registered', 'removed'])
 const SOURCES = new Set(['self', 'host'])
@@ -42,7 +43,7 @@ export function toEventRegistrationView(registration, account) {
     phone: account?.phoneNormalized ?? null,
     displayName: account?.displayName ?? null,
     entryCount: registration.entries?.length ?? 0,
-    entries: registration.entries ?? [],
+    entries: (registration.entries ?? []).map((entry) => toEntryView(entry, account)),
     accountCompleted: account?.lifecycleStatus === 'completed',
     status: registration.status === 'registered' ? 'REGISTERED' : 'REMOVED',
     source: registration.registrationSource === 'self' ? 'SELF' : 'HOST',

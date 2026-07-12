@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import { registerAccount } from './account.graphql.js'
+import { features } from '../../config/features.js'
 
 export default function RegisterPage({ register = registerAccount }) {
   const [state, setState] = useState({
@@ -35,6 +36,7 @@ export default function RegisterPage({ register = registerAccount }) {
     if (state.status === 'loading') return
     const form = new FormData(event.currentTarget)
     submit({
+      ...(features.eventSetup ? { displayName: form.get('displayName') } : {}),
       email: form.get('email'),
       password: form.get('password'),
       idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-0000-4000-8000-000000000000`,
@@ -66,6 +68,11 @@ export default function RegisterPage({ register = registerAccount }) {
       <h1>Create your account</h1>
       <p>Start hosting clear, organized voting events.</p>
       <FormSurface onSubmit={onSubmit} noValidate>
+        {features.eventSetup && (
+          <FormField label="Display name" htmlFor="register-display-name" error={state.fieldErrors.displayName}>
+            <input id="register-display-name" name="displayName" type="text" autoComplete="name" required />
+          </FormField>
+        )}
         <FormField label="Email" htmlFor="register-email" error={state.fieldErrors.email}>
           <input
             id="register-email"

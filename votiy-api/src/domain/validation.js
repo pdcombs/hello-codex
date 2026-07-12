@@ -19,6 +19,7 @@ export const passwordSchema = z.string()
 export const idempotencyKeySchema = z.string().uuid('Idempotency key must be a UUID')
 
 export const registerInputSchema = z.object({
+  displayName: trimmedRequiredText(100, 'Display name'),
   email: emailSchema,
   password: passwordSchema,
   idempotencyKey: idempotencyKeySchema,
@@ -50,11 +51,16 @@ export const setEventRegistrationPolicyInputSchema = z.object({
 
 export const addEventParticipantInputSchema = z.object({
   eventId: z.string().min(1),
+  displayName: trimmedRequiredText(100, 'Display name'),
   email: emailSchema,
   phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Enter a phone number in E.164 format').nullish()
     .transform((value) => value ?? undefined),
   idempotencyKey: idempotencyKeySchema,
-})
+  entries: z.array(z.object({
+    title: trimmedRequiredText(160, 'Entry title'),
+    categoryId: z.string().min(1, 'Category is required'),
+  }).strict()).min(1, 'At least one entry is required').max(100),
+}).strict()
 
 export const removeEventParticipantInputSchema = z.object({
   eventId: z.string().min(1),
@@ -63,5 +69,9 @@ export const removeEventParticipantInputSchema = z.object({
 
 export const registerForEventInputSchema = z.object({
   eventId: z.string().min(1),
+  entries: z.array(z.object({
+    title: trimmedRequiredText(160, 'Entry title'),
+    categoryId: z.string().min(1, 'Category is required'),
+  }).strict()).min(1, 'At least one entry is required').max(100),
   idempotencyKey: idempotencyKeySchema,
 }).strict()

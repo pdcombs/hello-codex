@@ -175,6 +175,7 @@ describe('event UI', () => {
     expect(screen.getByRole('link', { name: 'Back to events' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Make open' })).not.toBeInTheDocument()
 
+    await user.type(screen.getByLabelText('Display name'), 'New Participant')
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByText(/new@example\.com/)).toBeVisible()
@@ -272,6 +273,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText(/guest@example.com/)).toBeVisible()
+    await user.type(screen.getByLabelText('Display name'), 'New Participant')
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not add participant.')
@@ -293,6 +295,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText(/guest@example.com/)).toBeVisible()
+    await user.type(screen.getByLabelText('Display name'), 'Guest')
     await user.type(screen.getByLabelText('Email'), 'guest@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByText('Account complete')).toBeVisible()
@@ -347,6 +350,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.type(screen.getByLabelText('Display name'), 'Valid Person')
     await user.type(screen.getByLabelText('Email'), 'valid@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
@@ -382,6 +386,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.type(screen.getByLabelText('Display name'), 'Both Person')
     await user.type(screen.getByLabelText('Email'), 'both@example.com')
     await user.type(screen.getByLabelText('Phone'), '(555) 123-4567')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))

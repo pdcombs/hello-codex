@@ -84,7 +84,9 @@ export function createGraphqlHandler({
       }
 
       const { document, errors } = validateGraphqlOperation(schema, body.query, { isProduction })
-      if (errors.length > 0) return sendJson(response, 400, { errors: errors.map(({ message }) => ({ message })), correlationId })
+      if (errors.length > 0) return sendJson(response, 400, {
+        errors: errors.map(() => ({ message: 'App update required. Reload this page and try again.' })), correlationId,
+      })
       const operation = getOperationAST(document, body.operationName)
       if (!operation) return sendJson(response, 400, { error: 'GraphQL operation is required', correlationId })
 

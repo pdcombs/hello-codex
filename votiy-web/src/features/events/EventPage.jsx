@@ -3,10 +3,15 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
 import { registerForEvent, loadEventByPublicId } from './events.graphql.js'
+import { FormSurface } from '../../components/Form.jsx'
+import ParticipantEntryFields from './ParticipantEntryFields.jsx'
+import { readEntries } from './participant-entry-form.js'
 
 export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null, registrationState: 'idle' })
+  const [entryCount, setEntryCount] = useState(1)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   useEffect(() => {
     let active = true
@@ -25,12 +30,21 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
     }
   }, [publicId, loader])
 
-  async function onRegister() {
+  async function onRegister(submitEvent) {
+    submitEvent.preventDefault()
     if (!state.event) return
+    const entries = readEntries(new FormData(submitEvent.currentTarget), entryCount)
+    const errors = Object.fromEntries(entries.flatMap((entry, index) => [
+      ...(!entry.title ? [[`entries.${index}.title`, 'Enter an entry title.']] : []),
+      ...(!entry.categoryId ? [[`entries.${index}.categoryId`, 'Choose a category.']] : []),
+    ]))
+    if (Object.keys(errors).length) { setFieldErrors(errors); return }
+    setFieldErrors({})
     setState((current) => ({ ...current, registrationState: 'loading', error: null }))
     try {
       await register({
         eventId: state.event.id,
+        entries,
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-self-register`,
       })
       setState((current) => ({ ...current, registrationState: 'success' }))
@@ -86,9 +100,12 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
         <SectionCard title="Join this event">
           {!viewer && <p>Sign in with a verified account to register yourself for this event.</p>}
           {viewer && state.registrationState !== 'success' && (
-            <button className="primary-action" type="button" onClick={onRegister} disabled={state.registrationState === 'loading'}>
-              {state.registrationState === 'loading' ? 'Registering…' : 'Register for event'}
-            </button>
+            <FormSurface onSubmit={onRegister} noValidate>
+              <ParticipantEntryFields categories={state.event.categories} count={entryCount} errors={fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />
+              <button className="primary-action" type="submit" disabled={state.registrationState === 'loading'}>
+                {state.registrationState === 'loading' ? 'Registering…' : 'Register for event'}
+              </button>
+            </FormSurface>
           )}
           {state.registrationState === 'success' && <p>You are registered for this event.</p>}
           {state.registrationState === 'error' && <p role="alert">{state.error.message}</p>}
