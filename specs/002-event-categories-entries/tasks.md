@@ -20,7 +20,7 @@ description: "Implementation tasks for event categories and entries"
 - [X] T001 Configure MongoDB as a single-node replica set with a health check that confirms primary readiness in `compose.yaml` and `votiy-database/init-replica.js`
 - [X] T002 Document replica-set startup, recovery, and transaction prerequisites in `README.md` and `docs/operations.md`
 - [X] T003 Validate/stage the breaking contract and add a disabled-by-default web activation gate without switching runtime behavior in `votiy-api/tests/contract/schema.contract.test.js`, `votiy-web/src/config/features.js`, and `specs/002-event-categories-entries/contracts/schema.graphql`
-- [ ] T004 [P] Add shared event-category and entry fixtures/builders in `votiy-api/tests/support/event-setup.js`
+- [X] T004 [P] Add shared event-category and entry fixtures/builders in `votiy-api/tests/support/event-setup.js`
 - [ ] T005 [P] Add reusable browser fixtures for category/entry host flows in `tests/e2e/fixtures/event-setup.js`
 
 ---
