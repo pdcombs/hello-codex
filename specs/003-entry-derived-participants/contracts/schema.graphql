@@ -1,0 +1,140 @@
+scalar DateTime
+
+enum ErrorCode {
+  AUTHENTICATION_REQUIRED
+  EMAIL_NOT_VERIFIED
+  FORBIDDEN
+  INVALID_CREDENTIALS
+  INVALID_OR_EXPIRED_TOKEN
+  NOT_FOUND
+  RATE_LIMITED
+  VALIDATION_FAILED
+  CONFLICT
+  SERVICE_UNAVAILABLE
+}
+
+enum EventRegistrationPolicy { ADMIN_MANAGED OPEN }
+enum EventEntryStatus { ACTIVE ARCHIVED }
+
+type FieldError { field: String! code: String! message: String! }
+type OperationError { code: ErrorCode! message: String! fieldErrors: [FieldError!]! correlationId: String }
+type Account { id: ID! displayName: String! email: String! isVerified: Boolean! createdAt: DateTime! }
+type SessionPayload { account: Account! }
+
+type EventEntry {
+  id: ID!
+  title: String!
+  categoryId: ID!
+  ownerAccountId: ID!
+  ownerDisplayName: String!
+  status: EventEntryStatus!
+  createdAt: DateTime!
+}
+
+type EventCategory {
+  id: ID!
+  title: String!
+  isDefault: Boolean!
+  entries: [EventEntry!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Event {
+  id: ID!
+  publicId: String!
+  title: String!
+  description: String
+  location: String
+  registrationPolicy: EventRegistrationPolicy!
+  isOwner: Boolean!
+  categories: [EventCategory!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ParticipantCard {
+  accountId: ID!
+  displayName: String!
+  email: String
+  entries: [EventEntry!]!
+  entryCount: Int!
+}
+
+type EntryCreationPayload {
+  createdEntries: [EventEntry!]!
+  affectedParticipant: ParticipantCard!
+}
+
+type EntryArchivePayload {
+  archivedEntryIds: [ID!]!
+  affectedParticipant: ParticipantCard
+}
+
+type OwnedEventConnection { nodes: [Event!]! nextCursor: String }
+type AccountSuccess { account: Account! verificationToken: String }
+type SessionSuccess { session: SessionPayload! }
+type SignOutSuccess { signedOut: Boolean! }
+type EventSuccess { event: Event! }
+type EventListSuccess { events: OwnedEventConnection! }
+type ParticipantListSuccess { participants: [ParticipantCard!]! }
+type EntryCreationSuccess { result: EntryCreationPayload! }
+type EntryArchiveSuccess { result: EntryArchivePayload! }
+
+union AccountResult = AccountSuccess | OperationError
+union SessionResult = SessionSuccess | OperationError
+union SignOutResult = SignOutSuccess | OperationError
+union EventResult = EventSuccess | OperationError
+union EventListResult = EventListSuccess | OperationError
+union ParticipantListResult = ParticipantListSuccess | OperationError
+union EntryCreationResult = EntryCreationSuccess | OperationError
+union EntryArchiveResult = EntryArchiveSuccess | OperationError
+
+input RegisterInput { displayName: String! email: String! password: String! idempotencyKey: ID! }
+input VerifyEmailInput { token: String! }
+input SignInInput { email: String! password: String! }
+input CreateEventInput {
+  title: String!
+  description: String
+  location: String
+  registrationPolicy: EventRegistrationPolicy = ADMIN_MANAGED
+  idempotencyKey: ID!
+}
+input SetEventRegistrationPolicyInput { eventId: ID! registrationPolicy: EventRegistrationPolicy! }
+input ParticipantEntryInput { title: String! categoryId: ID! }
+input AddEventParticipantInput {
+  eventId: ID!
+  displayName: String!
+  email: String!
+  phone: String
+  entries: [ParticipantEntryInput!]!
+  idempotencyKey: ID!
+}
+input RegisterForEventInput { eventId: ID! entries: [ParticipantEntryInput!]! idempotencyKey: ID! }
+input AddEventCategoryInput { eventId: ID! title: String! idempotencyKey: ID! }
+input RenameEventCategoryInput { eventId: ID! categoryId: ID! title: String! idempotencyKey: ID! }
+input ArchiveEventEntryInput { eventId: ID! entryId: ID! idempotencyKey: ID! }
+input ArchiveEventParticipantEntriesInput { eventId: ID! accountId: ID! idempotencyKey: ID! }
+
+type Query {
+  viewer: SessionResult!
+  ownedEvents(first: Int = 20, after: String): EventListResult!
+  eventByPublicId(publicId: String!): EventResult!
+  eventParticipants(eventId: ID!): ParticipantListResult!
+}
+
+type Mutation {
+  register(input: RegisterInput!): AccountResult!
+  verifyEmail(input: VerifyEmailInput!): SessionResult!
+  resendVerification: AccountResult!
+  signIn(input: SignInInput!): SessionResult!
+  signOut: SignOutResult!
+  createEvent(input: CreateEventInput!): EventResult!
+  setEventRegistrationPolicy(input: SetEventRegistrationPolicyInput!): EventResult!
+  addEventCategory(input: AddEventCategoryInput!): EventResult!
+  renameEventCategory(input: RenameEventCategoryInput!): EventResult!
+  registerForEvent(input: RegisterForEventInput!): EntryCreationResult!
+  addEventParticipant(input: AddEventParticipantInput!): EntryCreationResult!
+  archiveEventEntry(input: ArchiveEventEntryInput!): EntryArchiveResult!
+  archiveEventParticipantEntries(input: ArchiveEventParticipantEntriesInput!): EntryArchiveResult!
+}
