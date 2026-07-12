@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
-import EventCategoryManager from './EventCategoryManager.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
 import EventSetupTabs from './EventSetupTabs.jsx'
 import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
@@ -103,9 +102,9 @@ export default function OwnerEventPage({
 
       {state.error && <p role="alert">{state.error.message}</p>}
       {Array.isArray(state.event.categories) ? <EventSetupTabs activeTab={tab} onChange={setTab}
-        setup={<><EventCategoryManager event={state.event} addCategory={addCategory} renameCategory={renameCategory}
-          onEventChange={(event) => setState((current) => ({ ...current, event }))} />
-          <EventCategoryList categories={state.event.categories} onRemoveEntry={onRemoveEntry} /></>}
+        setup={<EventCategoryList categories={state.event.categories} eventId={state.event.id} editable
+          addCategory={addCategory} renameCategory={renameCategory} onRemoveEntry={onRemoveEntry}
+          onEventChange={reloadEvent} />}
         participants={<EventParticipantsPanel eventId={state.event.id} loader={participantsLoader}
           addParticipant={addParticipant} removeParticipant={removeParticipant} categories={state.event.categories} />} />
         : <EventParticipantsPanel eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}

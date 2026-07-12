@@ -27,6 +27,59 @@ describe('grouped event setup view', () => {
     expect(readEntries(new FormData(), 1)).toEqual([{ title: '', categoryId: '' }])
   })
 
+  it('keeps view cards read-only and edits categories with icon entry deletion', async () => {
+    const renameCategory = vi.fn().mockResolvedValue({
+      event: { id: 'event-1', categories: [{ ...categories[0], title: 'Baked goods' }] },
+    })
+    const onEventChange = vi.fn()
+    const onRemoveEntry = vi.fn()
+    const user = userEvent.setup()
+    render(<EventCategoryList categories={[categories[0]]} eventId="event-1" editable
+      renameCategory={renameCategory} onEventChange={onEventChange} onRemoveEntry={onRemoveEntry} />)
+
+    expect(screen.queryByRole('button', { name: /delete apple pie/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(screen.getByLabelText('Category title')).toHaveValue('Desserts')
+    expect(screen.getByRole('button', { name: /delete apple pie/i })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Remove entry' })).not.toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Category title'))
+    await user.type(screen.getByLabelText('Category title'), 'Baked goods')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(renameCategory).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: 'event-1', categoryId: 'cat-1', title: 'Baked goods',
+    }))
+    expect(onEventChange).toHaveBeenCalled()
+  })
+
+  it('adds a draft category card at the bottom and saves it', async () => {
+    const addCategory = vi.fn().mockResolvedValue({ event: { id: 'event-1', categories } })
+    const user = userEvent.setup()
+    render(<EventCategoryList categories={categories} eventId="event-1" editable addCategory={addCategory} />)
+
+    await user.click(screen.getByRole('button', { name: 'Add category' }))
+    const title = screen.getByLabelText('Category title')
+    await user.type(title, 'Main courses')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(addCategory).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: 'event-1', title: 'Main courses',
+    }))
+  })
+
+  it('waits for the hydrated event refresh before leaving edit mode', async () => {
+    let finishRefresh
+    const onEventChange = vi.fn(() => new Promise((resolve) => { finishRefresh = resolve }))
+    const renameCategory = vi.fn().mockResolvedValue({ event: { id: 'event-1', categories: [] } })
+    const user = userEvent.setup()
+    render(<EventCategoryList categories={[categories[0]]} eventId="event-1" editable
+      renameCategory={renameCategory} onEventChange={onEventChange} />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
+    finishRefresh()
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible())
+  })
+
   it('provides accessible responsive setup and participant tabs', async () => {
     const onChange = vi.fn()
     const { rerender } = render(<EventSetupTabs activeTab="setup" onChange={onChange}

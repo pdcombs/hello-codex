@@ -292,6 +292,53 @@ main:focus {
   min-width: 0;
 }
 
+.event-category-area {
+  margin-top: 24px;
+}
+
+.event-category-card .secondary-action {
+  min-height: 34px;
+  padding: 6px 16px;
+}
+
+.category-edit-form {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.category-edit-actions {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.add-category-action {
+  margin-top: 18px;
+}
+
+.entry-delete-action {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 92, 100, 0.35);
+  border-radius: 50%;
+  color: #ff696f;
+  background: rgba(255, 69, 78, 0.08);
+}
+
+.entry-delete-action:hover {
+  border-color: rgba(255, 92, 100, 0.65);
+  background: rgba(255, 69, 78, 0.15);
+}
+
 .event-entry-row span {
   display: block;
   margin-top: 5px;
