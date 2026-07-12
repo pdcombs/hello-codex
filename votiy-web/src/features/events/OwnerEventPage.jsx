@@ -1,25 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
-import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
-import EventSetupTabs from './EventSetupTabs.jsx'
 import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
 
 export default function OwnerEventPage({
   viewer,
   loader = loadEventByPublicId,
-  participantsLoader,
-  addParticipant,
-  removeParticipant,
   addCategory,
   renameCategory,
   archiveEntry = archiveEventEntry,
 }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null })
-  const [tab, setTab] = useState('setup')
 
   async function reloadEvent() {
     const result = await loader(publicId)
@@ -76,7 +70,6 @@ export default function OwnerEventPage({
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
       <div className="event-title-row">
-        <Link className="secondary-action" to="/">Back to events</Link>
         <h1 data-page-title="true">{state.event.title}</h1>
       </div>
 
@@ -98,17 +91,15 @@ export default function OwnerEventPage({
             <dd><a href={`/events/${state.event.publicId}`}>{`/events/${state.event.publicId}`}</a></dd>
           </div>
         </dl>
+        <Link className="secondary-action event-participants-link"
+          to={`/events/${state.event.publicId}/participants`}>View all participants</Link>
       </div>
 
       {state.error && <p role="alert">{state.error.message}</p>}
-      {Array.isArray(state.event.categories) ? <EventSetupTabs activeTab={tab} onChange={setTab}
-        setup={<EventCategoryList categories={state.event.categories} eventId={state.event.id} editable
+      {Array.isArray(state.event.categories) &&
+        <EventCategoryList categories={state.event.categories} eventId={state.event.id} editable
           addCategory={addCategory} renameCategory={renameCategory} onRemoveEntry={onRemoveEntry}
           onEventChange={reloadEvent} />}
-        participants={<EventParticipantsPanel eventId={state.event.id} loader={participantsLoader}
-          addParticipant={addParticipant} removeParticipant={removeParticipant} categories={state.event.categories} />} />
-        : <EventParticipantsPanel eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}
-          removeParticipant={removeParticipant} legacy />}
     </main>
   )
 }

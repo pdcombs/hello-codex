@@ -9,6 +9,7 @@ import CreateEventPage from '../features/events/CreateEventPage.jsx'
 import EventDashboardPage from '../features/events/EventDashboardPage.jsx'
 import EventPage from '../features/events/EventPage.jsx'
 import OwnerEventPage from '../features/events/OwnerEventPage.jsx'
+import OwnerEventParticipantsPage from '../features/events/OwnerEventParticipantsPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
 
 function SiteHeader({ viewer }) {
@@ -75,6 +76,9 @@ export function AppRoutes({ viewer = null, onVerified }) {
       <Routes>
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
         <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
+        <Route path="/events/:publicId/participants" element={
+          <Protected viewer={viewer}><OwnerEventParticipantsPage /></Protected>
+        } />
         <Route
           path="/events/new"
           element={

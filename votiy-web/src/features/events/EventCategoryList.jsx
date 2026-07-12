@@ -98,7 +98,7 @@ export default function EventCategoryList({ categories = [], eventId, editable =
         )}
       </div>
       {editable && !adding && editingId === null && (
-        <button className="secondary-action add-category-action" type="button"
+        <button className="primary-action add-category-action" type="button"
           onClick={() => { setAdding(true); setState({ saving: false, error: null, titleError: null }) }}>
           Add category
         </button>

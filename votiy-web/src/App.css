@@ -131,7 +131,7 @@ main:focus {
 
 .event-title-row h1 {
   margin: 0;
-  text-align: right;
+  text-align: left;
 }
 
 .event-summary {
@@ -177,6 +177,14 @@ main:focus {
 .event-meta a {
   color: var(--color-text);
   text-underline-offset: 3px;
+}
+
+.event-participants-link {
+  margin-top: 18px;
+}
+
+.participant-page-title {
+  margin-top: 24px;
 }
 
 .secondary-action {
@@ -623,22 +631,18 @@ main:focus {
 .app-form > button,
 .empty-state a,
 .page-actions a {
-  min-width: 128px;
+  width: fit-content;
+  min-width: 0;
   min-height: 42px;
-  padding: 8px 26px;
+  padding: 9px 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(88, 190, 255, 0.68);
+  border: 1px solid rgba(88, 176, 255, 0.58);
   border-radius: 999px;
   color: #fff;
-  background:
-    linear-gradient(180deg, rgba(48, 176, 255, 0.98) 0%, rgba(0, 143, 238, 0.98) 54%, rgba(0, 123, 225, 0.98) 100%);
-  box-shadow:
-    inset 0 2px rgba(255, 255, 255, 0.32),
-    inset 0 -3px rgba(0, 73, 166, 0.26),
-    0 2px 0 rgba(49, 181, 255, 0.35),
-    0 8px 18px rgba(0, 0, 0, 0.28);
+  background: #0a84ff;
+  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.22);
   font: inherit;
   font-size: 1rem;
   font-weight: 560;
@@ -648,19 +652,15 @@ main:focus {
   text-decoration: none;
   text-transform: none;
   cursor: pointer;
-  transition: box-shadow 180ms ease, filter 180ms ease, transform 180ms ease;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .primary-action:hover:not(:disabled),
 .app-form > button:hover:not(:disabled),
 .empty-state a:hover,
 .page-actions a:hover {
-  filter: saturate(1.08) brightness(1.05);
-  box-shadow:
-    inset 0 2px rgba(255, 255, 255, 0.36),
-    inset 0 -3px rgba(0, 73, 166, 0.24),
-    0 2px 0 rgba(49, 181, 255, 0.38),
-    0 10px 20px rgba(0, 0, 0, 0.3);
+  background: #2094ff;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.28);
   transform: translateY(-1px);
 }
 
@@ -986,7 +986,8 @@ main:focus {
 }
 
 button {
-  min-width: 190px;
+  width: fit-content;
+  min-width: 0;
   padding: 7px 7px 7px 20px;
   display: flex;
   align-items: center;
@@ -1149,9 +1150,7 @@ footer {
     gap: 14px;
   }
 
-  .event-title-row h1 {
-    align-self: flex-end;
-  }
+  .event-title-row h1 { align-self: flex-start; }
 
   .event-meta {
     gap: 14px 24px;
@@ -1159,7 +1158,7 @@ footer {
 
   .page-title-row .primary-action,
   .app-form > button {
-    width: 100%;
+    width: fit-content;
   }
 
   .app-form {
@@ -1275,6 +1274,6 @@ footer {
   }
 
   button {
-    width: 100%;
+    width: fit-content;
   }
 }

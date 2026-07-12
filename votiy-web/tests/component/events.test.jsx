@@ -8,6 +8,7 @@ import EventDashboardPage from '../../src/features/events/EventDashboardPage.jsx
 import EventPage from '../../src/features/events/EventPage.jsx'
 import EventParticipantsPanel from '../../src/features/events/EventParticipantsPanel.jsx'
 import OwnerEventPage from '../../src/features/events/OwnerEventPage.jsx'
+import OwnerEventParticipantsPage from '../../src/features/events/OwnerEventParticipantsPage.jsx'
 
 describe('event UI', () => {
   it('loads the hosted dashboard and links to saved events', async () => {
@@ -167,16 +168,21 @@ describe('event UI', () => {
               />
             }
           />
+          <Route path="/events/:publicId/participants" element={
+            <OwnerEventParticipantsPage loader={loader} participantsLoader={participantsLoader}
+              addParticipant={addParticipant} removeParticipant={removeParticipant} />
+          } />
         </Routes>
       </MemoryRouter>,
     )
 
     const user = userEvent.setup()
     expect(await screen.findByText('Admin managed')).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Back to events' })).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Back to events' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Make open' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: 'Participants' }))
+    await user.click(screen.getByRole('link', { name: 'View all participants' }))
+    expect(await screen.findByRole('link', { name: 'Back to event' })).toBeVisible()
 
     await user.type(screen.getByLabelText('Display name'), 'New Participant')
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
