@@ -1,5 +1,12 @@
+import { readFile } from 'node:fs/promises'
+import { buildSchema } from 'graphql'
 import { describe, expect, it } from 'vitest'
 import { createGraphqlSchema, validateGraphqlOperation } from '../../src/api/graphql/schema.js'
+
+const eventSetupContract = new URL(
+  '../../../specs/002-event-categories-entries/contracts/schema.graphql',
+  import.meta.url,
+)
 
 describe('GraphQL schema contract', () => {
   it('loads the checked-in account, event, and registration operations', async () => {
@@ -34,5 +41,19 @@ describe('GraphQL schema contract', () => {
     expect(validateGraphqlOperation(schema, '{ eventByPublicId(publicId: "x") { __typename } }').errors).toEqual([])
     expect(() => validateGraphqlOperation(schema, '{ __schema { queryType { name } } }', { isProduction: true }))
       .toThrow('introspection is disabled')
+  })
+
+  it('stages a valid event-setup contract without activating it', async () => {
+    const stagedSchema = buildSchema(await readFile(eventSetupContract, 'utf8'))
+    const runtimeSchema = await createGraphqlSchema()
+
+    expect(stagedSchema.getType('EventCategory')).toBeDefined()
+    expect(stagedSchema.getType('EventEntry')).toBeDefined()
+    expect(stagedSchema.getMutationType().getFields()).toMatchObject({
+      addEventCategory: expect.any(Object),
+      renameEventCategory: expect.any(Object),
+    })
+    expect(runtimeSchema.getType('EventCategory')).toBeUndefined()
+    expect(runtimeSchema.getMutationType().getFields().addEventCategory).toBeUndefined()
   })
 })
