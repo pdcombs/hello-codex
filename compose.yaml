@@ -5,20 +5,48 @@ services:
     image: mongo:8.0
     container_name: votiy-mongodb
     restart: unless-stopped
+    entrypoint:
+      - bash
+      - -c
+      - |
+        printf '%s' "$$MONGO_REPLICA_SET_KEY" > /tmp/mongo-replica.key
+        chmod 400 /tmp/mongo-replica.key
+        chown mongodb:mongodb /tmp/mongo-replica.key
+        exec /usr/local/bin/docker-entrypoint.sh "$$@"
+      - --
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--keyFile", "/tmp/mongo-replica.key"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: localpassword
       MONGO_INITDB_DATABASE: votiy
+      MONGO_REPLICA_SET_KEY: dm90aXlsb2NhbHJlcGxpY2FzZXRrZXkyMDI2
     ports:
       - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
       - ./votiy-database/init.js:/docker-entrypoint-initdb.d/init.js:ro
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--username", "root", "--password", "localpassword", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "--quiet", "mongodb://root:localpassword@127.0.0.1:27017/admin?replicaSet=rs0&directConnection=true", "--eval", "quit(db.adminCommand('hello').isWritablePrimary ? 0 : 1)"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+
+  votiy-database-init:
+    image: mongo:8.0
+    container_name: votiy-mongodb-init
+    restart: on-failure
+    depends_on:
+      votiy-database:
+        condition: service_started
+    volumes:
+      - ./votiy-database/init-replica.js:/init-replica.js:ro
+    entrypoint:
+      - bash
+      - -c
+      - |
+        until mongosh --quiet "mongodb://root:localpassword@votiy-database:27017/admin?directConnection=true" /init-replica.js; do
+          sleep 2
+        done
 
   votiy-mail:
     image: axllent/mailpit:v1.27
