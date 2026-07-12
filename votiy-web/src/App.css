@@ -301,7 +301,9 @@ main:focus {
   padding: 6px 16px;
 }
 
-.category-edit-form {
+.section-card .category-edit-form {
+  width: 100%;
+  margin-top: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -321,22 +323,22 @@ main:focus {
 }
 
 .entry-delete-action {
-  width: 38px;
-  height: 38px;
-  padding: 0;
+  width: auto;
+  height: auto;
+  margin-left: auto;
+  padding: 8px;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 92, 100, 0.35);
-  border-radius: 50%;
+  border: 0;
+  border-radius: 8px;
   color: #ff696f;
-  background: rgba(255, 69, 78, 0.08);
+  background: transparent;
 }
 
 .entry-delete-action:hover {
-  border-color: rgba(255, 92, 100, 0.65);
-  background: rgba(255, 69, 78, 0.15);
+  background: rgba(255, 69, 78, 0.08);
 }
 
 .event-entry-row span {
