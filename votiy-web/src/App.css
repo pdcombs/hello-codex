@@ -301,7 +301,7 @@ main:focus {
   padding: 6px 16px;
 }
 
-.section-card .category-edit-form {
+.section-card form.category-edit-form {
   width: 100%;
   margin-top: 0;
   padding: 0;
@@ -322,8 +322,9 @@ main:focus {
   margin-top: 18px;
 }
 
-.entry-delete-action {
-  width: auto;
+.event-entry-row .entry-delete-action {
+  width: fit-content;
+  min-width: 0;
   height: auto;
   margin-left: auto;
   padding: 8px;
@@ -331,13 +332,14 @@ main:focus {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  gap: 0;
   border: 0;
   border-radius: 8px;
   color: #ff696f;
   background: transparent;
 }
 
-.entry-delete-action:hover {
+.event-entry-row .entry-delete-action:hover {
   background: rgba(255, 69, 78, 0.08);
 }
 
