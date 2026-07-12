@@ -57,6 +57,8 @@ describe('checked-in GraphQL operations and auth UI', () => {
       .mockResolvedValueOnce({ registerForEvent: { registration: { id: 'reg-1' } } })
       .mockResolvedValueOnce({ addEventParticipant: { registration: { id: 'reg-2' } } })
       .mockResolvedValueOnce({ removeEventParticipant: { registration: { id: 'reg-3' } } })
+      .mockResolvedValueOnce({ addEventCategory: { event: { id: 'evt-1' } } })
+      .mockResolvedValueOnce({ renameEventCategory: { event: { id: 'evt-1' } } })
 
     await sessionOps.signInAccount({ email: 'host@example.com', password: 'pw' })
     await sessionOps.signOutAccount()
@@ -68,10 +70,13 @@ describe('checked-in GraphQL operations and auth UI', () => {
     await eventOps.registerForEvent({ eventId: 'evt-1', idempotencyKey: 'abc' })
     await eventOps.addEventParticipant({ eventId: 'evt-1', email: 'guest@example.com', idempotencyKey: 'def' })
     await eventOps.removeEventParticipant({ eventId: 'evt-1', registrationId: 'reg-2' })
+    await eventOps.addEventCategory({ eventId: 'evt-1', title: 'Desserts', idempotencyKey: 'ghi' })
+    await eventOps.renameEventCategory({ eventId: 'evt-1', categoryId: 'cat-1', title: 'People', idempotencyKey: 'jkl' })
 
     expect(graphqlRequest).toHaveBeenNthCalledWith(1, expect.objectContaining({ operationName: 'SignIn' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(6, expect.objectContaining({ operationName: 'CreateEvent' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(10, expect.objectContaining({ operationName: 'RemoveEventParticipant' }))
+    expect(graphqlRequest).toHaveBeenNthCalledWith(12, expect.objectContaining({ operationName: 'RenameEventCategory' }))
   })
 
   it('retries event reads with legacy fields during rolling API upgrades', async () => {

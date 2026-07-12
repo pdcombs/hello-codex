@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
+import EventCategoryManager from './EventCategoryManager.jsx'
 import { loadEventByPublicId } from './events.graphql.js'
 
 export default function OwnerEventPage({
@@ -11,9 +12,12 @@ export default function OwnerEventPage({
   participantsLoader,
   addParticipant,
   removeParticipant,
+  addCategory,
+  renameCategory,
 }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null })
+  const [tab, setTab] = useState('setup')
 
   useEffect(() => {
     let active = true
@@ -80,15 +84,19 @@ export default function OwnerEventPage({
       </div>
 
       {state.error && <p role="alert">{state.error.message}</p>}
-
-      <EventParticipantsPanel
-        eventId={state.event.id}
-        loader={participantsLoader}
-        addParticipant={addParticipant}
-        removeParticipant={removeParticipant}
-        categories={state.event.categories}
-        legacy={!Array.isArray(state.event.categories)}
-      />
+      {Array.isArray(state.event.categories) && (
+        <div role="tablist" aria-label="Event management">
+          <button role="tab" aria-selected={tab === 'setup'} onClick={() => setTab('setup')}>Setup</button>
+          <button role="tab" aria-selected={tab === 'participants'} onClick={() => setTab('participants')}>Participants</button>
+        </div>
+      )}
+      {Array.isArray(state.event.categories) && tab === 'setup' && <EventCategoryManager event={state.event}
+        addCategory={addCategory} renameCategory={renameCategory}
+        onEventChange={(event) => setState((current) => ({ ...current, event }))} />}
+      {(!Array.isArray(state.event.categories) || tab === 'participants') && <EventParticipantsPanel
+        eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}
+        removeParticipant={removeParticipant} categories={state.event.categories}
+        legacy={!Array.isArray(state.event.categories)} />}
     </main>
   )
 }

@@ -82,6 +82,12 @@ export const REMOVE_EVENT_PARTICIPANT = `mutation RemoveEventParticipant($input:
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
+export const ADD_EVENT_CATEGORY = `mutation AddEventCategory($input: AddEventCategoryInput!) {
+  addEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
+export const RENAME_EVENT_CATEGORY = `mutation RenameEventCategory($input: RenameEventCategoryInput!) {
+  renameEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
 
 export async function loadOwnedEvents(variables = { first: 20 }) {
   try {
@@ -155,4 +161,14 @@ export async function removeEventParticipant(input) {
     operationName: 'RemoveEventParticipant',
   })
   return unwrapGraphqlResult(data.removeEventParticipant)
+}
+
+export async function addEventCategory(input) {
+  const data = await graphqlRequest({ query: ADD_EVENT_CATEGORY, variables: { input }, operationName: 'AddEventCategory' })
+  return unwrapGraphqlResult(data.addEventCategory)
+}
+
+export async function renameEventCategory(input) {
+  const data = await graphqlRequest({ query: RENAME_EVENT_CATEGORY, variables: { input }, operationName: 'RenameEventCategory' })
+  return unwrapGraphqlResult(data.renameEventCategory)
 }

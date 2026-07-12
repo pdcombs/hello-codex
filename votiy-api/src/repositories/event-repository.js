@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { createEventDocument, withEventVersion2 } from '../domain/event.js'
+import { normalizeCategoryTitle } from '../domain/event-category.js'
 
 const id = (value) => (value instanceof ObjectId ? value : new ObjectId(value))
 
@@ -25,6 +26,29 @@ export function createEventRepository(database) {
       if (!event) return null
       const available = new Set((event.categories ?? []).map(({ _id }) => String(_id)))
       return categoryIds.every((categoryId) => available.has(String(categoryId))) ? event : null
+    },
+    appendCategory(eventId, ownerAccountId, category, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), 'categories.99': { $exists: false },
+          categories: { $not: { $elemMatch: { titleNormalized: category.titleNormalized } } } },
+        { $push: { categories: category }, $set: { updatedAt: category.updatedAt } },
+        { returnDocument: 'after', ...options },
+      )
+    },
+    renameCategory(eventId, ownerAccountId, categoryId, title, now, options = {}) {
+      const normalized = normalizeCategoryTitle(title)
+      const categoryObjectId = id(categoryId)
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId),
+          categories: { $elemMatch: { _id: categoryObjectId } },
+          $expr: { $not: { $in: [normalized, { $map: {
+            input: { $filter: { input: '$categories', as: 'category', cond: { $ne: ['$$category._id', categoryObjectId] } } },
+            as: 'category', in: '$$category.titleNormalized',
+          } }] } } },
+        { $set: { 'categories.$[category].title': title, 'categories.$[category].titleNormalized': normalized,
+          'categories.$[category].updatedAt': now, updatedAt: now } },
+        { returnDocument: 'after', arrayFilters: [{ 'category._id': categoryObjectId }], ...options },
+      )
     },
     listByOwner(ownerAccountId, { first = 20, after = null } = {}) {
       const query = { ownerAccountId: id(ownerAccountId) }

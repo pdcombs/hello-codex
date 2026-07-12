@@ -14,4 +14,11 @@ describe('event setup GraphQL contract', () => {
       displayName: expect.any(Object), entries: expect.any(Object),
     })
   })
+
+  it('exposes host category create and rename mutations with typed inputs', async () => {
+    const schema = await createGraphqlSchema()
+    const mutations = schema.getMutationType().getFields()
+    expect(mutations.addEventCategory.args[0].type.toString()).toBe('AddEventCategoryInput!')
+    expect(mutations.renameEventCategory.args[0].type.toString()).toBe('RenameEventCategoryInput!')
+  })
 })

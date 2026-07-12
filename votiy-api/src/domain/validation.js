@@ -75,3 +75,16 @@ export const registerForEventInputSchema = z.object({
   }).strict()).min(1, 'At least one entry is required').max(100),
   idempotencyKey: idempotencyKeySchema,
 }).strict()
+
+export const addEventCategoryInputSchema = z.object({
+  eventId: z.string().min(1),
+  title: trimmedRequiredText(120, 'Category title'),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()
+
+export const renameEventCategoryInputSchema = z.object({
+  eventId: z.string().min(1),
+  categoryId: z.string().min(1),
+  title: trimmedRequiredText(120, 'Category title'),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()

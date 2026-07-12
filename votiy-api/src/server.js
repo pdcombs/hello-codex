@@ -31,6 +31,7 @@ import { createVerificationRepository } from './repositories/verification-reposi
 import { createRegistrationService } from './services/registration-service.js'
 import { createAuthenticationService } from './services/authentication-service.js'
 import { createEventRegistrationService } from './services/event-registration-service.js'
+import { createEventCategoryService } from './services/event-category-service.js'
 import { createEventService } from './services/event-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
@@ -124,6 +125,7 @@ const eventRegistrationService = createEventRegistrationService({
   withTransaction: mongo.withTransaction,
   logger,
 })
+const eventCategoryService = createEventCategoryService({ eventRepository, idempotencyRepository, logger })
 const schema = await createGraphqlSchema()
 const rootValue = {
   ...createAccountResolvers({
@@ -133,7 +135,7 @@ const rootValue = {
     auditRepository,
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),
-  ...createEventResolvers({ eventService, eventRegistrationService, auditRepository }),
+  ...createEventResolvers({ eventService, eventRegistrationService, eventCategoryService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,

@@ -29,3 +29,29 @@ test('CUF-001 participant self-registers with default-category entry', async ({ 
   await page.getByRole('button', { name: 'Register for event' }).click()
   await expect(page.getByText('You are registered for this event.')).toBeVisible()
 })
+
+test('CUF-002 host adds and renames unique categories', async ({ page }, testInfo) => {
+  test.skip(!process.env.E2E_HOST_EMAIL || !process.env.E2E_HOST_PASSWORD || !process.env.E2E_OPEN_EVENT_PUBLIC_ID,
+    'Synthetic host and event required')
+  const data = eventSetupData(testInfo)
+  await signInHost(page)
+  await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  await page.getByLabel('New category title').fill(data.categoryTitle)
+  await page.getByRole('button', { name: 'Add category' }).click()
+  await expect(page.getByText(data.categoryTitle)).toBeVisible()
+  await page.getByRole('button', { name: 'Rename' }).last().click()
+  await page.getByLabel('Category title').fill(`${data.categoryTitle} renamed`)
+  await page.getByRole('button', { name: 'Save category' }).click()
+  await expect(page.getByText(`${data.categoryTitle} renamed`)).toBeVisible()
+})
+
+test('CUF-004 non-owner cannot access category management', async ({ page }) => {
+  test.skip(!process.env.E2E_PARTICIPANT_EMAIL || !process.env.E2E_PARTICIPANT_PASSWORD || !process.env.E2E_OPEN_EVENT_PUBLIC_ID,
+    'Synthetic participant and open event required')
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(process.env.E2E_PARTICIPANT_EMAIL)
+  await page.getByLabel('Password').fill(process.env.E2E_PARTICIPANT_PASSWORD)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  await expect(page.getByRole('button', { name: 'Add category' })).toHaveCount(0)
+})

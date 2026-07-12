@@ -84,21 +84,21 @@ description: "Implementation tasks for event categories and entries"
 
 ### Tests for User Story 2
 
-- [ ] T030 [P] [US2] Write failing category-service unit tests for default naming, normalized uniqueness, limits, rename, and every ownership branch in `votiy-api/tests/unit/event-category-service.test.js`
-- [ ] T031 [P] [US2] Extend failing GraphQL category mutation contract tests in `votiy-api/tests/contract/event-setup.contract.test.js`
-- [ ] T032 [P] [US2] Write failing real-Mongo category create/rename concurrency and authorization tests in `votiy-api/tests/integration/event-categories.test.js`
-- [ ] T033 [P] [US2] Write failing category management component tests for empty, loading, validation, duplicate, and success states in `votiy-web/tests/component/event-categories.test.jsx`
-- [ ] T034 [P] [US2] Extend E2E coverage for CUF-002 and CUF-004 in `tests/e2e/event-setup.spec.js`
+- [X] T030 [P] [US2] Write failing category-service unit tests for default naming, normalized uniqueness, limits, rename, and every ownership branch in `votiy-api/tests/unit/event-category-service.test.js`
+- [X] T031 [P] [US2] Extend failing GraphQL category mutation contract tests in `votiy-api/tests/contract/event-setup.contract.test.js`
+- [X] T032 [P] [US2] Write failing real-Mongo category create/rename concurrency and authorization tests in `votiy-api/tests/integration/event-categories.test.js`
+- [X] T033 [P] [US2] Write failing category management component tests for empty, loading, validation, duplicate, and success states in `votiy-web/tests/component/event-categories.test.jsx`
+- [X] T034 [P] [US2] Extend E2E coverage for CUF-002 and CUF-004 in `tests/e2e/event-setup.spec.js`
 
 ### Implementation for User Story 2
 
-- [ ] T035 [US2] Project persisted default and additional categories for mutation responses in `votiy-api/src/services/event-service.js` and `votiy-api/src/repositories/event-repository.js`
-- [ ] T036 [US2] Implement host-only category create/rename validation and idempotency in `votiy-api/src/services/event-category-service.js`
-- [ ] T037 [US2] Implement conditional category append/rename persistence with normalized uniqueness and 100-category limit in `votiy-api/src/repositories/event-repository.js`
-- [ ] T038 [US2] Add category mutations, field errors, audit events, and denied-attempt auditing in `votiy-api/src/api/graphql/event-resolvers.js` and `votiy-api/src/repositories/audit-event-repository.js`
-- [ ] T039 [US2] Add web category GraphQL operations in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T040 [US2] Build host category list, add form, and rename form with shared field validation in `votiy-web/src/features/events/EventCategoryManager.jsx`
-- [ ] T041 [US2] Integrate category management into the event Setup tab and refresh participant category choices in `votiy-web/src/features/events/OwnerEventPage.jsx`
+- [X] T035 [US2] Project persisted default and additional categories for mutation responses in `votiy-api/src/services/event-service.js` and `votiy-api/src/repositories/event-repository.js`
+- [X] T036 [US2] Implement host-only category create/rename validation and idempotency in `votiy-api/src/services/event-category-service.js`
+- [X] T037 [US2] Implement conditional category append/rename persistence with normalized uniqueness and 100-category limit in `votiy-api/src/repositories/event-repository.js`
+- [X] T038 [US2] Add category mutations, field errors, audit events, and denied-attempt auditing in `votiy-api/src/api/graphql/event-resolvers.js` and `votiy-api/src/repositories/audit-event-repository.js`
+- [X] T039 [US2] Add web category GraphQL operations in `votiy-web/src/features/events/events.graphql.js`
+- [X] T040 [US2] Build host category list, add form, and rename form with shared field validation in `votiy-web/src/features/events/EventCategoryManager.jsx`
+- [X] T041 [US2] Integrate category management into the event Setup tab and refresh participant category choices in `votiy-web/src/features/events/OwnerEventPage.jsx`
 
 **Checkpoint**: User Story 2 works independently on a newly created event and all unauthorized mutations fail safely.
 

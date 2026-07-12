@@ -6,6 +6,7 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
   'event.created', 'event.registration_policy_changed', 'participant.added', 'participant.removed',
   'participant.self_registered', 'provisional_account.created',
   'participant.entries_created',
+  'event.category_created', 'event.category_renamed', 'event.category_change_denied',
 ])
 
 const outcomes = new Set(['success', 'denied', 'failure'])

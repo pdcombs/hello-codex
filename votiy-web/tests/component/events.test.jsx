@@ -176,6 +176,8 @@ describe('event UI', () => {
     expect(screen.getByRole('link', { name: 'Back to events' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Make open' })).not.toBeInTheDocument()
 
+    await user.click(screen.getByRole('tab', { name: 'Participants' }))
+
     await user.type(screen.getByLabelText('Display name'), 'New Participant')
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))

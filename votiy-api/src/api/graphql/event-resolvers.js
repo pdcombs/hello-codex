@@ -6,13 +6,33 @@ const successRegistration = (registration) => ({ __typename: 'EventRegistrationS
 const successRegistrations = (registrations) => ({ __typename: 'EventRegistrationListSuccess', registrations })
 const failure = (error, correlationId) => ({ __typename: 'OperationError', ...toClientError(error, correlationId) })
 
-export function createEventResolvers({ eventService, eventRegistrationService, auditRepository }) {
+export function createEventResolvers({ eventService, eventRegistrationService, eventCategoryService, auditRepository }) {
   return Object.freeze({
-    addEventCategory(_args, context) {
-      return failure(new Error('Event category mutations are not available yet'), context.correlationId)
+    async addEventCategory({ input }, context) {
+      try {
+        const result = await eventCategoryService.addCategory(input, context.viewer)
+        await auditRepository?.append({ name: 'event.category_created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: result.event.id, outcome: 'success', correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) {
+        if (error.code === 'FORBIDDEN') await auditRepository?.append({ name: 'event.category_change_denied',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event', subjectId: input.eventId,
+          outcome: 'denied', correlationId: context.correlationId, metadata: { errorCode: error.code } })
+        return failure(error, context.correlationId)
+      }
     },
-    renameEventCategory(_args, context) {
-      return failure(new Error('Event category mutations are not available yet'), context.correlationId)
+    async renameEventCategory({ input }, context) {
+      try {
+        const result = await eventCategoryService.renameCategory(input, context.viewer)
+        await auditRepository?.append({ name: 'event.category_renamed', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: result.event.id, outcome: 'success', correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) {
+        if (error.code === 'FORBIDDEN') await auditRepository?.append({ name: 'event.category_change_denied',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event', subjectId: input.eventId,
+          outcome: 'denied', correlationId: context.correlationId, metadata: { errorCode: error.code } })
+        return failure(error, context.correlationId)
+      }
     },
     async ownedEvents({ first, after }, context) {
       try {
