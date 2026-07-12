@@ -18,15 +18,17 @@ Operational runbook lives in [docs/operations.md](./docs/operations.md).
 
 ## Local development
 
-Start MongoDB and Mailpit from the repository root, then wait for both containers to become healthy:
+Start the single-node MongoDB replica set and Mailpit from the repository root, then wait for the
+database initializer and both long-running containers:
 
 ```bash
 docker compose up -d --wait
 docker compose ps
 ```
 
-Do not start the API until `votiy-mongodb` shows `healthy`. If Docker Desktop was stopped, start it
-first and rerun these commands.
+Do not start the API until `votiy-mongodb` shows `healthy` and `votiy-mongodb-init` has exited with
+code 0. Transactions require MongoDB to be a writable replica-set primary. If Docker Desktop was
+stopped, start it first and rerun these commands.
 
 Start the Votiy API:
 
@@ -41,7 +43,7 @@ If `.env.local` already exists from an older setup, make sure its local MongoDB 
 the Compose credentials:
 
 ```dotenv
-MONGODB_URI=mongodb://root:localpassword@127.0.0.1:27017/votiy?authSource=admin
+MONGODB_URI=mongodb://root:localpassword@127.0.0.1:27017/votiy?authSource=admin&replicaSet=rs0
 ```
 
 Start the Votiy React web app in another terminal:
@@ -62,7 +64,7 @@ reachable on the local port. From the repository root, check and restart the con
 ```bash
 open -a Docker # macOS only; wait until Docker Desktop says it is running
 docker compose ps
-docker compose up -d --wait votiy-database
+docker compose up -d --wait votiy-database votiy-database-init
 docker compose logs --tail=50 votiy-database
 ```
 
@@ -71,11 +73,12 @@ database directly with:
 
 ```bash
 docker compose exec votiy-database mongosh \
-  --username root \
-  --password localpassword \
-  --authenticationDatabase admin \
-  --eval "db.adminCommand('ping')"
+  "mongodb://root:localpassword@127.0.0.1:27017/admin?replicaSet=rs0&directConnection=true" \
+  --eval "db.adminCommand('hello').isWritablePrimary"
 ```
+
+The command must print `true`. See the replica-set recovery runbook in
+[docs/operations.md](./docs/operations.md) if it does not.
 
 If the error changes to `Authentication failed`, recopy `.env.example` to `.env.local` or update the
 existing `MONGODB_URI` to the Compose connection string shown above. Do not use these local credentials

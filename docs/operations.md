@@ -1,5 +1,46 @@
 # Votiy Operations
 
+## Local MongoDB replica set
+
+Event setup writes span multiple collections and require MongoDB transactions. Local MongoDB runs
+as the single-node `rs0` replica set; a standalone `mongod` is unsupported.
+
+Start or resume it from the repository root:
+
+```bash
+docker compose up -d --wait votiy-database votiy-database-init
+docker compose ps
+```
+
+`votiy-mongodb-init` is idempotent. It initializes `rs0` only when needed, then exits successfully.
+The persistent `mongodb_data` volume retains both application data and replica-set configuration.
+Use this API connection string:
+
+```dotenv
+MONGODB_URI=mongodb://root:localpassword@127.0.0.1:27017/votiy?authSource=admin&replicaSet=rs0
+```
+
+Confirm transaction readiness:
+
+```bash
+docker compose exec votiy-database mongosh \
+  "mongodb://root:localpassword@127.0.0.1:27017/admin?replicaSet=rs0&directConnection=true" \
+  --eval "db.adminCommand('hello').isWritablePrimary"
+```
+
+The result must be `true` before starting the API or running integration tests.
+
+### Recovery
+
+1. Run `docker compose logs --tail=100 votiy-database votiy-database-init`.
+2. Restart safely with `docker compose up -d --wait --force-recreate votiy-database votiy-database-init`.
+3. Re-run the primary-readiness command above.
+4. Restart the API after MongoDB becomes primary.
+
+Do not delete `mongodb_data` as a routine recovery step: doing so destroys local data. If the replica
+configuration is corrupted, capture `rs.status()` and the container logs before considering a clean
+volume reset.
+
 ## Core SLIs
 
 - Availability: `/health` and `/ready` success rate
