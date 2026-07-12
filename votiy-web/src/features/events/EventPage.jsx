@@ -33,7 +33,8 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
   async function onRegister(submitEvent) {
     submitEvent.preventDefault()
     if (!state.event) return
-    const entries = readEntries(new FormData(submitEvent.currentTarget), entryCount)
+    const eventSetupAvailable = Array.isArray(state.event.categories)
+    const entries = eventSetupAvailable ? readEntries(new FormData(submitEvent.currentTarget), entryCount) : []
     const errors = Object.fromEntries(entries.flatMap((entry, index) => [
       ...(!entry.title ? [[`entries.${index}.title`, 'Enter an entry title.']] : []),
       ...(!entry.categoryId ? [[`entries.${index}.categoryId`, 'Choose a category.']] : []),
@@ -44,9 +45,9 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
     try {
       await register({
         eventId: state.event.id,
-        entries,
+        ...(eventSetupAvailable ? { entries } : {}),
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-self-register`,
-      })
+      }, { legacy: !eventSetupAvailable })
       setState((current) => ({ ...current, registrationState: 'success' }))
     } catch (error) {
       setState((current) => ({ ...current, registrationState: 'error', error }))
@@ -101,7 +102,7 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
           {!viewer && <p>Sign in with a verified account to register yourself for this event.</p>}
           {viewer && state.registrationState !== 'success' && (
             <FormSurface onSubmit={onRegister} noValidate>
-              <ParticipantEntryFields categories={state.event.categories} count={entryCount} errors={fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />
+              {Array.isArray(state.event.categories) && <ParticipantEntryFields categories={state.event.categories} count={entryCount} errors={fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />}
               <button className="primary-action" type="submit" disabled={state.registrationState === 'loading'}>
                 {state.registrationState === 'loading' ? 'Registering…' : 'Register for event'}
               </button>

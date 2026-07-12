@@ -87,6 +87,7 @@ export default function OwnerEventPage({
         addParticipant={addParticipant}
         removeParticipant={removeParticipant}
         categories={state.event.categories}
+        legacy={!Array.isArray(state.event.categories)}
       />
     </main>
   )

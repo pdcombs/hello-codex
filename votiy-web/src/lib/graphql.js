@@ -23,6 +23,10 @@ export function unwrapGraphqlResult(value) {
   return value
 }
 
+export function isSchemaMismatch(error) {
+  return error instanceof GraphqlClientError && /Cannot query field|is not defined by type|Unknown argument|Unknown type/i.test(error.message)
+}
+
 export async function graphqlRequest({
   query,
   variables,

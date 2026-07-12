@@ -13,7 +13,9 @@ export default function EventParticipantsPanel({
   addParticipant = addEventParticipant,
   removeParticipant = removeEventParticipant,
   categories = [],
+  legacy = false,
 }) {
+  const eventSetupAvailable = !legacy
   const [entryCount, setEntryCount] = useState(1)
   const [state, setState] = useState({
     status: 'loading',
@@ -48,8 +50,8 @@ export default function EventParticipantsPanel({
     const email = clean(form.get('email'))
     const phoneInput = clean(form.get('phone'))
     const phone = normalizePhone(phoneInput)
-    const entries = readEntries(form, entryCount)
-    const fieldErrors = { ...validateIdentifier(email, phoneInput, phone), ...validateEntries(displayName, entries) }
+    const entries = eventSetupAvailable ? readEntries(form, entryCount) : []
+    const fieldErrors = { ...validateIdentifier(email, phoneInput, phone), ...(eventSetupAvailable ? validateEntries(displayName, entries) : {}) }
     if (Object.keys(fieldErrors).length > 0) {
       setState((current) => ({ ...current, saving: false, error: null, fieldErrors }))
       return
@@ -58,10 +60,10 @@ export default function EventParticipantsPanel({
     try {
       const result = await addParticipant({
         eventId,
-        displayName,
+        ...(eventSetupAvailable ? { displayName } : {}),
         email,
         phone,
-        entries,
+        ...(eventSetupAvailable ? { entries } : {}),
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-participant`,
       })
       setState((current) => ({
@@ -97,13 +99,15 @@ export default function EventParticipantsPanel({
       <p>Add by email, with an optional phone number. Unfinished accounts stay provisional until that person completes sign up.</p>
 
       <FormSurface onSubmit={onAdd} noValidate>
-        <FormField label="Display name" htmlFor="participant-display-name" error={state.fieldErrors.displayName}>
-          <input id="participant-display-name" name="displayName" type="text" required />
-        </FormField>
+        {eventSetupAvailable && (
+          <FormField label="Display name" htmlFor="participant-display-name" error={state.fieldErrors.displayName}>
+            <input id="participant-display-name" name="displayName" type="text" required />
+          </FormField>
+        )}
         <FormField label="Email" htmlFor="participant-email" error={state.fieldErrors.email}>
           <input id="participant-email" name="email" type="email" placeholder="participant@example.com" />
         </FormField>
-        <ParticipantEntryFields categories={categories} count={entryCount} errors={state.fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />
+        {eventSetupAvailable && <ParticipantEntryFields categories={categories} count={entryCount} errors={state.fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />}
         <FormField label="Phone" htmlFor="participant-phone" optional error={state.fieldErrors.phone}>
           <input id="participant-phone" name="phone" type="tel" placeholder="(555) 123-4567" />
         </FormField>

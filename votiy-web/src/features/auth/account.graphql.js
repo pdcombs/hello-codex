@@ -1,4 +1,4 @@
-import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
+import { graphqlRequest, isSchemaMismatch, unwrapGraphqlResult } from '../../lib/graphql.js'
 
 const ACCOUNT_FIELDS = 'id displayName email isVerified createdAt'
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
@@ -17,8 +17,15 @@ export const VIEWER = `query Viewer {
 }`
 
 export async function registerAccount(input) {
-  const data = await graphqlRequest({ query: REGISTER_ACCOUNT, variables: { input }, operationName: 'Register' })
-  return unwrapGraphqlResult(data.register)
+  try {
+    const data = await graphqlRequest({ query: REGISTER_ACCOUNT, variables: { input }, operationName: 'Register' })
+    return unwrapGraphqlResult(data.register)
+  } catch (error) {
+    if (!isSchemaMismatch(error)) throw error
+    const { displayName: _displayName, ...legacyInput } = input
+    const data = await graphqlRequest({ query: REGISTER_ACCOUNT, variables: { input: legacyInput }, operationName: 'Register' })
+    return unwrapGraphqlResult(data.register)
+  }
 }
 export async function verifyAccountEmail(input) {
   const data = await graphqlRequest({ query: VERIFY_EMAIL, variables: { input }, operationName: 'VerifyEmail' })

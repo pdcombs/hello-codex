@@ -1,9 +1,11 @@
-import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
+import { graphqlRequest, isSchemaMismatch, unwrapGraphqlResult } from '../../lib/graphql.js'
 
 const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName createdAt'
 const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } }`
 const REGISTRATION_FIELDS = `id accountId email phone displayName entryCount entries { ${ENTRY_FIELDS} } accountCompleted status source createdAt`
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
+const LEGACY_EVENT_FIELDS = 'id publicId title description location registrationPolicy isOwner createdAt updatedAt'
+const LEGACY_REGISTRATION_FIELDS = 'id accountId email phone accountCompleted status source createdAt'
 
 export const OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
   ownedEvents(first: $first, after: $after) {
@@ -11,6 +13,9 @@ export const OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
     ... on EventListSuccess { events { nodes { ${EVENT_FIELDS} } nextCursor } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
+}`
+const LEGACY_OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
+  ownedEvents(first: $first, after: $after) { __typename ... on EventListSuccess { events { nodes { ${LEGACY_EVENT_FIELDS} } nextCursor } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 
 export const EVENT_BY_PUBLIC_ID = `query EventByPublicId($publicId: String!) {
@@ -20,6 +25,9 @@ export const EVENT_BY_PUBLIC_ID = `query EventByPublicId($publicId: String!) {
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
+const LEGACY_EVENT_BY_PUBLIC_ID = `query EventByPublicId($publicId: String!) {
+  eventByPublicId(publicId: $publicId) { __typename ... on EventSuccess { event { ${LEGACY_EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
 
 export const EVENT_REGISTRATIONS = `query EventRegistrations($eventId: ID!) {
   eventRegistrations(eventId: $eventId) {
@@ -27,6 +35,9 @@ export const EVENT_REGISTRATIONS = `query EventRegistrations($eventId: ID!) {
     ... on EventRegistrationListSuccess { registrations { ${REGISTRATION_FIELDS} } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
+}`
+const LEGACY_EVENT_REGISTRATIONS = `query EventRegistrations($eventId: ID!) {
+  eventRegistrations(eventId: $eventId) { __typename ... on EventRegistrationListSuccess { registrations { ${LEGACY_REGISTRATION_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 
 export const CREATE_EVENT = `mutation CreateEvent($input: CreateEventInput!) {
@@ -52,6 +63,9 @@ export const REGISTER_FOR_EVENT = `mutation RegisterForEvent($input: RegisterFor
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
+const LEGACY_REGISTER_FOR_EVENT = `mutation RegisterForEvent($eventId: ID!, $idempotencyKey: ID!) {
+  registerForEvent(eventId: $eventId, idempotencyKey: $idempotencyKey) { __typename ... on EventRegistrationSuccess { registration { ${LEGACY_REGISTRATION_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
 
 export const ADD_EVENT_PARTICIPANT = `mutation AddEventParticipant($input: AddEventParticipantInput!) {
   addEventParticipant(input: $input) {
@@ -70,26 +84,36 @@ export const REMOVE_EVENT_PARTICIPANT = `mutation RemoveEventParticipant($input:
 }`
 
 export async function loadOwnedEvents(variables = { first: 20 }) {
-  const data = await graphqlRequest({ query: OWNED_EVENTS, variables, operationName: 'OwnedEvents' })
-  return unwrapGraphqlResult(data.ownedEvents)
+  try {
+    const data = await graphqlRequest({ query: OWNED_EVENTS, variables, operationName: 'OwnedEvents' })
+    return unwrapGraphqlResult(data.ownedEvents)
+  } catch (error) {
+    if (!isSchemaMismatch(error)) throw error
+    const data = await graphqlRequest({ query: LEGACY_OWNED_EVENTS, variables, operationName: 'OwnedEvents' })
+    return unwrapGraphqlResult(data.ownedEvents)
+  }
 }
 
 export async function loadEventByPublicId(publicId) {
-  const data = await graphqlRequest({
-    query: EVENT_BY_PUBLIC_ID,
-    variables: { publicId },
-    operationName: 'EventByPublicId',
-  })
-  return unwrapGraphqlResult(data.eventByPublicId)
+  try {
+    const data = await graphqlRequest({ query: EVENT_BY_PUBLIC_ID, variables: { publicId }, operationName: 'EventByPublicId' })
+    return unwrapGraphqlResult(data.eventByPublicId)
+  } catch (error) {
+    if (!isSchemaMismatch(error)) throw error
+    const data = await graphqlRequest({ query: LEGACY_EVENT_BY_PUBLIC_ID, variables: { publicId }, operationName: 'EventByPublicId' })
+    return unwrapGraphqlResult(data.eventByPublicId)
+  }
 }
 
 export async function loadEventRegistrations(eventId) {
-  const data = await graphqlRequest({
-    query: EVENT_REGISTRATIONS,
-    variables: { eventId },
-    operationName: 'EventRegistrations',
-  })
-  return unwrapGraphqlResult(data.eventRegistrations)
+  try {
+    const data = await graphqlRequest({ query: EVENT_REGISTRATIONS, variables: { eventId }, operationName: 'EventRegistrations' })
+    return unwrapGraphqlResult(data.eventRegistrations)
+  } catch (error) {
+    if (!isSchemaMismatch(error)) throw error
+    const data = await graphqlRequest({ query: LEGACY_EVENT_REGISTRATIONS, variables: { eventId }, operationName: 'EventRegistrations' })
+    return unwrapGraphqlResult(data.eventRegistrations)
+  }
 }
 
 export async function createEvent(input) {
@@ -106,10 +130,10 @@ export async function setEventRegistrationPolicy(input) {
   return unwrapGraphqlResult(data.setEventRegistrationPolicy)
 }
 
-export async function registerForEvent(input) {
+export async function registerForEvent(input, { legacy = false } = {}) {
   const data = await graphqlRequest({
-    query: REGISTER_FOR_EVENT,
-    variables: { input },
+    query: legacy ? LEGACY_REGISTER_FOR_EVENT : REGISTER_FOR_EVENT,
+    variables: legacy ? { eventId: input.eventId, idempotencyKey: input.idempotencyKey } : { input },
     operationName: 'RegisterForEvent',
   })
   return unwrapGraphqlResult(data.registerForEvent)

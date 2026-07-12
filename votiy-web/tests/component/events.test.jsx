@@ -139,6 +139,7 @@ describe('event UI', () => {
         location: null,
         registrationPolicy: 'ADMIN_MANAGED',
         isOwner: true,
+        categories: [{ id: 'cat-1', title: 'Board vote participants', isDefault: true }],
       },
     })
     const participantsLoader = vi.fn().mockResolvedValue({
@@ -257,6 +258,25 @@ describe('event UI', () => {
     )
 
     expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+  })
+
+  it('keeps legacy participant submission compatible during rolling upgrades', async () => {
+    const addParticipant = vi.fn().mockResolvedValue({
+      registration: { id: 'reg-legacy', email: 'legacy@example.com', accountCompleted: false },
+    })
+    render(
+      <MemoryRouter>
+        <EventParticipantsPanel eventId="evt-1" legacy loader={() => Promise.resolve({ registrations: [] })}
+          addParticipant={addParticipant} removeParticipant={vi.fn()} />
+      </MemoryRouter>,
+    )
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Email'), 'legacy@example.com')
+    await user.click(screen.getByRole('button', { name: 'Add participant' }))
+    expect(addParticipant).toHaveBeenCalledWith({
+      eventId: 'evt-1', email: 'legacy@example.com', phone: null, idempotencyKey: expect.any(String),
+    })
+    expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument()
   })
 
   it('surfaces participant add and remove failures', async () => {

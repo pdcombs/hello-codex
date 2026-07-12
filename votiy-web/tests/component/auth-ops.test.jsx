@@ -10,6 +10,7 @@ import * as eventOps from '../../src/features/events/events.graphql.js'
 
 vi.mock('../../src/lib/graphql.js', () => ({
   graphqlRequest: vi.fn(),
+  isSchemaMismatch: vi.fn((error) => /Cannot query field|is not defined by type/.test(error.message)),
   unwrapGraphqlResult: vi.fn((value) => value),
 }))
 
@@ -71,6 +72,16 @@ describe('checked-in GraphQL operations and auth UI', () => {
     expect(graphqlRequest).toHaveBeenNthCalledWith(1, expect.objectContaining({ operationName: 'SignIn' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(6, expect.objectContaining({ operationName: 'CreateEvent' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(10, expect.objectContaining({ operationName: 'RemoveEventParticipant' }))
+  })
+
+  it('retries event reads with legacy fields during rolling API upgrades', async () => {
+    graphqlRequest
+      .mockRejectedValueOnce(new Error('Cannot query field "categories" on type "Event".'))
+      .mockResolvedValueOnce({ ownedEvents: { events: { nodes: [{ id: 'legacy-event' }] } } })
+
+    await expect(eventOps.loadOwnedEvents()).resolves.toEqual({ events: { nodes: [{ id: 'legacy-event' }] } })
+    expect(graphqlRequest).toHaveBeenCalledTimes(2)
+    expect(graphqlRequest.mock.calls[1][0].query).not.toContain('categories')
   })
 
   it('renders sign-out button and calls sign-out action', async () => {
