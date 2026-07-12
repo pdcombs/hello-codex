@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { createEntry } from './event-entry.js'
 
 const STATUSES = new Set(['registered', 'removed'])
 const SOURCES = new Set(['self', 'host'])
@@ -26,12 +27,22 @@ export function createEventRegistrationDocument({
   })
 }
 
+export function withRegistrationVersion2(registration, { categoryId, title, now = registration.updatedAt ?? new Date() }) {
+  const entry = createEntry({
+    categoryId, title, createdByAccountId: registration.registeredByAccountId, now,
+  })
+  return Object.freeze({ ...registration, entries: [entry], schemaVersion: 2, updatedAt: now })
+}
+
 export function toEventRegistrationView(registration, account) {
   return Object.freeze({
     id: String(registration._id),
     accountId: String(registration.accountId),
     email: account?.emailNormalized ?? null,
     phone: account?.phoneNormalized ?? null,
+    displayName: account?.displayName ?? null,
+    entryCount: registration.entries?.length ?? 0,
+    entries: registration.entries ?? [],
     accountCompleted: account?.lifecycleStatus === 'completed',
     status: registration.status === 'registered' ? 'REGISTERED' : 'REMOVED',
     source: registration.registrationSource === 'self' ? 'SELF' : 'HOST',

@@ -18,6 +18,7 @@ import { createFakeSender } from './email/fake-sender.js'
 import { createMailpitSender } from './email/mailpit-sender.js'
 import { createProviderSender } from './email/provider-sender.js'
 import { createLogger } from './observability/logger.js'
+import { runEventSetupMigration } from './migrations/002-event-categories-entries.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
@@ -42,6 +43,7 @@ const mongo = createMongoConnection({ uri: environment.mongoUri, databaseName: e
 
 await mongo.connect()
 await ensureCollectionsAndIndexes(mongo.database)
+await runEventSetupMigration({ database: mongo.database, logger })
 
 const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
@@ -152,7 +154,7 @@ const graphqlHandler = createGraphqlHandler({
     }
   },
 })
-const { healthHandler, readyHandler } = createHealthHandlers({ mongo })
+const { healthHandler, readyHandler } = createHealthHandlers({ mongo, migrationReady: true })
 const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger })
 const server = createServer(application)
 const host = environment.isProduction ? '0.0.0.0' : '127.0.0.1'

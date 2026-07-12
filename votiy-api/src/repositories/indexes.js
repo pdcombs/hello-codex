@@ -152,6 +152,53 @@ export const collectionDefinitions = Object.freeze({
   },
 })
 
+const categorySchema = {
+  bsonType: 'object',
+  required: ['_id', 'title', 'titleNormalized', 'isDefault', 'createdAt', 'updatedAt'],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: 'objectId' }, title: { bsonType: 'string', minLength: 1, maxLength: 120 },
+    titleNormalized: { bsonType: 'string', minLength: 1, maxLength: 120 }, isDefault: { bsonType: 'bool' },
+    createdAt: { bsonType: 'date' }, updatedAt: { bsonType: 'date' },
+  },
+}
+const entrySchema = {
+  bsonType: 'object',
+  required: ['_id', 'categoryId', 'title', 'createdByAccountId', 'createdAt', 'schemaVersion'],
+  additionalProperties: false,
+  properties: {
+    _id: { bsonType: 'objectId' }, categoryId: { bsonType: 'objectId' },
+    title: { bsonType: 'string', minLength: 1, maxLength: 160 }, createdByAccountId: { bsonType: 'objectId' },
+    createdAt: { bsonType: 'date' }, schemaVersion: { enum: [1] },
+  },
+}
+
+function installTransitionalSchema(name, additions) {
+  const legacy = collectionDefinitions[name].validator.$jsonSchema
+  legacy.properties.schemaVersion = { enum: [1] }
+  collectionDefinitions[name].validator.$jsonSchema = {
+    bsonType: 'object',
+    oneOf: [legacy, {
+      ...legacy,
+      required: [...legacy.required, ...additions.required],
+      properties: { ...legacy.properties, ...additions.properties, schemaVersion: { enum: [2] } },
+    }],
+  }
+}
+
+installTransitionalSchema('accounts', {
+  required: ['displayName'],
+  properties: { displayName: { bsonType: 'string', minLength: 1, maxLength: 100 } },
+})
+installTransitionalSchema('events', {
+  required: ['categories'],
+  properties: { categories: { bsonType: 'array', minItems: 1, maxItems: 100, items: categorySchema } },
+})
+installTransitionalSchema('eventRegistrations', {
+  required: ['entries'],
+  properties: { entries: { bsonType: 'array', minItems: 1, maxItems: 100, items: entrySchema } },
+})
+
 export async function ensureCollectionsAndIndexes(database) {
   const existing = new Set((await database.listCollections({}, { nameOnly: true }).toArray()).map(({ name }) => name))
 

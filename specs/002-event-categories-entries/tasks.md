@@ -31,16 +31,16 @@ description: "Implementation tasks for event categories and entries"
 
 **⚠️ CRITICAL**: No user-story implementation begins until this phase passes.
 
-- [ ] T006 [P] Write failing unit tests for required account display names, category/entry construction, normalization, limits, and email-prefix/phone-only fallback derivation in `votiy-api/tests/unit/event-setup-domain.test.js`
-- [ ] T007 [P] Write failing persistence contract tests for version-2 accounts, event categories, and active/removed registration entries in `votiy-api/tests/contract/persistence-event-setup.contract.test.js`
-- [ ] T008 [P] Write failing migration integration tests covering every account and registration status, deterministic names/titles, checkpoints, idempotent restart, and validator ordering in `votiy-api/tests/integration/event-setup-migration.test.js`
-- [ ] T009 Implement Category and Entry domain constructors/projections in `votiy-api/src/domain/event-category.js` and `votiy-api/src/domain/event-entry.js`
-- [ ] T010 Add dormant schema-version-2 account, event/default-category, and registration/entry constructors without activating writes in `votiy-api/src/domain/account.js`, `votiy-api/src/domain/event.js`, and `votiy-api/src/domain/event-registration.js`
-- [ ] T011 Add transitional validators accepting version 1 and 2 display-name/category/entry documents in `votiy-api/src/repositories/indexes.js`
-- [ ] T012 Implement transaction/session plumbing for repository operations in `votiy-api/src/repositories/mongo.js`, `votiy-api/src/repositories/account-repository.js`, `votiy-api/src/repositories/event-registration-repository.js`, and `votiy-api/src/repositories/idempotency-repository.js`
-- [ ] T013 Implement idempotent migration 002 for all accounts, events, and active/removed registrations with email-prefix display names, phone-only fallbacks, and stable entry titles in `votiy-api/src/migrations/002-event-categories-entries.js`
-- [ ] T014 Run idempotent migration 002 before HTTP readiness while retaining transitional validators for subsequent task-level deployments in `votiy-api/src/server.js`
-- [ ] T015 Add account/event/all-registration migration outcome logs, readiness failure behavior, and privacy assertions in `votiy-api/src/observability/logger.js`, `votiy-api/src/api/health.js`, and `votiy-api/tests/integration/event-setup-migration.test.js`
+- [X] T006 [P] Write failing unit tests for required account display names, category/entry construction, normalization, limits, and email-prefix/phone-only fallback derivation in `votiy-api/tests/unit/event-setup-domain.test.js`
+- [X] T007 [P] Write failing persistence contract tests for version-2 accounts, event categories, and active/removed registration entries in `votiy-api/tests/contract/persistence-event-setup.contract.test.js`
+- [X] T008 [P] Write failing migration integration tests covering every account and registration status, deterministic names/titles, checkpoints, idempotent restart, and validator ordering in `votiy-api/tests/integration/event-setup-migration.test.js`
+- [X] T009 Implement Category and Entry domain constructors/projections in `votiy-api/src/domain/event-category.js` and `votiy-api/src/domain/event-entry.js`
+- [X] T010 Add dormant schema-version-2 account, event/default-category, and registration/entry constructors without activating writes in `votiy-api/src/domain/account.js`, `votiy-api/src/domain/event.js`, and `votiy-api/src/domain/event-registration.js`
+- [X] T011 Add transitional validators accepting version 1 and 2 display-name/category/entry documents in `votiy-api/src/repositories/indexes.js`
+- [X] T012 Implement transaction/session plumbing for repository operations in `votiy-api/src/repositories/mongo.js`, `votiy-api/src/repositories/account-repository.js`, `votiy-api/src/repositories/event-registration-repository.js`, and `votiy-api/src/repositories/idempotency-repository.js`
+- [X] T013 Implement idempotent migration 002 for all accounts, events, and active/removed registrations with email-prefix display names, phone-only fallbacks, and stable entry titles in `votiy-api/src/migrations/002-event-categories-entries.js`
+- [X] T014 Run idempotent migration 002 before HTTP readiness while retaining transitional validators for subsequent task-level deployments in `votiy-api/src/server.js`
+- [X] T015 Add account/event/all-registration migration outcome logs, readiness failure behavior, and privacy assertions in `votiy-api/src/observability/logger.js`, `votiy-api/src/api/health.js`, and `votiy-api/tests/integration/event-setup-migration.test.js`
 
 **Checkpoint**: Replica-set transactions, version-2 documents, migration, validators, and fixtures pass before story work.
 

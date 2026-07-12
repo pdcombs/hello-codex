@@ -7,21 +7,21 @@ export function createEventRegistrationRepository(database) {
   const collection = database.collection('eventRegistrations')
 
   return Object.freeze({
-    findById(registrationId) {
-      return collection.findOne({ _id: id(registrationId) })
+    findById(registrationId, options = {}) {
+      return collection.findOne({ _id: id(registrationId) }, options)
     },
-    findByEventAndAccount(eventId, accountId) {
-      return collection.findOne({ eventId: id(eventId), accountId: id(accountId) })
+    findByEventAndAccount(eventId, accountId, options = {}) {
+      return collection.findOne({ eventId: id(eventId), accountId: id(accountId) }, options)
     },
     listByEvent(eventId) {
       return collection.find({ eventId: id(eventId) }).sort({ createdAt: 1 }).toArray()
     },
-    async create(input) {
+    async create(input, options = {}) {
       const registration = createEventRegistrationDocument(input)
-      await collection.insertOne(registration)
+      await collection.insertOne(registration, options)
       return registration
     },
-    revive(registrationId, registeredByAccountId, registrationSource, now) {
+    revive(registrationId, registeredByAccountId, registrationSource, now, options = {}) {
       return collection.findOneAndUpdate(
         { _id: id(registrationId) },
         {
@@ -33,14 +33,14 @@ export function createEventRegistrationRepository(database) {
             updatedAt: now,
           },
         },
-        { returnDocument: 'after' },
+        { returnDocument: 'after', ...options },
       )
     },
-    remove(registrationId, now) {
+    remove(registrationId, now, options = {}) {
       return collection.findOneAndUpdate(
         { _id: id(registrationId), status: 'registered' },
         { $set: { status: 'removed', removedAt: now, updatedAt: now } },
-        { returnDocument: 'after' },
+        { returnDocument: 'after', ...options },
       )
     },
   })

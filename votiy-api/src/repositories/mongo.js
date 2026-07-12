@@ -17,6 +17,16 @@ export function createMongoConnection({ uri, databaseName, clientOptions = {} })
     collection(name) {
       return database.collection(name)
     },
+    async withTransaction(operation, options = {}) {
+      const session = client.startSession()
+      try {
+        let result
+        await session.withTransaction(async () => { result = await operation(session) }, options)
+        return result
+      } finally {
+        await session.endSession()
+      }
+    },
     async connect() {
       await client.connect()
       await database.command({ ping: 1 })

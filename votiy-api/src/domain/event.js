@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { createCategory } from './event-category.js'
 
 const REGISTRATION_POLICIES = new Set(['admin_managed', 'open'])
 
@@ -32,6 +33,11 @@ export function createEventDocument({
   })
 }
 
+export function withEventVersion2(event, { categoryId = new ObjectId(), now = event.updatedAt ?? new Date() } = {}) {
+  const category = createCategory({ id: categoryId, title: `${event.title.trim()} participants`, isDefault: true, now })
+  return Object.freeze({ ...event, categories: [category], schemaVersion: 2, updatedAt: now })
+}
+
 export function toEventView(event, viewerAccountId = null) {
   const ownerId = String(event.ownerAccountId)
   return Object.freeze({
@@ -42,6 +48,7 @@ export function toEventView(event, viewerAccountId = null) {
     location: event.location,
     registrationPolicy: event.registrationPolicy === 'open' ? 'OPEN' : 'ADMIN_MANAGED',
     isOwner: viewerAccountId ? String(viewerAccountId) === ownerId : false,
+    categories: event.categories ?? [],
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
   })

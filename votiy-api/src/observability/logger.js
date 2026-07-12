@@ -4,6 +4,7 @@ const redactPaths = [
   'password', '*.password', 'req.headers.authorization', 'req.headers.cookie',
   'request.headers.authorization', 'request.headers.cookie', 'token', '*.token',
   'email', '*.email', 'phone', '*.phone',
+  'displayName', '*.displayName', 'title', '*.title',
 ]
 
 export function createLogger({ level = 'info', environment = 'development' } = {}, destination) {

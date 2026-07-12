@@ -79,6 +79,8 @@ describe('event lifecycle with real MongoDB', () => {
 
     const hostRegistration = await eventRegistrationService.addParticipant({
       eventId: adminManaged.event.id,
+      displayName: 'Hosted Participant',
+      email: 'hosted-participant@example.test',
       phone: '+14155550123',
       idempotencyKey: '82cc7674-c717-40d8-a158-f54db62ac41e',
     }, viewer)
