@@ -26,7 +26,7 @@ describe('participant secondary tab', () => {
     resolve({ registrations: [{ id: 'reg-1', accountId: 'account-1', displayName: 'Peyton', email: null,
       phone: null, entryCount: 3, accountCompleted: true }] })
     expect(await screen.findByText('Peyton')).toBeVisible()
-    expect(screen.getByText('3 entries')).toBeVisible()
+    expect(screen.getByLabelText('3 entries')).toHaveTextContent('3')
   })
 
   it('shows empty and error states', async () => {

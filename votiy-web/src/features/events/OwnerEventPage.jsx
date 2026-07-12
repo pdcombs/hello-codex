@@ -6,7 +6,7 @@ import EventPage from './EventPage.jsx'
 import EventCategoryManager from './EventCategoryManager.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
 import EventSetupTabs from './EventSetupTabs.jsx'
-import { loadEventByPublicId } from './events.graphql.js'
+import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
 
 export default function OwnerEventPage({
   viewer,
@@ -16,10 +16,26 @@ export default function OwnerEventPage({
   removeParticipant,
   addCategory,
   renameCategory,
+  archiveEntry = archiveEventEntry,
 }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null })
   const [tab, setTab] = useState('setup')
+
+  async function reloadEvent() {
+    const result = await loader(publicId)
+    setState({ status: 'success', error: null, event: result.event })
+  }
+
+  async function onRemoveEntry(entry) {
+    try {
+      await archiveEntry({ eventId: state.event.id, entryId: entry.id,
+        idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-entry-remove` })
+      await reloadEvent()
+    } catch (error) {
+      setState((current) => ({ ...current, error }))
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -89,7 +105,7 @@ export default function OwnerEventPage({
       {Array.isArray(state.event.categories) ? <EventSetupTabs activeTab={tab} onChange={setTab}
         setup={<><EventCategoryManager event={state.event} addCategory={addCategory} renameCategory={renameCategory}
           onEventChange={(event) => setState((current) => ({ ...current, event }))} />
-          <EventCategoryList categories={state.event.categories} /></>}
+          <EventCategoryList categories={state.event.categories} onRemoveEntry={onRemoveEntry} /></>}
         participants={<EventParticipantsPanel eventId={state.event.id} loader={participantsLoader}
           addParticipant={addParticipant} removeParticipant={removeParticipant} categories={state.event.categories} />} />
         : <EventParticipantsPanel eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}

@@ -50,6 +50,7 @@ jobs:
       - run: pnpm --dir votiy-api test:integration
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
+      - run: node --check tests/smoke/production-smoke.js
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e --project=chromium
       - run: pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"

@@ -47,6 +47,13 @@ test('responsive event setup supports keyboard focus, labels, errors, and mobile
   await expect(page.getByRole('alert')).toContainText('Email')
   await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
 
+  const cards = page.locator('.participant-card')
+  if (await cards.count()) {
+    await expect(cards.first().getByRole('heading')).toBeVisible()
+    await expect(cards.first().locator('.participant-entry-count')).toHaveAttribute('aria-label', /\d+ entries/)
+    await expect(cards.first().getByRole('button', { name: 'Remove participant' })).toBeVisible()
+  }
+
   const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
   expect(fitsViewport).toBe(true)
 })

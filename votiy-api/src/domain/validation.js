@@ -67,6 +67,18 @@ export const removeEventParticipantInputSchema = z.object({
   registrationId: z.string().min(1),
 }).strict()
 
+export const archiveEventEntryInputSchema = z.object({
+  eventId: z.string().min(1),
+  entryId: z.string().min(1),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()
+
+export const archiveEventParticipantEntriesInputSchema = z.object({
+  eventId: z.string().min(1),
+  accountId: z.string().min(1),
+  idempotencyKey: idempotencyKeySchema,
+}).strict()
+
 export const registerForEventInputSchema = z.object({
   eventId: z.string().min(1),
   entries: z.array(z.object({

@@ -1,6 +1,6 @@
 import EventEntryRow from './EventEntryRow.jsx'
 
-export default function EventCategoryList({ categories = [] }) {
+export default function EventCategoryList({ categories = [], onRemoveEntry }) {
   if (categories.length === 0) return <p>No categories available.</p>
   return (
     <div className="event-category-grid" aria-label="Event categories">
@@ -11,7 +11,7 @@ export default function EventCategoryList({ categories = [] }) {
             {(category.entries ?? []).length === 0
               ? <p>No entries in this category.</p>
               : <ul className="record-list" aria-label={`${category.title} entries`}>
-                  {category.entries.map((entry) => <EventEntryRow key={entry.id} entry={entry} />)}
+                  {category.entries.map((entry) => <EventEntryRow key={entry.id} entry={entry} onRemove={onRemoveEntry} />)}
                 </ul>}
           </div>
         </section>

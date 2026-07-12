@@ -7,10 +7,12 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
   'participant.self_registered', 'provisional_account.created',
   'participant.entries_created',
   'event.category_created', 'event.category_renamed', 'event.category_change_denied',
+  'entry.created', 'entry.archived', 'participant.entries_archived',
 ])
 
 const outcomes = new Set(['success', 'denied', 'failure'])
-const metadataKeys = new Set(['errorCode', 'registrationPolicy', 'registrationSource', 'lifecycleStatus', 'verificationStatus', 'entryCount'])
+const metadataKeys = new Set(['errorCode', 'registrationPolicy', 'registrationSource', 'lifecycleStatus',
+  'verificationStatus', 'entryCount', 'archiveReason'])
 
 function sanitizeMetadata(metadata = {}) {
   const entries = Object.entries(metadata)

@@ -143,14 +143,14 @@ describe('event UI', () => {
       },
     })
     const participantsLoader = vi.fn().mockResolvedValue({
-      registrations: [{ id: 'reg-1', accountId: 'acct-2', email: 'guest@example.com', phone: null, accountCompleted: false }],
+      participants: [{ accountId: 'acct-2', displayName: 'Guest', email: 'guest@example.com',
+        entries: [{ id: 'entry-1', title: 'Guest entry' }], entryCount: 1 }],
     })
     const addParticipant = vi.fn().mockResolvedValue({
-      registration: { id: 'reg-2', accountId: 'acct-3', email: 'new@example.com', phone: null, accountCompleted: false },
+      affectedParticipant: { accountId: 'acct-3', displayName: 'New Participant', email: 'new@example.com',
+        entries: [{ id: 'entry-2', title: 'Entry 1' }], entryCount: 1 },
     })
-    const removeParticipant = vi.fn().mockResolvedValue({
-      registration: { id: 'reg-1' },
-    })
+    const removeParticipant = vi.fn().mockResolvedValue({ archivedEntryIds: ['entry-1'], affectedParticipant: null })
 
     render(
       <MemoryRouter initialEntries={['/events/board-vote']}>
@@ -182,10 +182,11 @@ describe('event UI', () => {
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByText(/new@example\.com/)).toBeVisible()
-    expect(screen.getAllByText(/provisional account/i)[0]).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'New Participant' })).toBeVisible()
 
-    await user.click(screen.getAllByRole('button', { name: 'Remove' })[0])
-    expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', registrationId: 'reg-1' })
+    await user.click(screen.getAllByRole('button', { name: 'Remove participant' })[0])
+    expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', accountId: 'acct-2',
+      idempotencyKey: expect.any(String) })
   })
 
   it('shows owner page errors when loading fails', async () => {
@@ -299,7 +300,7 @@ describe('event UI', () => {
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not add participant.')
-    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    await user.click(screen.getByRole('button', { name: 'Remove participant' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove participant.')
   })
 
@@ -308,8 +309,11 @@ describe('event UI', () => {
       <MemoryRouter>
         <EventParticipantsPanel
           eventId="evt-1"
-          loader={() => Promise.resolve({ registrations: [{ id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: false }] })}
-          addParticipant={() => Promise.resolve({ registration: { id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: true } })}
+          loader={() => Promise.resolve({ participants: [{ accountId: 'acct-1', displayName: 'Guest',
+            email: 'guest@example.com', entries: [{ id: 'entry-1', title: 'First' }], entryCount: 1 }] })}
+          addParticipant={() => Promise.resolve({ affectedParticipant: { accountId: 'acct-1', displayName: 'Guest',
+            email: 'guest@example.com', entries: [{ id: 'entry-1', title: 'First' },
+              { id: 'entry-2', title: 'Second' }], entryCount: 2 } })}
           removeParticipant={vi.fn()}
         />
       </MemoryRouter>,
@@ -320,7 +324,7 @@ describe('event UI', () => {
     await user.type(screen.getByLabelText('Display name'), 'Guest')
     await user.type(screen.getByLabelText('Email'), 'guest@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(await screen.findByText('Account complete')).toBeVisible()
+    expect(await screen.findByLabelText('2 entries')).toHaveTextContent('2')
   })
 
   it('highlights participant fields and identifies validation failures', async () => {

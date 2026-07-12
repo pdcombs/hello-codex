@@ -19,9 +19,11 @@ import { createMailpitSender } from './email/mailpit-sender.js'
 import { createProviderSender } from './email/provider-sender.js'
 import { createLogger } from './observability/logger.js'
 import { runEventSetupMigration } from './migrations/002-event-categories-entries.js'
+import { runEntryDerivedParticipantMigration } from './migrations/003-entry-derived-participants.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
+import { createEventEntryRepository } from './repositories/event-entry-repository.js'
 import { createEventRepository } from './repositories/event-repository.js'
 import { createIdempotencyRepository } from './repositories/idempotency-repository.js'
 import { enforceEventSetupValidators, ensureCollectionsAndIndexes } from './repositories/indexes.js'
@@ -33,6 +35,7 @@ import { createAuthenticationService } from './services/authentication-service.j
 import { createEventRegistrationService } from './services/event-registration-service.js'
 import { createEventCategoryService } from './services/event-category-service.js'
 import { createEventService } from './services/event-service.js'
+import { createEventEntryService } from './services/event-entry-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
 
@@ -46,12 +49,14 @@ await mongo.connect()
 await ensureCollectionsAndIndexes(mongo.database)
 await runEventSetupMigration({ database: mongo.database, logger })
 await enforceEventSetupValidators(mongo.database)
+await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 
 const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
 const sessionRepository = createSessionRepository(mongo.database)
 const eventRepository = createEventRepository(mongo.database)
 const eventRegistrationRepository = createEventRegistrationRepository(mongo.database)
+const eventEntryRepository = createEventEntryRepository(mongo.database)
 const idempotencyRepository = createIdempotencyRepository(mongo.database)
 const auditRepository = createAuditEventRepository(mongo.database)
 const transport =
@@ -115,6 +120,7 @@ const authenticationService = createAuthenticationService({
 const eventService = createEventService({
   eventRepository,
   eventRegistrationRepository,
+  eventEntryRepository,
   accountRepository,
   idempotencyRepository,
   logger,
@@ -122,6 +128,14 @@ const eventService = createEventService({
 const eventRegistrationService = createEventRegistrationService({
   eventRepository,
   eventRegistrationRepository,
+  accountRepository,
+  idempotencyRepository,
+  withTransaction: mongo.withTransaction,
+  logger,
+})
+const eventEntryService = createEventEntryService({
+  eventRepository,
+  eventEntryRepository,
   accountRepository,
   idempotencyRepository,
   withTransaction: mongo.withTransaction,
@@ -137,7 +151,7 @@ const rootValue = {
     auditRepository,
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),
-  ...createEventResolvers({ eventService, eventRegistrationService, eventCategoryService, auditRepository }),
+  ...createEventResolvers({ eventService, eventRegistrationService, eventEntryService, eventCategoryService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,

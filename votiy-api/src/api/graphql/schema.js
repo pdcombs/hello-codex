@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { buildSchema, Kind, parse, validate } from 'graphql'
 
 const directory = dirname(fileURLToPath(import.meta.url))
-const contractPath = join(directory, '..', '..', '..', '..', 'specs', '002-event-categories-entries', 'contracts', 'schema.graphql')
+const contractPath = join(directory, '..', '..', '..', '..', 'specs', '003-entry-derived-participants', 'contracts', 'schema.graphql')
 
 function configureDateTimeScalar(schema) {
   const scalar = schema.getType('DateTime')

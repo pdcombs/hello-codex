@@ -1,12 +1,21 @@
-import { toClientError } from '../../domain/errors.js'
+import { ApplicationError, ErrorCode, toClientError } from '../../domain/errors.js'
 
 const successEvent = (event) => ({ __typename: 'EventSuccess', event })
 const successList = (events) => ({ __typename: 'EventListSuccess', events })
 const successRegistration = (registration) => ({ __typename: 'EventRegistrationSuccess', registration })
 const successRegistrations = (registrations) => ({ __typename: 'EventRegistrationListSuccess', registrations })
+const successParticipants = (participants) => ({ __typename: 'ParticipantListSuccess', participants })
+const successCreation = (result) => ({ __typename: 'EntryCreationSuccess', result })
+const successArchive = (result) => ({ __typename: 'EntryArchiveSuccess', result })
+const legacyRegistration = (participant, source) => ({
+  id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
+  displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
+  accountCompleted: true, status: 'REGISTERED', source,
+  createdAt: participant.entries[0]?.createdAt ?? new Date(),
+})
 const failure = (error, correlationId) => ({ __typename: 'OperationError', ...toClientError(error, correlationId) })
 
-export function createEventResolvers({ eventService, eventRegistrationService, eventCategoryService, auditRepository }) {
+export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null, eventCategoryService, auditRepository }) {
   return Object.freeze({
     async addEventCategory({ input }, context) {
       try {
@@ -52,8 +61,20 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async eventRegistrations({ eventId }, context) {
       try {
+        if (eventEntryService) {
+          const result = await eventEntryService.listParticipants({ eventId }, context.viewer)
+          return successRegistrations(result.participants.map((participant) => legacyRegistration(participant, 'HOST')))
+        }
         const result = await eventRegistrationService.listRegistrations({ eventId }, context.viewer)
         return successRegistrations(result.registrations)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async eventParticipants({ eventId }, context) {
+      try {
+        const result = await eventEntryService.listParticipants({ eventId }, context.viewer)
+        return successParticipants(result.participants)
       } catch (error) {
         return failure(error, context.correlationId)
       }
@@ -94,6 +115,13 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async registerForEvent({ input }, context) {
       try {
+        if (eventEntryService) {
+          const result = await eventEntryService.registerForEvent(input, context.viewer)
+          await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
+            subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+            metadata: { entryCount: result.createdEntries.length } })
+          return successRegistration(legacyRegistration(result.affectedParticipant, 'SELF'))
+        }
         const result = await eventRegistrationService.registerForEvent(input, context.viewer)
         await auditRepository?.append({
           name: 'participant.self_registered',
@@ -116,6 +144,13 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async addEventParticipant({ input }, context) {
       try {
+        if (eventEntryService) {
+          const result = await eventEntryService.addParticipant(input, context.viewer)
+          await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
+            subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+            metadata: { entryCount: result.createdEntries.length } })
+          return successRegistration(legacyRegistration(result.affectedParticipant, 'HOST'))
+        }
         const result = await eventRegistrationService.addParticipant(input, context.viewer)
         if (result.provisionalCreated) {
           await auditRepository?.append({
@@ -149,6 +184,14 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async removeEventParticipant({ input }, context) {
       try {
+        if (eventEntryService) {
+          const before = await eventEntryService.listParticipants({ eventId: input.eventId }, context.viewer)
+          const participant = before.participants.find(({ accountId }) => accountId === input.registrationId)
+          if (!participant) throw new ApplicationError(ErrorCode.NOT_FOUND)
+          await eventEntryService.archiveParticipantEntries({ eventId: input.eventId, accountId: input.registrationId,
+            idempotencyKey: crypto.randomUUID() }, context.viewer)
+          return successRegistration({ ...legacyRegistration(participant, 'HOST'), status: 'REMOVED' })
+        }
         const result = await eventRegistrationService.removeParticipant(input, context.viewer)
         await auditRepository?.append({
           name: 'participant.removed',
@@ -160,6 +203,51 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
           metadata: { registrationSource: result.registration.source },
         })
         return successRegistration(result.registration)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async createSelfEventEntries({ input }, context) {
+      try {
+        const result = await eventEntryService.registerForEvent(input, context.viewer)
+        await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+          metadata: { entryCount: result.createdEntries.length } })
+        return successCreation(result)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async createEventEntriesForParticipant({ input }, context) {
+      try {
+        const result = await eventEntryService.addParticipant(input, context.viewer)
+        await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+          metadata: { entryCount: result.createdEntries.length } })
+        return successCreation(result)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async archiveEventEntry({ input }, context) {
+      try {
+        const result = await eventEntryService.archiveEntry(input, context.viewer)
+        await auditRepository?.append({ name: 'entry.archived', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+          metadata: { entryCount: result.archivedEntryIds.length, archiveReason: 'entry_removed' } })
+        return successArchive(result)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async archiveEventParticipantEntries({ input }, context) {
+      try {
+        const result = await eventEntryService.archiveParticipantEntries(input, context.viewer)
+        await auditRepository?.append({ name: 'participant.entries_archived',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event', subjectId: input.eventId,
+          outcome: 'success', correlationId: context.correlationId,
+          metadata: { entryCount: result.archivedEntryIds.length, archiveReason: 'participant_removed' } })
+        return successArchive(result)
       } catch (error) {
         return failure(error, context.correlationId)
       }

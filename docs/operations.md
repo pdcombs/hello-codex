@@ -50,6 +50,8 @@ volume reset.
 - Email delivery failures: `email.failed` events
 - Deployment health: post-deploy smoke pass/fail rate
 - Grouped setup reads: `event.setup_view.completed` latency, category/entry counts, and failure rate
+- Entry-derived participant reads: `operation:"event.participants_read"` latency, participant count, and failure rate
+- Entry archival: `entry.archived` and `participant.entries_archived` success/error rate
 
 ## Render / Atlas query ideas
 
@@ -62,6 +64,8 @@ volume reset.
   - `operation:"event.category_rename" outcome:"success"`
   - `operation:"event.setup_view" outcome:"failure"`
   - `event:"migration.stage.completed" migration:"002-event-categories-entries"`
+  - `event:"migration.completed" migration:"003-entry-derived-participants"`
+  - `operation:"event.participants_read" outcome:"failure"`
 - Atlas:
   - connection count and wait queue
   - primary CPU and memory
@@ -79,6 +83,8 @@ volume reset.
 - grouped setup-view p95 above 2 seconds or failure rate above 2% for 10 minutes
 - setup mutation errors above 5% for 10 minutes across participant and category operations
 - any `002-event-categories-entries` migration failure or `/ready` migration dependency failure
+- any `003-entry-derived-participants` migration failure
+- entry archive mutation errors above 5% for 10 minutes
 
 Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
 category titles, entry titles, display names, email addresses, or phone numbers.
@@ -113,3 +119,14 @@ category titles, entry titles, display names, email addresses, or phone numbers.
 For event-setup rollback, do not reverse migration 002: version-2 documents remain readable by
 transitional code. Roll back application commit, confirm `/ready`, verify grouped public reads and
 host participant summaries, then forward-fix. Never delete categories or entries during rollback.
+
+For entry-derived participant rollback, never delete `eventEntries` or reverse migration 003. Archived
+entries are retained indefinitely without a TTL. Roll back the application commit, verify legacy embedded
+registration reads during the compatibility window, then forward-fix. Diagnose by correlation ID and
+operation name before inspecting database records. Logs and audit metadata must not contain entry titles,
+display names, email addresses, or phone numbers.
+
+Production smoke may exercise safe archival only against the dedicated synthetic event. Configure
+`PRODUCTION_SYNTHETIC_HOST_EMAIL`, `PRODUCTION_SYNTHETIC_HOST_PASSWORD`, `PRODUCTION_SYNTHETIC_EVENT_ID`,
+and `PRODUCTION_SYNTHETIC_CATEGORY_ID` together. The smoke creates one synthetic entry, archives it, and
+verifies the owner leaves active participant views; it never targets real user fixtures.

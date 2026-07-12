@@ -154,4 +154,50 @@ describe('GraphQL resolvers', () => {
     await expect(failingResolvers.addEventParticipant({ input: {} }, context)).resolves.toMatchObject({ __typename: 'OperationError', code: 'VALIDATION_FAILED' })
     await expect(failingResolvers.removeEventParticipant({ input: {} }, context)).resolves.toMatchObject({ __typename: 'OperationError', code: 'CONFLICT' })
   })
+
+  it('resolves entry-derived participant creation, reads, and archive results', async () => {
+    const result = { createdEntries: [{ id: 'entry-1', createdAt: new Date() }], affectedParticipant: {
+      accountId: 'account-1', displayName: 'Peyton', email: 'peyton@example.test', entryCount: 1,
+      entries: [{ id: 'entry-1', createdAt: new Date() }],
+    } }
+    const archive = { archivedEntryIds: ['entry-1'], affectedParticipant: null }
+    const eventEntryService = {
+      listParticipants: vi.fn().mockResolvedValue({ participants: [result.affectedParticipant] }),
+      registerForEvent: vi.fn().mockResolvedValue(result),
+      addParticipant: vi.fn().mockResolvedValue(result),
+      archiveEntry: vi.fn().mockResolvedValue(archive),
+      archiveParticipantEntries: vi.fn().mockResolvedValue(archive),
+    }
+    const auditRepository = { append: vi.fn().mockResolvedValue(undefined) }
+    const resolvers = createEventResolvers({ eventService: {}, eventRegistrationService: {},
+      eventEntryService, auditRepository })
+    const context = { correlationId: 'cid', viewer: { account } }
+    await expect(resolvers.eventParticipants({ eventId: 'evt-1' }, context))
+      .resolves.toMatchObject({ __typename: 'ParticipantListSuccess' })
+    await expect(resolvers.eventRegistrations({ eventId: 'evt-1' }, context))
+      .resolves.toMatchObject({ __typename: 'EventRegistrationListSuccess' })
+    await expect(resolvers.registerForEvent({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EventRegistrationSuccess' })
+    await expect(resolvers.addEventParticipant({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EventRegistrationSuccess' })
+    await expect(resolvers.createSelfEventEntries({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EntryCreationSuccess' })
+    await expect(resolvers.createEventEntriesForParticipant({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EntryCreationSuccess' })
+    await expect(resolvers.archiveEventEntry({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EntryArchiveSuccess' })
+    await expect(resolvers.archiveEventParticipantEntries({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EntryArchiveSuccess' })
+    await expect(resolvers.removeEventParticipant({ input: { eventId: 'evt-1', registrationId: 'account-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EventRegistrationSuccess', registration: { status: 'REMOVED' } })
+
+    for (const method of Object.keys(eventEntryService)) {
+      eventEntryService[method].mockRejectedValue(new ApplicationError(ErrorCode.FORBIDDEN))
+    }
+    await expect(resolvers.eventParticipants({ eventId: 'evt-1' }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.createSelfEventEntries({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.createEventEntriesForParticipant({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.archiveEventEntry({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.archiveEventParticipantEntries({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+  })
 })

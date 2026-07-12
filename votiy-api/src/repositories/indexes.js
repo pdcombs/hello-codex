@@ -114,6 +114,29 @@ export const collectionDefinitions = Object.freeze({
       { key: { eventId: 1, status: 1, createdAt: 1 }, name: 'registration_event_active' },
     ],
   },
+  eventEntries: {
+    validator: {
+      $jsonSchema: {
+        bsonType: 'object',
+        required: ['eventId', 'categoryId', 'ownerAccountId', 'title', 'createdByAccountId', 'status',
+          'archiveReason', 'archivedAt', 'archivedByAccountId', 'createdAt', 'updatedAt', 'schemaVersion'],
+        additionalProperties: false,
+        properties: {
+          _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, categoryId: { bsonType: 'objectId' },
+          ownerAccountId: { bsonType: 'objectId' }, title: { bsonType: 'string', minLength: 1, maxLength: 160 },
+          createdByAccountId: { bsonType: 'objectId' }, status: { enum: ['active', 'archived'] },
+          archiveReason: { bsonType: ['string', 'null'] }, archivedAt: dateOrNull,
+          archivedByAccountId: objectIdOrNull, createdAt: { bsonType: 'date' }, updatedAt: { bsonType: 'date' },
+          schemaVersion: { enum: [1] },
+        },
+      },
+    },
+    indexes: [
+      { key: { eventId: 1, status: 1, categoryId: 1, createdAt: 1, _id: 1 }, name: 'entry_event_category_active' },
+      { key: { eventId: 1, status: 1, ownerAccountId: 1, createdAt: 1, _id: 1 }, name: 'entry_event_owner_active' },
+      { key: { ownerAccountId: 1, status: 1, eventId: 1 }, name: 'entry_owner_status_event' },
+    ],
+  },
   idempotencyRecords: {
     validator: {
       $jsonSchema: {

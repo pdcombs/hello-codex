@@ -17,10 +17,10 @@ description: "Implementation tasks for entry-derived participants"
 
 **Purpose**: Stage the v3 contract, compatibility controls, and reusable fixtures without changing production behavior.
 
-- [ ] T001 Add a disabled-by-default entry-derived participant activation gate and document coordinated activation in `votiy-api/src/config/env.js`, `votiy-web/src/config/features.js`, and `docs/operations.md`
-- [ ] T002 [P] Add standalone active/archived entry and participant-projection fixtures in `votiy-api/tests/support/entry-derived-participants.js`
-- [ ] T003 [P] Add reusable participant-card and archive browser fixtures in `tests/e2e/fixtures/entry-derived-participants.js`
-- [ ] T004 Stage and syntax-test the v3 GraphQL contract without switching the runtime schema in `specs/003-entry-derived-participants/contracts/schema.graphql` and `votiy-api/tests/contract/schema.contract.test.js`
+- [X] T001 Add a disabled-by-default entry-derived participant activation gate and document coordinated activation in `votiy-api/src/config/env.js`, `votiy-web/src/config/features.js`, and `docs/operations.md`
+- [X] T002 [P] Add standalone active/archived entry and participant-projection fixtures in `votiy-api/tests/support/entry-derived-participants.js`
+- [X] T003 [P] Add reusable participant-card and archive browser fixtures in `tests/e2e/fixtures/entry-derived-participants.js`
+- [X] T004 Stage and syntax-test the v3 GraphQL contract without switching the runtime schema in `specs/003-entry-derived-participants/contracts/schema.graphql` and `votiy-api/tests/contract/schema.contract.test.js`
 
 ---
 
@@ -30,16 +30,16 @@ description: "Implementation tasks for entry-derived participants"
 
 **⚠️ CRITICAL**: No user-story implementation begins until this phase passes.
 
-- [ ] T005 [P] Write failing entry lifecycle unit tests for active/archive invariants, immutable ownership/category data, reasons, and privacy-safe projections in `votiy-api/tests/unit/event-entry-lifecycle.test.js`
-- [ ] T006 [P] Write failing persistence contract tests for `eventEntries` validation, archival fields, no TTL, and all query indexes in `votiy-api/tests/contract/event-entry-persistence.contract.test.js`
-- [ ] T007 [P] Write failing migration integration tests covering active/removed registrations, preserved IDs/references, invalid references, checkpoints, mismatches, and idempotent restart in `votiy-api/tests/integration/entry-derived-participant-migration.test.js`
-- [ ] T008 Extend the Entry domain with standalone active/archive document construction and state transitions in `votiy-api/src/domain/event-entry.js`
-- [ ] T009 Add strict `eventEntries` collection validation and event/category/owner indexes without changing legacy registration validators in `votiy-api/src/repositories/indexes.js`
-- [ ] T010 Implement standalone entry lookup, insertion, grouping, conditional archive, and transactional batch archive persistence in `votiy-api/src/repositories/event-entry-repository.js`
-- [ ] T011 Register the entry repository and transaction dependencies without activating application reads or writes in `votiy-api/src/server.js`
-- [ ] T012 Implement checkpointed idempotent migration 003 from every active/removed embedded registration entry into standalone entries in `votiy-api/src/migrations/003-entry-derived-participants.js`
-- [ ] T013 Run migration 003 before readiness, verify counts/references, and retain registration data for compatibility rollback in `votiy-api/src/server.js` and `votiy-api/src/api/health.js`
-- [ ] T014 Add privacy-safe migration metrics, mismatch diagnostics, and readiness tests in `votiy-api/src/observability/logger.js` and `votiy-api/tests/integration/entry-derived-participant-migration.test.js`
+- [X] T005 [P] Write failing entry lifecycle unit tests for active/archive invariants, immutable ownership/category data, reasons, and privacy-safe projections in `votiy-api/tests/unit/event-entry-lifecycle.test.js`
+- [X] T006 [P] Write failing persistence contract tests for `eventEntries` validation, archival fields, no TTL, and all query indexes in `votiy-api/tests/contract/event-entry-persistence.contract.test.js`
+- [X] T007 [P] Write failing migration integration tests covering active/removed registrations, preserved IDs/references, invalid references, checkpoints, mismatches, and idempotent restart in `votiy-api/tests/integration/entry-derived-participant-migration.test.js`
+- [X] T008 Extend the Entry domain with standalone active/archive document construction and state transitions in `votiy-api/src/domain/event-entry.js`
+- [X] T009 Add strict `eventEntries` collection validation and event/category/owner indexes without changing legacy registration validators in `votiy-api/src/repositories/indexes.js`
+- [X] T010 Implement standalone entry lookup, insertion, grouping, conditional archive, and transactional batch archive persistence in `votiy-api/src/repositories/event-entry-repository.js`
+- [X] T011 Register the entry repository and transaction dependencies without activating application reads or writes in `votiy-api/src/server.js`
+- [X] T012 Implement checkpointed idempotent migration 003 from every active/removed embedded registration entry into standalone entries in `votiy-api/src/migrations/003-entry-derived-participants.js`
+- [X] T013 Run migration 003 before readiness, verify counts/references, and retain registration data for compatibility rollback in `votiy-api/src/server.js` and `votiy-api/src/api/health.js`
+- [X] T014 Add privacy-safe migration metrics, mismatch diagnostics, and readiness tests in `votiy-api/src/observability/logger.js` and `votiy-api/tests/integration/entry-derived-participant-migration.test.js`
 
 **Checkpoint**: Standalone entries mirror all legacy embedded entries, rerun safely, and remain dormant until story activation.
 
@@ -53,20 +53,20 @@ description: "Implementation tasks for entry-derived participants"
 
 ### Tests for User Story 1
 
-- [ ] T015 [P] [US1] Write failing service tests for first-entry participation, no-entry exclusion, cross-event isolation, and pre-archived final-entry exclusion in `votiy-api/tests/unit/event-entry-service.test.js`
-- [ ] T016 [P] [US1] Write failing GraphQL contract tests for separate entry-creation payloads and entry-derived category projections in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
-- [ ] T017 [P] [US1] Write failing real-Mongo transaction tests for host/self account-entry creation, rollback, idempotency, and no registration writes in `votiy-api/tests/integration/event-entry-creation.test.js`
-- [ ] T018 [P] [US1] Write failing grouped event-view tests proving only active standalone entries populate categories and owners in `votiy-api/tests/unit/event-setup-view.test.js`
-- [ ] T019 [P] [US1] Add CUF-001 E2E coverage for first entry automatically creating derived participation in `tests/e2e/entry-derived-participants.spec.js`
+- [X] T015 [P] [US1] Write failing service tests for first-entry participation, no-entry exclusion, cross-event isolation, and pre-archived final-entry exclusion in `votiy-api/tests/unit/event-entry-service.test.js`
+- [X] T016 [P] [US1] Write failing GraphQL contract tests for separate entry-creation payloads and entry-derived category projections in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
+- [X] T017 [P] [US1] Write failing real-Mongo transaction tests for host/self account-entry creation, rollback, idempotency, and no registration writes in `votiy-api/tests/integration/event-entry-creation.test.js`
+- [X] T018 [P] [US1] Write failing grouped event-view tests proving only active standalone entries populate categories and owners in `votiy-api/tests/unit/event-setup-view.test.js`
+- [X] T019 [P] [US1] Add CUF-001 E2E coverage for first entry automatically creating derived participation in `tests/e2e/entry-derived-participants.spec.js`
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Add standalone entry creation and archive input validation with field-specific failures in `votiy-api/src/domain/validation.js`
-- [ ] T021 [US1] Implement atomic host/self account plus standalone-entry plus idempotency orchestration without registration writes in `votiy-api/src/services/event-entry-service.js`
-- [ ] T022 [US1] Project category-grouped event details exclusively from active standalone entries in `votiy-api/src/services/event-service.js`
-- [ ] T023 [US1] Add entry-creation GraphQL resolver adapters and deprecated registration compatibility responses in `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T024 [US1] Update host and OPEN-event web mutations to consume standalone entry mutation results while preserving current forms in `votiy-web/src/features/events/events.graphql.js`, `votiy-web/src/features/events/EventParticipantsPanel.jsx`, and `votiy-web/src/features/events/EventPage.jsx`
-- [ ] T025 [US1] Emit privacy-safe entry-created audit events and operation signals without titles/contact data in `votiy-api/src/api/graphql/event-resolvers.js`, `votiy-api/src/repositories/audit-event-repository.js`, and `votiy-api/src/observability/logger.js`
+- [X] T020 [US1] Add standalone entry creation and archive input validation with field-specific failures in `votiy-api/src/domain/validation.js`
+- [X] T021 [US1] Implement atomic host/self account plus standalone-entry plus idempotency orchestration without registration writes in `votiy-api/src/services/event-entry-service.js`
+- [X] T022 [US1] Project category-grouped event details exclusively from active standalone entries in `votiy-api/src/services/event-service.js`
+- [X] T023 [US1] Add entry-creation GraphQL resolver adapters and deprecated registration compatibility responses in `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T024 [US1] Update host and OPEN-event web mutations to consume standalone entry mutation results while preserving current forms in `votiy-web/src/features/events/events.graphql.js`, `votiy-web/src/features/events/EventParticipantsPanel.jsx`, and `votiy-web/src/features/events/EventPage.jsx`
+- [X] T025 [US1] Emit privacy-safe entry-created audit events and operation signals without titles/contact data in `votiy-api/src/api/graphql/event-resolvers.js`, `votiy-api/src/repositories/audit-event-repository.js`, and `votiy-api/src/observability/logger.js`
 
 **Checkpoint**: New host/self entries create participation solely through active entry ownership; active views no longer read membership status.
 
@@ -80,21 +80,21 @@ description: "Implementation tasks for entry-derived participants"
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Write failing participant projection unit tests for grouping, stable order, duplicate titles, missing email fallback, exact counts, and archived exclusion in `votiy-api/tests/unit/event-participant-projection.test.js`
-- [ ] T027 [P] [US2] Write failing host-only `eventParticipants` GraphQL shape, authorization, and contact-privacy contract tests in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
-- [ ] T028 [P] [US2] Write failing real-Mongo participant projection tests at 1,000 owners/5,000 entries with the two-second outcome in `votiy-api/tests/integration/event-participant-projection.test.js`
-- [ ] T029 [P] [US2] Write failing accessible participant-card component tests for title, subtitle, entry list, right-aligned count, loading, empty, failure, and mobile layout in `votiy-web/tests/component/event-participant-cards.test.jsx`
-- [ ] T030 [P] [US2] Add CUF-002 and CUF-005 E2E coverage for host cards and unauthorized contact denial in `tests/e2e/entry-derived-participants.spec.js`
+- [X] T026 [P] [US2] Write failing participant projection unit tests for grouping, stable order, duplicate titles, missing email fallback, exact counts, and archived exclusion in `votiy-api/tests/unit/event-participant-projection.test.js`
+- [X] T027 [P] [US2] Write failing host-only `eventParticipants` GraphQL shape, authorization, and contact-privacy contract tests in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
+- [X] T028 [P] [US2] Write failing real-Mongo participant projection tests at 1,000 owners/5,000 entries with the two-second outcome in `votiy-api/tests/integration/event-participant-projection.test.js`
+- [X] T029 [P] [US2] Write failing accessible participant-card component tests for title, subtitle, entry list, right-aligned count, loading, empty, failure, and mobile layout in `votiy-web/tests/component/event-participant-cards.test.jsx`
+- [X] T030 [P] [US2] Add CUF-002 and CUF-005 E2E coverage for host cards and unauthorized contact denial in `tests/e2e/entry-derived-participants.spec.js`
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Implement active-entry owner grouping and batched account resolution in `votiy-api/src/services/event-entry-service.js`
-- [ ] T032 [US2] Add host-only `eventParticipants` resolver, projection types, and safe failure responses in `votiy-api/src/api/graphql/event-resolvers.js` and `votiy-api/src/api/graphql/schema.js`
-- [ ] T033 [US2] Add participant-card query and normalization while retaining a temporary legacy-query fallback in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T034 [US2] Build the reusable accessible participant card and list components in `votiy-web/src/features/events/EventParticipantCard.jsx` and `votiy-web/src/features/events/EventParticipantCardList.jsx`
-- [ ] T035 [US2] Replace registration rows with participant cards and host-only empty/loading/failure states in `votiy-web/src/features/events/EventParticipantsPanel.jsx`
-- [ ] T036 [US2] Add responsive participant-card layout, right-aligned count, and long-title overflow handling in `votiy-web/src/App.css`
-- [ ] T037 [US2] Emit participant-read latency/error/count signals without email or titles and document the diagnostic query in `votiy-api/src/observability/logger.js` and `docs/operations.md`
+- [X] T031 [US2] Implement active-entry owner grouping and batched account resolution in `votiy-api/src/services/event-entry-service.js`
+- [X] T032 [US2] Add host-only `eventParticipants` resolver, projection types, and safe failure responses in `votiy-api/src/api/graphql/event-resolvers.js` and `votiy-api/src/api/graphql/schema.js`
+- [X] T033 [US2] Add participant-card query and normalization while retaining a temporary legacy-query fallback in `votiy-web/src/features/events/events.graphql.js`
+- [X] T034 [US2] Build the reusable accessible participant card and list components in `votiy-web/src/features/events/EventParticipantCard.jsx` and `votiy-web/src/features/events/EventParticipantCardList.jsx`
+- [X] T035 [US2] Replace registration rows with participant cards and host-only empty/loading/failure states in `votiy-web/src/features/events/EventParticipantsPanel.jsx`
+- [X] T036 [US2] Add responsive participant-card layout, right-aligned count, and long-title overflow handling in `votiy-web/src/App.css`
+- [X] T037 [US2] Emit participant-read latency/error/count signals without email or titles and document the diagnostic query in `votiy-api/src/observability/logger.js` and `docs/operations.md`
 
 **Checkpoint**: The Participants tab exactly reflects distinct active entry owners and exposes email only to the event host.
 
@@ -108,22 +108,22 @@ description: "Implementation tasks for entry-derived participants"
 
 ### Tests for User Story 3
 
-- [ ] T038 [P] [US3] Write failing service tests for one-entry, final-entry, and participant batch archival; ownership denial; retries; zero matches; and other-event isolation in `votiy-api/tests/unit/event-entry-service.test.js`
-- [ ] T039 [P] [US3] Write failing archive-mutation contract tests for the separate archive payload, explicit inputs, archived IDs, affected participant projection, and operation errors in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
-- [ ] T040 [P] [US3] Write failing real-Mongo tests for conditional archive concurrency, all-or-nothing participant archive, retained history, and audit identity in `votiy-api/tests/integration/event-entry-archive.test.js`
-- [ ] T041 [P] [US3] Write failing component tests for entry/participant confirmation, success refresh, failure preservation, and affected-count messaging in `votiy-web/tests/component/event-entry-archive.test.jsx`
-- [ ] T042 [P] [US3] Add CUF-003, CUF-004, and CUF-006 E2E coverage for partial, final, and participant archival in `tests/e2e/entry-derived-participants.spec.js`
+- [X] T038 [P] [US3] Write failing service tests for one-entry, final-entry, and participant batch archival; ownership denial; retries; zero matches; and other-event isolation in `votiy-api/tests/unit/event-entry-service.test.js`
+- [X] T039 [P] [US3] Write failing archive-mutation contract tests for the separate archive payload, explicit inputs, archived IDs, affected participant projection, and operation errors in `votiy-api/tests/contract/entry-derived-participants.contract.test.js`
+- [X] T040 [P] [US3] Write failing real-Mongo tests for conditional archive concurrency, all-or-nothing participant archive, retained history, and audit identity in `votiy-api/tests/integration/event-entry-archive.test.js`
+- [X] T041 [P] [US3] Write failing component tests for entry/participant confirmation, success refresh, failure preservation, and affected-count messaging in `votiy-web/tests/component/event-entry-archive.test.jsx`
+- [X] T042 [P] [US3] Add CUF-003, CUF-004, and CUF-006 E2E coverage for partial, final, and participant archival in `tests/e2e/entry-derived-participants.spec.js`
 
 ### Implementation for User Story 3
 
-- [ ] T043 [US3] Implement host-authorized idempotent one-entry and transactional participant-entry archival orchestration in `votiy-api/src/services/event-entry-service.js`
-- [ ] T044 [US3] Add `archiveEventEntry` and `archiveEventParticipantEntries` resolvers with conflict and not-found behavior in `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T045 [US3] Allowlist privacy-safe `entry.archived` and `participant.entries_archived` audit events with affected IDs/count/reason in `votiy-api/src/repositories/audit-event-repository.js`
-- [ ] T046 [US3] Add web archive mutations and normalized affected-participant results in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T047 [US3] Add owner-only accessible entry-removal confirmation controls, public-view exclusion, and category/participant refresh in `votiy-web/src/features/events/EventEntryRow.jsx`, `votiy-web/src/features/events/OwnerEventPage.jsx`, and `votiy-web/tests/component/event-setup-view.test.jsx`
-- [ ] T048 [US3] Add participant-removal confirmation with affected entry count and all-or-nothing refresh behavior in `votiy-web/src/features/events/EventParticipantCard.jsx` and `votiy-web/src/features/events/EventParticipantsPanel.jsx`
-- [ ] T049 [US3] Remove registration-status mutation usage from active UI/API flows and route deprecated `removeEventParticipant` compatibility calls through batch entry archival in `votiy-api/src/services/event-registration-service.js`, `votiy-api/src/api/graphql/event-resolvers.js`, and `votiy-web/src/features/events/events.graphql.js`
-- [ ] T050 [US3] Atomically activate v3 runtime schema and web gate after migration catch-up while preserving cached-client reload diagnostics in `votiy-api/src/api/graphql/schema.js`, `votiy-api/src/server.js`, and `votiy-web/src/config/features.js`
+- [X] T043 [US3] Implement host-authorized idempotent one-entry and transactional participant-entry archival orchestration in `votiy-api/src/services/event-entry-service.js`
+- [X] T044 [US3] Add `archiveEventEntry` and `archiveEventParticipantEntries` resolvers with conflict and not-found behavior in `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T045 [US3] Allowlist privacy-safe `entry.archived` and `participant.entries_archived` audit events with affected IDs/count/reason in `votiy-api/src/repositories/audit-event-repository.js`
+- [X] T046 [US3] Add web archive mutations and normalized affected-participant results in `votiy-web/src/features/events/events.graphql.js`
+- [X] T047 [US3] Add owner-only accessible entry-removal confirmation controls, public-view exclusion, and category/participant refresh in `votiy-web/src/features/events/EventEntryRow.jsx`, `votiy-web/src/features/events/OwnerEventPage.jsx`, and `votiy-web/tests/component/event-setup-view.test.jsx`
+- [X] T048 [US3] Add participant-removal confirmation with affected entry count and all-or-nothing refresh behavior in `votiy-web/src/features/events/EventParticipantCard.jsx` and `votiy-web/src/features/events/EventParticipantsPanel.jsx`
+- [X] T049 [US3] Remove registration-status mutation usage from active UI/API flows and route deprecated `removeEventParticipant` compatibility calls through batch entry archival in `votiy-api/src/services/event-registration-service.js`, `votiy-api/src/api/graphql/event-resolvers.js`, and `votiy-web/src/features/events/events.graphql.js`
+- [X] T050 [US3] Atomically activate v3 runtime schema and web gate after migration catch-up while preserving cached-client reload diagnostics in `votiy-api/src/api/graphql/schema.js`, `votiy-api/src/server.js`, and `votiy-web/src/config/features.js`
 
 **Checkpoint**: Every removal is archival, category and participant views agree, no participant state is stored, and other events remain untouched.
 
@@ -133,13 +133,13 @@ description: "Implementation tasks for entry-derived participants"
 
 **Purpose**: Close migration, compatibility, performance, accessibility, delivery, privacy, and operational quality gates.
 
-- [ ] T051 [P] Close every archive/authorization/migration decision path and repository-wide 80% line/branch coverage gaps in `votiy-api/tests/unit/`, `votiy-api/tests/contract/`, and `votiy-web/tests/component/`
-- [ ] T052 [P] Add migration-003 readiness, active-entry public read, participant-count, privacy, exact-commit, and isolated synthetic create/archive production smoke checks in `tests/smoke/production-smoke.js` and `.github/workflows/ci.yml`
-- [ ] T053 [P] Document migration counts, participant-read SLI, archive error-rate and migration alerts, correlation-first diagnosis, compatibility window, and rollback in `docs/operations.md`
-- [ ] T054 Validate keyboard focus, confirmation dialogs, card semantics, error announcements, long content, and mobile overflow in `tests/e2e/responsive-accessibility.spec.js`
-- [ ] T055 Verify logs and audit allowlists reject entry titles, display names, email, phone, tokens, and unknown metadata in `votiy-api/tests/integration/security-and-failures.test.js` and `votiy-api/tests/unit/polish-coverage.test.js`
+- [X] T051 [P] Close every archive/authorization/migration decision path and repository-wide 80% line/branch coverage gaps in `votiy-api/tests/unit/`, `votiy-api/tests/contract/`, and `votiy-web/tests/component/`
+- [X] T052 [P] Add migration-003 readiness, active-entry public read, participant-count, privacy, exact-commit, and isolated synthetic create/archive production smoke checks in `tests/smoke/production-smoke.js` and `.github/workflows/ci.yml`
+- [X] T053 [P] Document migration counts, participant-read SLI, archive error-rate and migration alerts, correlation-first diagnosis, compatibility window, and rollback in `docs/operations.md`
+- [X] T054 Validate keyboard focus, confirmation dialogs, card semantics, error announcements, long content, and mobile overflow in `tests/e2e/responsive-accessibility.spec.js`
+- [X] T055 Verify logs and audit allowlists reject entry titles, display names, email, phone, tokens, and unknown metadata in `votiy-api/tests/integration/security-and-failures.test.js` and `votiy-api/tests/unit/polish-coverage.test.js`
 - [ ] T056 Run timed first-use participant-card and entry-ownership comprehension validation with at least ten testers and record anonymized aggregate outcomes in `specs/003-entry-derived-participants/checklists/requirements.md`
-- [ ] T057 Execute every scenario and quality gate in `specs/003-entry-derived-participants/quickstart.md` and record deviations in `specs/003-entry-derived-participants/checklists/requirements.md`
+- [X] T057 Execute every scenario and quality gate in `specs/003-entry-derived-participants/quickstart.md` and record deviations in `specs/003-entry-derived-participants/checklists/requirements.md`
 
 ---
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createGraphqlSchema, validateGraphqlOperation } from '../../src/api/graphql/schema.js'
 
 const eventSetupContract = new URL(
-  '../../../specs/002-event-categories-entries/contracts/schema.graphql',
+  '../../../specs/003-entry-derived-participants/contracts/schema.graphql',
   import.meta.url,
 )
 
@@ -12,9 +12,10 @@ describe('GraphQL schema contract', () => {
   it('loads the checked-in account, event, and registration operations', async () => {
     const schema = await createGraphqlSchema()
     expect(Object.keys(schema.getQueryType().getFields())).toEqual([
-      'viewer', 'ownedEvents', 'eventByPublicId', 'eventRegistrations',
+      'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'eventRegistrations',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
+    expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')
     expect(Object.keys(schema.getTypeMap()).filter((name) => !name.startsWith('__')).sort()).toMatchSnapshot()
   })
 

@@ -18,6 +18,7 @@ function validationError(error) {
 export function createEventService({
   eventRepository,
   eventRegistrationRepository = null,
+  eventEntryRepository = null,
   accountRepository = null,
   idempotencyRepository,
   generatePublicId = () => generateOpaqueToken(16),
@@ -26,8 +27,18 @@ export function createEventService({
   logger,
 }) {
   async function projectSetup(event, viewerAccountId) {
-    if (!eventRegistrationRepository || !accountRepository) return toEventView(event, viewerAccountId)
+    if (!accountRepository) return toEventView(event, viewerAccountId)
     const startedAt = process.hrtime.bigint()
+    if (eventEntryRepository) {
+      const entries = await eventEntryRepository.listActiveByEvent(event._id)
+      const accounts = await accountRepository.findByIds(entries.map(({ ownerAccountId }) => ownerAccountId))
+      const result = projectEventEntries(event, entries, accounts, viewerAccountId)
+      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
+      logGroupedView(logger, { outcome: 'success', durationMs, categoryCount: result.categories.length,
+        entryCount: entries.length })
+      return result
+    }
+    if (!eventRegistrationRepository) return toEventView(event, viewerAccountId)
     const registrations = await eventRegistrationRepository.listByEvent(event._id, { status: 'registered' })
     const accounts = await accountRepository.findByIds(registrations.map(({ accountId }) => accountId))
     const result = projectEventSetup(event, registrations, accounts, viewerAccountId)
@@ -115,6 +126,21 @@ export function createEventService({
       return { event: toEventView(event, viewer.account._id) }
     },
   })
+}
+
+export function projectEventEntries(event, entries, accounts, viewerAccountId = null) {
+  const base = toEventView(event, viewerAccountId)
+  const accountsById = new Map(accounts.map((account) => [String(account._id), account]))
+  const entriesByCategory = new Map((event.categories ?? []).map(({ _id }) => [String(_id), []]))
+  for (const entry of entries) {
+    if (entry.status !== 'active') continue
+    const owner = accountsById.get(String(entry.ownerAccountId))
+    if (!owner?.displayName) continue
+    entriesByCategory.get(String(entry.categoryId))?.push(toEntryView(entry, owner))
+  }
+  return Object.freeze({ ...base, categories: base.categories.map((category) => Object.freeze({
+    ...category, entries: entriesByCategory.get(category.id) ?? [],
+  })) })
 }
 
 export function projectEventSetup(event, registrations, accounts, viewerAccountId = null) {

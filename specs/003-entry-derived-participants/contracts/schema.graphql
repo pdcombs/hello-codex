@@ -15,6 +15,8 @@ enum ErrorCode {
 
 enum EventRegistrationPolicy { ADMIN_MANAGED OPEN }
 enum EventEntryStatus { ACTIVE ARCHIVED }
+enum EventRegistrationStatus { REGISTERED REMOVED }
+enum EventRegistrationSource { SELF HOST }
 
 type FieldError { field: String! code: String! message: String! }
 type OperationError { code: ErrorCode! message: String! fieldErrors: [FieldError!]! correlationId: String }
@@ -61,6 +63,20 @@ type ParticipantCard {
   entryCount: Int!
 }
 
+type EventRegistration {
+  id: ID!
+  accountId: ID!
+  email: String
+  phone: String
+  displayName: String!
+  entryCount: Int!
+  entries: [EventEntry!]!
+  accountCompleted: Boolean!
+  status: EventRegistrationStatus!
+  source: EventRegistrationSource!
+  createdAt: DateTime!
+}
+
 type EntryCreationPayload {
   createdEntries: [EventEntry!]!
   affectedParticipant: ParticipantCard!
@@ -78,6 +94,8 @@ type SignOutSuccess { signedOut: Boolean! }
 type EventSuccess { event: Event! }
 type EventListSuccess { events: OwnedEventConnection! }
 type ParticipantListSuccess { participants: [ParticipantCard!]! }
+type EventRegistrationSuccess { registration: EventRegistration! }
+type EventRegistrationListSuccess { registrations: [EventRegistration!]! }
 type EntryCreationSuccess { result: EntryCreationPayload! }
 type EntryArchiveSuccess { result: EntryArchivePayload! }
 
@@ -87,6 +105,8 @@ union SignOutResult = SignOutSuccess | OperationError
 union EventResult = EventSuccess | OperationError
 union EventListResult = EventListSuccess | OperationError
 union ParticipantListResult = ParticipantListSuccess | OperationError
+union EventRegistrationResult = EventRegistrationSuccess | OperationError
+union EventRegistrationListResult = EventRegistrationListSuccess | OperationError
 union EntryCreationResult = EntryCreationSuccess | OperationError
 union EntryArchiveResult = EntryArchiveSuccess | OperationError
 
@@ -115,12 +135,14 @@ input AddEventCategoryInput { eventId: ID! title: String! idempotencyKey: ID! }
 input RenameEventCategoryInput { eventId: ID! categoryId: ID! title: String! idempotencyKey: ID! }
 input ArchiveEventEntryInput { eventId: ID! entryId: ID! idempotencyKey: ID! }
 input ArchiveEventParticipantEntriesInput { eventId: ID! accountId: ID! idempotencyKey: ID! }
+input RemoveEventParticipantInput { eventId: ID! registrationId: ID! }
 
 type Query {
   viewer: SessionResult!
   ownedEvents(first: Int = 20, after: String): EventListResult!
   eventByPublicId(publicId: String!): EventResult!
   eventParticipants(eventId: ID!): ParticipantListResult!
+  eventRegistrations(eventId: ID!): EventRegistrationListResult! @deprecated(reason: "Use eventParticipants")
 }
 
 type Mutation {
@@ -133,8 +155,11 @@ type Mutation {
   setEventRegistrationPolicy(input: SetEventRegistrationPolicyInput!): EventResult!
   addEventCategory(input: AddEventCategoryInput!): EventResult!
   renameEventCategory(input: RenameEventCategoryInput!): EventResult!
-  registerForEvent(input: RegisterForEventInput!): EntryCreationResult!
-  addEventParticipant(input: AddEventParticipantInput!): EntryCreationResult!
+  createSelfEventEntries(input: RegisterForEventInput!): EntryCreationResult!
+  createEventEntriesForParticipant(input: AddEventParticipantInput!): EntryCreationResult!
+  registerForEvent(input: RegisterForEventInput!): EventRegistrationResult! @deprecated(reason: "Use createSelfEventEntries")
+  addEventParticipant(input: AddEventParticipantInput!): EventRegistrationResult! @deprecated(reason: "Use createEventEntriesForParticipant")
+  removeEventParticipant(input: RemoveEventParticipantInput!): EventRegistrationResult! @deprecated(reason: "Use archiveEventParticipantEntries")
   archiveEventEntry(input: ArchiveEventEntryInput!): EntryArchiveResult!
   archiveEventParticipantEntries(input: ArchiveEventParticipantEntriesInput!): EntryArchiveResult!
 }

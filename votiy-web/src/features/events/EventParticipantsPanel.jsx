@@ -3,15 +3,16 @@ import EmptyState from '../../components/EmptyState.jsx'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
-import { addEventParticipant, loadEventRegistrations, removeEventParticipant } from './events.graphql.js'
+import { addEventParticipant, archiveEventParticipantEntries, loadEventParticipants } from './events.graphql.js'
+import EventParticipantCardList from './EventParticipantCardList.jsx'
 import ParticipantEntryFields from './ParticipantEntryFields.jsx'
 import { readEntries } from './participant-entry-form.js'
 
 export default function EventParticipantsPanel({
   eventId,
-  loader = loadEventRegistrations,
+  loader = loadEventParticipants,
   addParticipant = addEventParticipant,
-  removeParticipant = removeEventParticipant,
+  removeParticipant = archiveEventParticipantEntries,
   categories = [],
   legacy = false,
 }) {
@@ -22,7 +23,7 @@ export default function EventParticipantsPanel({
     saving: false,
     error: null,
     fieldErrors: {},
-    registrations: [],
+    participants: [],
   })
 
   useEffect(() => {
@@ -30,11 +31,12 @@ export default function EventParticipantsPanel({
     loader(eventId)
       .then((result) => {
         if (!active) return
-        setState({ status: 'success', saving: false, error: null, fieldErrors: {}, registrations: result.registrations })
+        setState({ status: 'success', saving: false, error: null, fieldErrors: {},
+          participants: normalizeParticipants(result) })
       })
       .catch((error) => {
         if (!active) return
-        setState({ status: 'error', saving: false, error, fieldErrors: {}, registrations: [] })
+        setState({ status: 'error', saving: false, error, fieldErrors: {}, participants: [] })
       })
     return () => {
       active = false
@@ -70,7 +72,8 @@ export default function EventParticipantsPanel({
         ...current,
         saving: false,
         fieldErrors: {},
-        registrations: upsertRegistration(current.registrations, result.registration),
+        participants: upsertParticipant(current.participants,
+          result.affectedParticipant ?? normalizeRegistration(result.registration)),
       }))
       formElement.reset()
       setEntryCount(1)
@@ -80,14 +83,17 @@ export default function EventParticipantsPanel({
     }
   }
 
-  async function onRemove(registrationId) {
+  async function onRemove(participant) {
     setState((current) => ({ ...current, saving: true, error: null, fieldErrors: {} }))
     try {
-      const result = await removeParticipant({ eventId, registrationId })
+      await removeParticipant(participant.registrationId
+        ? { eventId, registrationId: participant.registrationId }
+        : { eventId, accountId: participant.accountId,
+            idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-participant-remove` })
       setState((current) => ({
         ...current,
         saving: false,
-        registrations: current.registrations.filter((item) => item.id !== result.registration.id),
+        participants: current.participants.filter((item) => item.accountId !== participant.accountId),
       }))
     } catch (error) {
       setState((current) => ({ ...current, saving: false, error }))
@@ -124,24 +130,12 @@ export default function EventParticipantsPanel({
         <ErrorState title="Participants unavailable" message={state.error.message} />
       )}
 
-      {state.status === 'success' && state.registrations.length === 0 && (
+      {state.status === 'success' && state.participants.length === 0 && (
         <EmptyState title="No participants yet" message="No participants registered yet." />
       )}
 
-      {state.status === 'success' && state.registrations.length > 0 && (
-        <ul aria-label="Participants" className="record-list">
-          {state.registrations.map((registration) => (
-            <li key={registration.id}>
-              <div>
-                <strong>{registration.displayName ?? registration.email ?? registration.phone ?? registration.accountId}</strong>
-                <p><span>{registration.entryCount ?? 0} entries</span> · <span>{registration.accountCompleted ? 'Account complete' : 'Provisional account'}</span></p>
-              </div>
-              <button type="button" onClick={() => onRemove(registration.id)} disabled={state.saving}>
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
+      {state.status === 'success' && state.participants.length > 0 && (
+        <EventParticipantCardList participants={state.participants} onRemove={onRemove} disabled={state.saving} />
       )}
     </SectionCard>
   )
@@ -192,8 +186,28 @@ function fieldErrorSummary(fieldErrors) {
     .join(' ')
 }
 
-function upsertRegistration(registrations, registration) {
-  const existing = registrations.findIndex((item) => item.id === registration.id)
-  if (existing === -1) return [...registrations, registration]
-  return registrations.map((item) => (item.id === registration.id ? registration : item))
+function upsertParticipant(participants, participant) {
+  const existing = participants.findIndex((item) => item.accountId === participant.accountId)
+  if (existing === -1) return [...participants, participant]
+  return participants.map((item) => (item.accountId === participant.accountId ? participant : item))
+}
+
+function normalizeParticipants(result) {
+  if (Array.isArray(result?.participants)) return result.participants
+  return (result?.registrations ?? []).map(normalizeRegistration)
+}
+
+function normalizeRegistration(registration) {
+  if (!registration) return null
+  return {
+    accountId: registration.accountId ?? registration.id,
+    registrationId: registration.id,
+    displayName: registration.displayName ?? registration.email?.split('@')[0] ?? registration.phone ?? registration.accountId,
+    email: registration.email ?? null,
+    entries: registration.entries ?? Array.from({ length: registration.entryCount ?? 0 }, (_, index) => ({
+      id: `${registration.id}-entry-${index + 1}`,
+      title: `Entry ${index + 1}`,
+    })),
+    entryCount: registration.entryCount ?? registration.entries?.length ?? 0,
+  }
 }

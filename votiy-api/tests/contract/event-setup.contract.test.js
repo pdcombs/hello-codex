@@ -34,9 +34,9 @@ describe('event setup GraphQL contract', () => {
 
   it('exposes host participant summaries with entry counts', async () => {
     const schema = await createGraphqlSchema()
-    const fields = schema.getType('EventRegistration').getFields()
+    const fields = schema.getType('ParticipantCard').getFields()
     expect(fields).toMatchObject({ displayName: expect.any(Object), entryCount: expect.any(Object) })
     expect(fields.entryCount.type.toString()).toBe('Int!')
-    expect(schema.getQueryType().getFields().eventRegistrations.type.toString()).toBe('EventRegistrationListResult!')
+    expect(schema.getQueryType().getFields().eventParticipants.type.toString()).toBe('ParticipantListResult!')
   })
 })

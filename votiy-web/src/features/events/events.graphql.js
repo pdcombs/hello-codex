@@ -1,11 +1,12 @@
 import { graphqlRequest, isSchemaMismatch, unwrapGraphqlResult } from '../../lib/graphql.js'
 
-const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName createdAt'
+const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName status createdAt'
 const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } }`
 const REGISTRATION_FIELDS = `id accountId email phone displayName entryCount entries { ${ENTRY_FIELDS} } accountCompleted status source createdAt`
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
 const LEGACY_EVENT_FIELDS = 'id publicId title description location registrationPolicy isOwner createdAt updatedAt'
 const LEGACY_REGISTRATION_FIELDS = 'id accountId email phone accountCompleted status source createdAt'
+const PARTICIPANT_FIELDS = `accountId displayName email entryCount entries { ${ENTRY_FIELDS} }`
 
 export const OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
   ownedEvents(first: $first, after: $after) {
@@ -36,6 +37,13 @@ export const EVENT_REGISTRATIONS = `query EventRegistrations($eventId: ID!) {
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
+export const EVENT_PARTICIPANTS = `query EventParticipants($eventId: ID!) {
+  eventParticipants(eventId: $eventId) {
+    __typename
+    ... on ParticipantListSuccess { participants { ${PARTICIPANT_FIELDS} } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
 const LEGACY_EVENT_REGISTRATIONS = `query EventRegistrations($eventId: ID!) {
   eventRegistrations(eventId: $eventId) { __typename ... on EventRegistrationListSuccess { registrations { ${LEGACY_REGISTRATION_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
@@ -56,10 +64,10 @@ export const SET_EVENT_REGISTRATION_POLICY = `mutation SetEventRegistrationPolic
   }
 }`
 
-export const REGISTER_FOR_EVENT = `mutation RegisterForEvent($input: RegisterForEventInput!) {
-  registerForEvent(input: $input) {
+export const REGISTER_FOR_EVENT = `mutation CreateSelfEventEntries($input: RegisterForEventInput!) {
+  createSelfEventEntries(input: $input) {
     __typename
-    ... on EventRegistrationSuccess { registration { ${REGISTRATION_FIELDS} } }
+    ... on EntryCreationSuccess { result { createdEntries { ${ENTRY_FIELDS} } affectedParticipant { ${PARTICIPANT_FIELDS} } } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
@@ -67,10 +75,24 @@ const LEGACY_REGISTER_FOR_EVENT = `mutation RegisterForEvent($eventId: ID!, $ide
   registerForEvent(eventId: $eventId, idempotencyKey: $idempotencyKey) { __typename ... on EventRegistrationSuccess { registration { ${LEGACY_REGISTRATION_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 
-export const ADD_EVENT_PARTICIPANT = `mutation AddEventParticipant($input: AddEventParticipantInput!) {
-  addEventParticipant(input: $input) {
+export const ADD_EVENT_PARTICIPANT = `mutation CreateEventEntriesForParticipant($input: AddEventParticipantInput!) {
+  createEventEntriesForParticipant(input: $input) {
     __typename
-    ... on EventRegistrationSuccess { registration { ${REGISTRATION_FIELDS} } }
+    ... on EntryCreationSuccess { result { createdEntries { ${ENTRY_FIELDS} } affectedParticipant { ${PARTICIPANT_FIELDS} } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const ARCHIVE_EVENT_ENTRY = `mutation ArchiveEventEntry($input: ArchiveEventEntryInput!) {
+  archiveEventEntry(input: $input) {
+    __typename
+    ... on EntryArchiveSuccess { result { archivedEntryIds affectedParticipant { ${PARTICIPANT_FIELDS} } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const ARCHIVE_EVENT_PARTICIPANT_ENTRIES = `mutation ArchiveEventParticipantEntries($input: ArchiveEventParticipantEntriesInput!) {
+  archiveEventParticipantEntries(input: $input) {
+    __typename
+    ... on EntryArchiveSuccess { result { archivedEntryIds affectedParticipant { ${PARTICIPANT_FIELDS} } } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
@@ -129,6 +151,11 @@ export async function loadEventRegistrations(eventId) {
   }
 }
 
+export async function loadEventParticipants(eventId) {
+  const data = await graphqlRequest({ query: EVENT_PARTICIPANTS, variables: { eventId }, operationName: 'EventParticipants' })
+  return unwrapGraphqlResult(data.eventParticipants)
+}
+
 export async function createEvent(input) {
   const data = await graphqlRequest({ query: CREATE_EVENT, variables: { input }, operationName: 'CreateEvent' })
   return unwrapGraphqlResult(data.createEvent)
@@ -147,18 +174,18 @@ export async function registerForEvent(input, { legacy = false } = {}) {
   const data = await graphqlRequest({
     query: legacy ? LEGACY_REGISTER_FOR_EVENT : REGISTER_FOR_EVENT,
     variables: legacy ? { eventId: input.eventId, idempotencyKey: input.idempotencyKey } : { input },
-    operationName: 'RegisterForEvent',
+    operationName: legacy ? 'RegisterForEvent' : 'CreateSelfEventEntries',
   })
-  return unwrapGraphqlResult(data.registerForEvent)
+  return unwrapGraphqlResult(legacy ? data.registerForEvent : data.createSelfEventEntries)
 }
 
 export async function addEventParticipant(input) {
   const data = await graphqlRequest({
     query: ADD_EVENT_PARTICIPANT,
     variables: { input },
-    operationName: 'AddEventParticipant',
+    operationName: 'CreateEventEntriesForParticipant',
   })
-  return unwrapGraphqlResult(data.addEventParticipant)
+  return unwrapGraphqlResult(data.createEventEntriesForParticipant)
 }
 
 export async function removeEventParticipant(input) {
@@ -168,6 +195,17 @@ export async function removeEventParticipant(input) {
     operationName: 'RemoveEventParticipant',
   })
   return unwrapGraphqlResult(data.removeEventParticipant)
+}
+
+export async function archiveEventEntry(input) {
+  const data = await graphqlRequest({ query: ARCHIVE_EVENT_ENTRY, variables: { input }, operationName: 'ArchiveEventEntry' })
+  return unwrapGraphqlResult(data.archiveEventEntry)
+}
+
+export async function archiveEventParticipantEntries(input) {
+  const data = await graphqlRequest({ query: ARCHIVE_EVENT_PARTICIPANT_ENTRIES, variables: { input },
+    operationName: 'ArchiveEventParticipantEntries' })
+  return unwrapGraphqlResult(data.archiveEventParticipantEntries)
 }
 
 export async function addEventCategory(input) {
