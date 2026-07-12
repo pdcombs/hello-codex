@@ -7,6 +7,7 @@ test('CUF-001 host registers display-named participant with multiple entries', a
   const data = eventSetupData(testInfo)
   await signInHost(page)
   await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  await page.getByRole('tab', { name: 'Participants' }).click()
   await page.getByLabel('Display name').fill(data.participant.displayName)
   await page.getByLabel('Email').fill(data.participant.email)
   await page.getByLabel('Entry 1 title').fill(data.entryTitle)
@@ -14,6 +15,7 @@ test('CUF-001 host registers display-named participant with multiple entries', a
   await page.getByLabel('Entry 2 title').fill(`${data.entryTitle} two`)
   await page.getByRole('button', { name: 'Add participant' }).click()
   await expect(page.getByText(data.participant.displayName)).toBeVisible()
+  await expect(page.getByText('2 entries')).toBeVisible()
 })
 
 test('CUF-001 participant self-registers with default-category entry', async ({ page }, testInfo) => {

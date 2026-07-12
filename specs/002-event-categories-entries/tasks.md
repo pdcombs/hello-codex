@@ -139,16 +139,16 @@ description: "Implementation tasks for event categories and entries"
 
 ### Tests for User Story 4
 
-- [ ] T053 [P] [US4] Write failing participant summary and count unit tests in `votiy-api/tests/unit/event-registration-service.test.js`
-- [ ] T054 [P] [US4] Extend host-only participant list contract tests with entry counts in `votiy-api/tests/contract/event-setup.contract.test.js`
-- [ ] T055 [P] [US4] Write failing participant-tab component tests for counts, navigation, loading, empty, and error states in `votiy-web/tests/component/event-participants-tab.test.jsx`
-- [ ] T056 [P] [US4] Extend CUF-003 E2E coverage in `tests/e2e/event-setup.spec.js`
+- [X] T053 [P] [US4] Write failing participant summary and count unit tests in `votiy-api/tests/unit/event-registration-service.test.js`
+- [X] T054 [P] [US4] Extend host-only participant list contract tests with entry counts in `votiy-api/tests/contract/event-setup.contract.test.js`
+- [X] T055 [P] [US4] Write failing participant-tab component tests for counts, navigation, loading, empty, and error states in `votiy-web/tests/component/event-participants-tab.test.jsx`
+- [X] T056 [P] [US4] Extend CUF-003 E2E coverage in `tests/e2e/event-setup.spec.js`
 
 ### Implementation for User Story 4
 
-- [ ] T057 [US4] Project entry counts and enforce host-only participant list access in `votiy-api/src/services/event-registration-service.js` and `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T058 [US4] Add participant summary fields to web queries in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T059 [US4] Move participant administration into a lazy secondary tab and display entry counts in `votiy-web/src/features/events/OwnerEventPage.jsx` and `votiy-web/src/features/events/EventParticipantsPanel.jsx`
+- [X] T057 [US4] Project entry counts and enforce host-only participant list access in `votiy-api/src/services/event-registration-service.js` and `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T058 [US4] Add participant summary fields to web queries in `votiy-web/src/features/events/events.graphql.js`
+- [X] T059 [US4] Move participant administration into a lazy secondary tab and display entry counts in `votiy-web/src/features/events/OwnerEventPage.jsx` and `votiy-web/src/features/events/EventParticipantsPanel.jsx`
 
 **Checkpoint**: Participant administration is secondary, count-correct, and owner-only.
 

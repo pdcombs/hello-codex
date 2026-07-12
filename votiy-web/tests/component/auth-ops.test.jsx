@@ -77,6 +77,7 @@ describe('checked-in GraphQL operations and auth UI', () => {
     expect(graphqlRequest).toHaveBeenNthCalledWith(6, expect.objectContaining({ operationName: 'CreateEvent' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(10, expect.objectContaining({ operationName: 'RemoveEventParticipant' }))
     expect(graphqlRequest).toHaveBeenNthCalledWith(12, expect.objectContaining({ operationName: 'RenameEventCategory' }))
+    expect(eventOps.EVENT_REGISTRATIONS).toContain('entryCount')
   })
 
   it('retries event reads with legacy fields during rolling API upgrades', async () => {

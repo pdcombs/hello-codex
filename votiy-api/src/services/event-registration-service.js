@@ -155,7 +155,7 @@ export function createEventRegistrationService({
 
     async listRegistrations({ eventId }, viewer) {
       await requireOwner(eventId, viewer)
-      const rows = await eventRegistrationRepository.listByEvent(eventId)
+      const rows = await eventRegistrationRepository.listByEvent(eventId, { status: 'registered' })
       return { registrations: await materializeRegistrations(rows) }
     },
   })

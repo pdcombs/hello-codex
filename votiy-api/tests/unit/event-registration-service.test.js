@@ -9,6 +9,7 @@ const PARTICIPANT = {
   emailNormalized: 'member@example.com',
   phoneNormalized: null,
   lifecycleStatus: 'completed',
+  displayName: 'Member',
 }
 
 function createHarness(overrides = {}) {
@@ -156,5 +157,18 @@ describe('event registration service', () => {
     await expect(harness.service.listRegistrations({ eventId: 'event-1' }, OWNER)).rejects.toMatchObject({
       code: ErrorCode.FORBIDDEN,
     })
+  })
+
+  it('returns one active participant summary with total embedded entry count', async () => {
+    const harness = createHarness()
+    harness.eventRegistrationRepository.listByEvent.mockResolvedValue([{ ...harness.registration, entries: [
+      { _id: 'entry-1', title: 'First', categoryId: 'category-1', createdAt: NOW },
+      { _id: 'entry-2', title: 'Second', categoryId: 'category-2', createdAt: NOW },
+    ] }])
+    const result = await harness.service.listRegistrations({ eventId: 'event-1' }, OWNER)
+    expect(harness.eventRegistrationRepository.listByEvent).toHaveBeenCalledWith('event-1', { status: 'registered' })
+    expect(result.registrations).toHaveLength(1)
+    expect(result.registrations[0]).toMatchObject({ displayName: 'Member', entryCount: 2 })
+    expect(JSON.stringify(result)).not.toContain('phoneNormalized')
   })
 })

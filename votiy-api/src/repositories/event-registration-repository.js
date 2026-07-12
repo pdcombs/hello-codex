@@ -14,8 +14,8 @@ export function createEventRegistrationRepository(database) {
     findByEventAndAccount(eventId, accountId, options = {}) {
       return collection.findOne({ eventId: id(eventId), accountId: id(accountId) }, options)
     },
-    listByEvent(eventId) {
-      return collection.find({ eventId: id(eventId) }).sort({ createdAt: 1 }).toArray()
+    listByEvent(eventId, { status = null, session = null } = {}) {
+      return collection.find({ eventId: id(eventId), ...(status ? { status } : {}) }, session ? { session } : {}).sort({ createdAt: 1 }).toArray()
     },
     async create(input, options = {}) {
       const registration = createEventRegistrationDocument(input)

@@ -28,8 +28,7 @@ export function createEventService({
   async function projectSetup(event, viewerAccountId) {
     if (!eventRegistrationRepository || !accountRepository) return toEventView(event, viewerAccountId)
     const startedAt = process.hrtime.bigint()
-    const registrations = (await eventRegistrationRepository.listByEvent(event._id))
-      .filter(({ status }) => status === 'registered')
+    const registrations = await eventRegistrationRepository.listByEvent(event._id, { status: 'registered' })
     const accounts = await accountRepository.findByIds(registrations.map(({ accountId }) => accountId))
     const result = projectEventSetup(event, registrations, accounts, viewerAccountId)
     const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
