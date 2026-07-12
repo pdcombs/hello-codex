@@ -1,7 +1,9 @@
 import { ApplicationError, ErrorCode } from '../domain/errors.js'
 import { toEventView } from '../domain/event.js'
+import { toEntryView } from '../domain/event-entry.js'
 import { digestIdempotencyRequest, generateOpaqueToken } from '../domain/security.js'
 import { eventInputSchema, setEventRegistrationPolicyInputSchema } from '../domain/validation.js'
+import { logGroupedView } from '../observability/logger.js'
 
 function validationError(error) {
   return new ApplicationError(ErrorCode.VALIDATION_FAILED, {
@@ -15,12 +17,27 @@ function validationError(error) {
 
 export function createEventService({
   eventRepository,
+  eventRegistrationRepository = null,
+  accountRepository = null,
   idempotencyRepository,
   generatePublicId = () => generateOpaqueToken(16),
   digestRequest = digestIdempotencyRequest,
   now = () => new Date(),
   logger,
 }) {
+  async function projectSetup(event, viewerAccountId) {
+    if (!eventRegistrationRepository || !accountRepository) return toEventView(event, viewerAccountId)
+    const startedAt = process.hrtime.bigint()
+    const registrations = (await eventRegistrationRepository.listByEvent(event._id))
+      .filter(({ status }) => status === 'registered')
+    const accounts = await accountRepository.findByIds(registrations.map(({ accountId }) => accountId))
+    const result = projectEventSetup(event, registrations, accounts, viewerAccountId)
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
+    logGroupedView(logger, { outcome: 'success', durationMs, categoryCount: result.categories.length,
+      entryCount: result.categories.reduce((sum, category) => sum + category.entries.length, 0) })
+    return result
+  }
+
   return Object.freeze({
     async createEvent(rawInput, viewer) {
       if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
@@ -75,7 +92,12 @@ export function createEventService({
     async eventByPublicId({ publicId, viewer = null }) {
       const event = await eventRepository.findByPublicId(publicId)
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
-      return { event: toEventView(event, viewer?.account?._id ?? null) }
+      try {
+        return { event: await projectSetup(event, viewer?.account?._id ?? null) }
+      } catch (error) {
+        logGroupedView(logger, { outcome: 'failure', durationMs: 0, errorCode: error.code ?? ErrorCode.SERVICE_UNAVAILABLE })
+        throw error
+      }
     },
 
     async setRegistrationPolicy(rawInput, viewer) {
@@ -94,4 +116,21 @@ export function createEventService({
       return { event: toEventView(event, viewer.account._id) }
     },
   })
+}
+
+export function projectEventSetup(event, registrations, accounts, viewerAccountId = null) {
+  const base = toEventView(event, viewerAccountId)
+  const accountsById = new Map(accounts.map((account) => [String(account._id), account]))
+  const entriesByCategory = new Map((event.categories ?? []).map(({ _id }) => [String(_id), []]))
+  for (const registration of registrations) {
+    if (registration.status !== 'registered') continue
+    const owner = accountsById.get(String(registration.accountId))
+    if (!owner?.displayName) continue
+    for (const entry of registration.entries ?? []) {
+      entriesByCategory.get(String(entry.categoryId))?.push(toEntryView(entry, owner))
+    }
+  }
+  return Object.freeze({ ...base, categories: base.categories.map((category) => Object.freeze({
+    ...category, entries: entriesByCategory.get(category.id) ?? [],
+  })) })
 }

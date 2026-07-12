@@ -49,6 +49,7 @@ volume reset.
 - Authentication failures: sign-in denied and session expiry events
 - Email delivery failures: `email.failed` events
 - Deployment health: post-deploy smoke pass/fail rate
+- Grouped setup reads: `event.setup_view.completed` latency, category/entry counts, and failure rate
 
 ## Render / Atlas query ideas
 
@@ -71,6 +72,10 @@ volume reset.
 - email delivery failure above 5% for 10 minutes
 - Atlas connection pressure above 80% of pool capacity
 - post-deploy smoke failure on latest `main` deploy
+- grouped setup-view p95 above 2 seconds or failure rate above 2% for 10 minutes
+
+Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
+category titles, entry titles, display names, email addresses, or phone numbers.
 
 ## Correlation ID diagnostics
 

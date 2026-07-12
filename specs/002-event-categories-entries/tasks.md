@@ -112,20 +112,20 @@ description: "Implementation tasks for event categories and entries"
 
 ### Tests for User Story 3
 
-- [ ] T042 [P] [US3] Write failing grouped projection tests for stable order, empty categories, display-name owners, removed-registration exclusion, and contact privacy in `votiy-api/tests/unit/event-setup-view.test.js`
-- [ ] T043 [P] [US3] Extend GraphQL public-read contract tests for grouped categories and entries in `votiy-api/tests/contract/event-setup.contract.test.js`
-- [ ] T044 [P] [US3] Write failing real-Mongo grouped read tests that enforce the two-second outcome at 100 categories, 1,000 participants, and 5,000 entries in `votiy-api/tests/integration/event-setup-view.test.js`
-- [ ] T045 [P] [US3] Write failing responsive/accessibility component tests for setup tabs and grouped category cards in `votiy-web/tests/component/event-setup-view.test.jsx`
-- [ ] T046 [P] [US3] Extend anonymous and host E2E category-grouped view coverage in `tests/e2e/event-setup.spec.js`
+- [X] T042 [P] [US3] Write failing grouped projection tests for stable order, empty categories, display-name owners, removed-registration exclusion, and contact privacy in `votiy-api/tests/unit/event-setup-view.test.js`
+- [X] T043 [P] [US3] Extend GraphQL public-read contract tests for grouped categories and entries in `votiy-api/tests/contract/event-setup.contract.test.js`
+- [X] T044 [P] [US3] Write failing real-Mongo grouped read tests that enforce the two-second outcome at 100 categories, 1,000 participants, and 5,000 entries in `votiy-api/tests/integration/event-setup-view.test.js`
+- [X] T045 [P] [US3] Write failing responsive/accessibility component tests for setup tabs and grouped category cards in `votiy-web/tests/component/event-setup-view.test.jsx`
+- [X] T046 [P] [US3] Extend anonymous and host E2E category-grouped view coverage in `tests/e2e/event-setup.spec.js`
 
 ### Implementation for User Story 3
 
-- [ ] T047 [US3] Implement grouped category/entry projection with account display-name owners in `votiy-api/src/services/event-service.js`
-- [ ] T048 [US3] Extend public event GraphQL fields without exposing registration contact data in `votiy-api/src/api/graphql/event-resolvers.js`
-- [ ] T049 [US3] Extend web event queries and normalized view models for grouped setup data in `votiy-web/src/features/events/events.graphql.js`
-- [ ] T050 [US3] Build reusable setup tabs, category cards, empty states, and entry rows in `votiy-web/src/features/events/EventSetupTabs.jsx`, `votiy-web/src/features/events/EventCategoryList.jsx`, and `votiy-web/src/features/events/EventEntryRow.jsx`
-- [ ] T051 [US3] Make category-grouped setup the primary content for owner and public event pages in `votiy-web/src/features/events/OwnerEventPage.jsx` and `votiy-web/src/features/events/EventPage.jsx`
-- [ ] T052 [US3] Add grouped-view latency/error signals and privacy-safe diagnostic logging in `votiy-api/src/observability/logger.js` and `docs/operations.md`
+- [X] T047 [US3] Implement grouped category/entry projection with account display-name owners in `votiy-api/src/services/event-service.js`
+- [X] T048 [US3] Extend public event GraphQL fields without exposing registration contact data in `votiy-api/src/api/graphql/event-resolvers.js`
+- [X] T049 [US3] Extend web event queries and normalized view models for grouped setup data in `votiy-web/src/features/events/events.graphql.js`
+- [X] T050 [US3] Build reusable setup tabs, category cards, empty states, and entry rows in `votiy-web/src/features/events/EventSetupTabs.jsx`, `votiy-web/src/features/events/EventCategoryList.jsx`, and `votiy-web/src/features/events/EventEntryRow.jsx`
+- [X] T051 [US3] Make category-grouped setup the primary content for owner and public event pages in `votiy-web/src/features/events/OwnerEventPage.jsx` and `votiy-web/src/features/events/EventPage.jsx`
+- [X] T052 [US3] Add grouped-view latency/error signals and privacy-safe diagnostic logging in `votiy-api/src/observability/logger.js` and `docs/operations.md`
 
 **Checkpoint**: User Story 3 clearly presents voter-facing setup without leaking email or phone.
 

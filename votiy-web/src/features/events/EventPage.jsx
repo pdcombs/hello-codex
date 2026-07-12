@@ -5,6 +5,7 @@ import SectionCard from '../../components/SectionCard.jsx'
 import { registerForEvent, loadEventByPublicId } from './events.graphql.js'
 import { FormSurface } from '../../components/Form.jsx'
 import ParticipantEntryFields from './ParticipantEntryFields.jsx'
+import EventCategoryList from './EventCategoryList.jsx'
 import { readEntries } from './participant-entry-form.js'
 
 export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent }) {
@@ -96,6 +97,8 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
           </div>
         </dl>
       </div>
+
+      {Array.isArray(state.event.categories) && <EventCategoryList categories={state.event.categories} />}
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
         <SectionCard title="Join this event">

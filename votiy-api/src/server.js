@@ -114,6 +114,8 @@ const authenticationService = createAuthenticationService({
 })
 const eventService = createEventService({
   eventRepository,
+  eventRegistrationRepository,
+  accountRepository,
   idempotencyRepository,
   logger,
 })

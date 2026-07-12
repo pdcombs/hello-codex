@@ -103,12 +103,19 @@ export async function loadOwnedEvents(variables = { first: 20 }) {
 export async function loadEventByPublicId(publicId) {
   try {
     const data = await graphqlRequest({ query: EVENT_BY_PUBLIC_ID, variables: { publicId }, operationName: 'EventByPublicId' })
-    return unwrapGraphqlResult(data.eventByPublicId)
+    return normalizeEventSetup(unwrapGraphqlResult(data.eventByPublicId))
   } catch (error) {
     if (!isSchemaMismatch(error)) throw error
     const data = await graphqlRequest({ query: LEGACY_EVENT_BY_PUBLIC_ID, variables: { publicId }, operationName: 'EventByPublicId' })
     return unwrapGraphqlResult(data.eventByPublicId)
   }
+}
+
+export function normalizeEventSetup(result) {
+  if (!Array.isArray(result?.event?.categories)) return result
+  return { ...result, event: { ...result.event, categories: result.event.categories.map((category) => ({
+    ...category, entries: Array.isArray(category.entries) ? category.entries : [],
+  })) } }
 }
 
 export async function loadEventRegistrations(eventId) {

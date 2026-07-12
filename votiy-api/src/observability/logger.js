@@ -27,3 +27,11 @@ export function logRequestCompletion(logger, { request, response, correlationId,
     correlationId,
   }, 'Request completed')
 }
+
+export function logGroupedView(logger, { outcome, durationMs, categoryCount = 0, entryCount = 0, errorCode = null }) {
+  logger?.[outcome === 'success' ? 'info' : 'error']({
+    event: 'event.setup_view.completed', operation: 'event.setup_view', outcome,
+    durationMs: Math.round(durationMs * 100) / 100, categoryCount, entryCount,
+    ...(errorCode ? { errorCode } : {}),
+  }, outcome === 'success' ? 'Event setup view loaded' : 'Event setup view failed')
+}

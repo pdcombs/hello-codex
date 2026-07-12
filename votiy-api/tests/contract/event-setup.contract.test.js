@@ -21,4 +21,14 @@ describe('event setup GraphQL contract', () => {
     expect(mutations.addEventCategory.args[0].type.toString()).toBe('AddEventCategoryInput!')
     expect(mutations.renameEventCategory.args[0].type.toString()).toBe('RenameEventCategoryInput!')
   })
+
+  it('publishes grouped entry owners without registration contact fields', async () => {
+    const schema = await createGraphqlSchema()
+    const eventFields = schema.getType('Event').getFields()
+    const entryFields = schema.getType('EventEntry').getFields()
+    expect(eventFields.categories.type.toString()).toBe('[EventCategory!]!')
+    expect(entryFields).toMatchObject({ title: expect.any(Object), ownerDisplayName: expect.any(Object) })
+    expect(entryFields.email).toBeUndefined()
+    expect(entryFields.phone).toBeUndefined()
+  })
 })

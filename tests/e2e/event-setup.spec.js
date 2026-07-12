@@ -55,3 +55,17 @@ test('CUF-004 non-owner cannot access category management', async ({ page }) => 
   await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
   await expect(page.getByRole('button', { name: 'Add category' })).toHaveCount(0)
 })
+
+test('CUF-003 anonymous and host views show category-grouped setup', async ({ page }) => {
+  test.skip(!process.env.E2E_OPEN_EVENT_PUBLIC_ID, 'Synthetic open event required')
+  await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  await expect(page.getByLabel('Event categories')).toBeVisible()
+  await expect(page.locator('.event-category-card').first()).toBeVisible()
+
+  if (process.env.E2E_HOST_EMAIL && process.env.E2E_HOST_PASSWORD) {
+    await signInHost(page)
+    await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+    await expect(page.getByRole('tab', { name: 'Setup' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByLabel('Event categories')).toBeVisible()
+  }
+})

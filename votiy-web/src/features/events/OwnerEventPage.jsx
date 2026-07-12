@@ -4,6 +4,8 @@ import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import EventPage from './EventPage.jsx'
 import EventCategoryManager from './EventCategoryManager.jsx'
+import EventCategoryList from './EventCategoryList.jsx'
+import EventSetupTabs from './EventSetupTabs.jsx'
 import { loadEventByPublicId } from './events.graphql.js'
 
 export default function OwnerEventPage({
@@ -84,19 +86,14 @@ export default function OwnerEventPage({
       </div>
 
       {state.error && <p role="alert">{state.error.message}</p>}
-      {Array.isArray(state.event.categories) && (
-        <div role="tablist" aria-label="Event management">
-          <button role="tab" aria-selected={tab === 'setup'} onClick={() => setTab('setup')}>Setup</button>
-          <button role="tab" aria-selected={tab === 'participants'} onClick={() => setTab('participants')}>Participants</button>
-        </div>
-      )}
-      {Array.isArray(state.event.categories) && tab === 'setup' && <EventCategoryManager event={state.event}
-        addCategory={addCategory} renameCategory={renameCategory}
-        onEventChange={(event) => setState((current) => ({ ...current, event }))} />}
-      {(!Array.isArray(state.event.categories) || tab === 'participants') && <EventParticipantsPanel
-        eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}
-        removeParticipant={removeParticipant} categories={state.event.categories}
-        legacy={!Array.isArray(state.event.categories)} />}
+      {Array.isArray(state.event.categories) ? <EventSetupTabs activeTab={tab} onChange={setTab}
+        setup={<><EventCategoryManager event={state.event} addCategory={addCategory} renameCategory={renameCategory}
+          onEventChange={(event) => setState((current) => ({ ...current, event }))} />
+          <EventCategoryList categories={state.event.categories} /></>}
+        participants={<EventParticipantsPanel eventId={state.event.id} loader={participantsLoader}
+          addParticipant={addParticipant} removeParticipant={removeParticipant} categories={state.event.categories} />} />
+        : <EventParticipantsPanel eventId={state.event.id} loader={participantsLoader} addParticipant={addParticipant}
+          removeParticipant={removeParticipant} legacy />}
     </main>
   )
 }
