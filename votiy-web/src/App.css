@@ -215,14 +215,17 @@ main:focus {
 }
 
 .add-entry-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   width: 100%;
   max-width: none;
   height: 100%;
   max-height: none;
   margin: 0;
-  padding: 24px;
+  padding: 12px 12px 0;
   display: grid;
-  place-items: center;
+  place-items: end center;
   border: 0;
   color: var(--color-text);
   background: rgba(0, 0, 0, 0.64);
@@ -230,14 +233,25 @@ main:focus {
 }
 
 .add-entry-dialog-card {
-  width: min(620px, 100%);
-  max-height: calc(100vh - 48px);
-  padding: 24px;
+  width: min(720px, 100%);
+  max-height: min(85vh, 760px);
+  padding: 24px 24px 44px;
   overflow-y: auto;
   border: 1px solid var(--color-border-strong);
-  border-radius: 24px;
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
   background: var(--color-app-bg-soft);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  animation: add-entry-sheet-in 180ms ease-out;
+}
+
+@keyframes add-entry-sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .add-entry-dialog-card { animation: none; }
 }
 
 .modal-heading-row {
@@ -245,6 +259,12 @@ main:focus {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
+}
+
+.modal-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .modal-heading-row h2,
@@ -263,13 +283,12 @@ main:focus {
   line-height: 1;
 }
 
-.modal-category,
 .choice-help { color: var(--color-text-muted); }
 
 .add-entry-owner-step {
-  margin-top: 18px;
+  margin-top: 12px;
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 .add-entry-owner-step > label { font-weight: 600; }
@@ -291,6 +310,10 @@ main:focus {
   display: grid;
   gap: 8px;
   list-style: none;
+}
+
+.choice-help {
+  margin: 2px 0 0;
 }
 
 .entry-owner-choices button {
@@ -1441,8 +1464,12 @@ footer {
 }
 
 @media (max-width: 560px) {
-  .add-entry-dialog { padding: 12px; }
-  .add-entry-dialog-card { max-height: calc(100vh - 24px); padding: 18px; border-radius: 20px; }
+  .add-entry-dialog { padding: 8px 8px 0; }
+  .add-entry-dialog-card { max-height: calc(100vh - 8px); padding: 18px 18px 34px;
+    border-bottom: 0; border-radius: 20px 20px 0 0; }
+  .modal-heading-row { gap: 10px; }
+  .modal-heading-actions { gap: 6px; }
+  .modal-heading-actions .primary-action { padding-inline: 12px; }
   .modal-actions { justify-content: flex-start; }
 }
 

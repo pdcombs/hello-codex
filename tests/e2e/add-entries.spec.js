@@ -43,7 +43,7 @@ test('CUF-002/CUF-004 host can search globally and create provisional owner', as
   const search = page.getByLabel('Search by email or phone')
   await search.fill(process.env.E2E_UNUSED_CONTACT)
   await expect(page.getByText('No matching account found.')).toBeVisible()
-  await page.getByRole('button', { name: 'Create provisional participant' }).click()
+  await page.getByRole('button', { name: 'Create new account' }).click()
   await page.getByLabel('Display name').fill('Synthetic Entry Owner')
   await page.getByRole('button', { name: 'Use new participant' }).click()
   const title = `Provisional owner ${Date.now()}`

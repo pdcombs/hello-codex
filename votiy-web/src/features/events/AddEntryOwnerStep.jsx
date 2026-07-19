@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { loadEntryOwnerChoices } from './events.graphql.js'
 import AddEntryProvisionalOwner from './AddEntryProvisionalOwner.jsx'
 
-export default function AddEntryOwnerStep({ eventId, loader = loadEntryOwnerChoices, onSelect }) {
+export default function AddEntryOwnerStep({ eventId, loader = loadEntryOwnerChoices, onSelect, createRequest = null }) {
   const [search, setSearch] = useState('')
   const [state, setState] = useState({ status: 'loading', choices: [], error: null })
   const [creating, setCreating] = useState(false)
+  const [contactError, setContactError] = useState(null)
   const [retryKey, setRetryKey] = useState(0)
   const sequence = useRef(0)
   const choiceRefs = useRef([])
+  const handledCreateRequest = useRef(createRequest)
   const searchableLength = /[a-z@]/i.test(search) ? search.replace(/\s/g, '').length : search.replace(/\D/g, '').length
 
   useEffect(() => {
@@ -32,12 +34,29 @@ export default function AddEntryOwnerStep({ eventId, loader = loadEntryOwnerChoi
     return () => clearTimeout(timer)
   }, [eventId, loader, retryKey, search, searchableLength])
 
+  function beginAccountCreation() {
+    if (!isCompleteContact(search)) {
+      setContactError('Enter a complete email address or phone number to create a new account.')
+      return
+    }
+    setContactError(null)
+    setCreating(true)
+  }
+  useEffect(() => {
+    if (createRequest == null) return
+    if (createRequest === handledCreateRequest.current) return
+    handledCreateRequest.current = createRequest
+    if (!isCompleteContact(search)) {
+      setContactError('Enter a complete email address or phone number to create a new account.')
+      return
+    }
+    setContactError(null)
+    setCreating(true)
+  }, [createRequest, search])
   if (creating) {
     return <AddEntryProvisionalOwner contact={search} onSelect={(provisionalOwner) => onSelect({ provisionalOwner })}
       onCancel={() => setCreating(false)} />
   }
-
-  const completeContact = isCompleteContact(search)
   function navigateChoices(event, index) {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
     event.preventDefault()
@@ -48,10 +67,14 @@ export default function AddEntryOwnerStep({ eventId, loader = loadEntryOwnerChoi
   }
   return (
     <div className="add-entry-owner-step">
+      {createRequest == null && <button className="primary-action" type="button"
+        onClick={beginAccountCreation}>Create new account</button>}
       <label htmlFor="entry-owner-search">Search by email or phone</label>
       <input id="entry-owner-search" type="search" value={search} autoComplete="off"
-        onChange={(event) => { setSearch(event.target.value); setCreating(false) }}
+        aria-invalid={contactError ? 'true' : undefined} aria-describedby={contactError ? 'entry-owner-contact-error' : undefined}
+        onChange={(event) => { setSearch(event.target.value); setCreating(false); setContactError(null) }}
         placeholder="Email or phone" />
+      {contactError && <p id="entry-owner-contact-error" role="alert">{contactError}</p>}
       {!search && <p className="choice-help">Recent participants</p>}
       {search && searchableLength < 3 && <p className="choice-help">Enter at least 3 characters.</p>}
       {state.status === 'loading' && <p role="status">Loading participants…</p>}
@@ -76,8 +99,6 @@ export default function AddEntryOwnerStep({ eventId, loader = loadEntryOwnerChoi
       {state.status === 'success' && state.choices.length === 0 && (
         <div className="owner-choice-empty">
           <p>{search ? 'No matching account found.' : 'No recent participants yet.'}</p>
-          {completeContact && <button className="secondary-action" type="button"
-            onClick={() => setCreating(true)}>Create provisional participant</button>}
         </div>
       )}
     </div>

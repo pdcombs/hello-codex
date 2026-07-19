@@ -7,6 +7,7 @@ export default function AddEntryModal({ eventId, category, onClose, onSaved,
   creator = createSingleEventEntry, choicesLoader }) {
   const [step, setStep] = useState(1)
   const [owner, setOwner] = useState(null)
+  const [createAccountRequest, setCreateAccountRequest] = useState(0)
   const [state, setState] = useState({ saving: false, error: null, titleError: null })
   const headingRef = useRef(null)
   const dialogRef = useRef(null)
@@ -44,6 +45,7 @@ export default function AddEntryModal({ eventId, category, onClose, onSaved,
   const ownerName = owner?.account?.displayName ?? owner?.provisionalOwner?.displayName
   return (
     <dialog ref={dialogRef} className="add-entry-dialog" open aria-modal="true" aria-labelledby="add-entry-heading"
+      onClick={(event) => { if (event.target === event.currentTarget) close() }}
       onCancel={(event) => { event.preventDefault(); close() }} onKeyDown={(event) => {
         if (event.key === 'Escape') { event.preventDefault(); close() }
         if (event.key === 'Tab') trapFocus(event, dialogRef.current)
@@ -56,11 +58,15 @@ export default function AddEntryModal({ eventId, category, onClose, onSaved,
               {step === 1 ? 'Who is this entry for?' : 'Name this entry'}
             </h2>
           </div>
-          <button className="modal-close" type="button" aria-label="Close add entry" onClick={close}>×</button>
+          <div className="modal-heading-actions">
+            {step === 1 && <button className="primary-action" type="button"
+              onClick={() => setCreateAccountRequest((value) => value + 1)}>Create new account</button>}
+            <button className="modal-close" type="button" aria-label="Close add entry" onClick={close}>×</button>
+          </div>
         </div>
-        <p className="modal-category">Category: <strong>{category.title}</strong></p>
         {step === 1 ? (
-          <AddEntryOwnerStep eventId={eventId} loader={choicesLoader} onSelect={(selection) => {
+          <AddEntryOwnerStep eventId={eventId} loader={choicesLoader} createRequest={createAccountRequest}
+            onSelect={(selection) => {
             setOwner(selection); setStep(2)
           }} />
         ) : (

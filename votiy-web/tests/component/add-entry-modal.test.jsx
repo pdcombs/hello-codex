@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import AddEntryModal from '../../src/features/events/AddEntryModal.jsx'
@@ -23,7 +23,7 @@ describe('add entry modal', () => {
       onSaved={onSaved} onClose={vi.fn()} />)
     expect(screen.getByRole('heading', { name: 'Who is this entry for?' })).toBeVisible()
     await user.click(await screen.findByRole('option', { name: /Peyton Person/ }))
-    expect(screen.getByText(/Category:/)).toHaveTextContent('Entrants')
+    expect(screen.queryByText(/Category:/)).not.toBeInTheDocument()
     await user.type(screen.getByLabelText('Entry title'), 'Apple pie')
     await user.click(screen.getByRole('button', { name: 'Save entry' }))
     expect(creator).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 'cat-1',
@@ -66,6 +66,18 @@ describe('add entry modal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('closes from backdrop click but stays open for sheet content clicks', async () => {
+    const onClose = vi.fn()
+    render(<AddEntryModal eventId="event-1" category={category}
+      choicesLoader={() => Promise.resolve({ choices: [] })} creator={vi.fn()}
+      onSaved={vi.fn()} onClose={onClose} />)
+    const dialog = screen.getByRole('dialog', { name: 'Who is this entry for?' })
+    fireEvent.click(screen.getByRole('heading', { name: 'Who is this entry for?' }))
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(dialog)
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('sends provisional owner, handles field errors, Back, and close controls', async () => {
     const onClose = vi.fn()
     const creator = vi.fn().mockRejectedValue(Object.assign(new Error('Invalid title'), {
@@ -76,7 +88,7 @@ describe('add entry modal', () => {
       choicesLoader={() => Promise.resolve({ choices: [] })} creator={creator}
       onSaved={vi.fn()} onClose={onClose} />)
     await user.type(screen.getByLabelText('Search by email or phone'), 'new@example.test')
-    await user.click(await screen.findByRole('button', { name: 'Create provisional participant' }))
+    await user.click(screen.getByRole('button', { name: 'Create new account' }))
     await user.type(screen.getByLabelText('Display name'), 'New Person')
     await user.click(screen.getByRole('button', { name: 'Use new participant' }))
     await user.type(screen.getByLabelText('Entry title'), 'Pie')
@@ -100,7 +112,8 @@ describe('add entry modal', () => {
       choicesLoader={() => Promise.resolve({ choices: [choice] })} creator={creator}
       onSaved={vi.fn()} onClose={onClose} />)
     const close = screen.getByRole('button', { name: 'Close add entry' })
-    close.focus()
+    const createAccount = screen.getByRole('button', { name: 'Create new account' })
+    createAccount.focus()
     await user.keyboard('{Shift>}{Tab}{/Shift}')
     expect(await screen.findByRole('option', { name: /Peyton Person/ })).toHaveFocus()
     await user.click(screen.getByRole('option', { name: /Peyton Person/ }))
