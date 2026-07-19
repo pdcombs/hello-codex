@@ -1,0 +1,20 @@
+"Additive extension composed with active feature 003 schema."
+
+input CategoryEntryTitleUpdateInput {
+  entryId: ID!
+  title: String!
+  expectedUpdatedAt: DateTime!
+}
+
+input UpdateEventCategoryInput {
+  eventId: ID!
+  categoryId: ID!
+  title: String!
+  expectedCategoryUpdatedAt: DateTime!
+  entryTitles: [CategoryEntryTitleUpdateInput!]!
+  idempotencyKey: ID!
+}
+
+extend type Mutation {
+  updateEventCategory(input: UpdateEventCategoryInput!): EventResult!
+}

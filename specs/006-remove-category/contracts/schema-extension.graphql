@@ -1,0 +1,19 @@
+"Additive extension composed with the active event schema."
+
+input CategoryRemovalEntrySnapshotInput {
+  entryId: ID!
+  expectedUpdatedAt: DateTime!
+}
+
+input ArchiveEventCategoryInput {
+  eventId: ID!
+  categoryId: ID!
+  expectedEventUpdatedAt: DateTime!
+  expectedCategoryUpdatedAt: DateTime!
+  activeEntries: [CategoryRemovalEntrySnapshotInput!]!
+  idempotencyKey: ID!
+}
+
+extend type Mutation {
+  archiveEventCategory(input: ArchiveEventCategoryInput!): EventResult!
+}

@@ -178,11 +178,14 @@ export const collectionDefinitions = Object.freeze({
 
 const categorySchema = {
   bsonType: 'object',
-  required: ['_id', 'title', 'titleNormalized', 'isDefault', 'createdAt', 'updatedAt'],
+  required: ['_id', 'title', 'titleNormalized', 'isDefault', 'status', 'archiveReason', 'archivedAt',
+    'archivedByAccountId', 'createdAt', 'updatedAt'],
   additionalProperties: false,
   properties: {
     _id: { bsonType: 'objectId' }, title: { bsonType: 'string', minLength: 1, maxLength: 120 },
     titleNormalized: { bsonType: 'string', minLength: 1, maxLength: 120 }, isDefault: { bsonType: 'bool' },
+    status: { enum: ['active', 'archived'] }, archiveReason: stringOrNull, archivedAt: dateOrNull,
+    archivedByAccountId: objectIdOrNull,
     createdAt: { bsonType: 'date' }, updatedAt: { bsonType: 'date' },
   },
 }

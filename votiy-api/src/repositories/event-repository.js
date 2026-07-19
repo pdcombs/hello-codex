@@ -24,13 +24,14 @@ export function createEventRepository(database) {
     async requireCategoryIds(eventId, categoryIds, options = {}) {
       const event = await collection.findOne({ _id: id(eventId) }, { projection: { categories: 1 }, ...options })
       if (!event) return null
-      const available = new Set((event.categories ?? []).map(({ _id }) => String(_id)))
+      const available = new Set((event.categories ?? []).filter(({ status }) => status !== 'archived')
+        .map(({ _id }) => String(_id)))
       return categoryIds.every((categoryId) => available.has(String(categoryId))) ? event : null
     },
     appendCategory(eventId, ownerAccountId, category, options = {}) {
       return collection.findOneAndUpdate(
         { _id: id(eventId), ownerAccountId: id(ownerAccountId), 'categories.99': { $exists: false },
-          categories: { $not: { $elemMatch: { titleNormalized: category.titleNormalized } } } },
+          categories: { $not: { $elemMatch: { titleNormalized: category.titleNormalized, status: { $ne: 'archived' } } } } },
         { $push: { categories: category }, $set: { updatedAt: category.updatedAt } },
         { returnDocument: 'after', ...options },
       )
@@ -40,14 +41,54 @@ export function createEventRepository(database) {
       const categoryObjectId = id(categoryId)
       return collection.findOneAndUpdate(
         { _id: id(eventId), ownerAccountId: id(ownerAccountId),
-          categories: { $elemMatch: { _id: categoryObjectId } },
+          categories: { $elemMatch: { _id: categoryObjectId, status: { $ne: 'archived' } } },
           $expr: { $not: { $in: [normalized, { $map: {
-            input: { $filter: { input: '$categories', as: 'category', cond: { $ne: ['$$category._id', categoryObjectId] } } },
+            input: { $filter: { input: '$categories', as: 'category', cond: { $and: [
+              { $ne: ['$$category._id', categoryObjectId] }, { $ne: ['$$category.status', 'archived'] },
+            ] } } },
             as: 'category', in: '$$category.titleNormalized',
           } }] } } },
         { $set: { 'categories.$[category].title': title, 'categories.$[category].titleNormalized': normalized,
           'categories.$[category].updatedAt': now, updatedAt: now } },
         { returnDocument: 'after', arrayFilters: [{ 'category._id': categoryObjectId }], ...options },
+      )
+    },
+    updateCategoryTitle(eventId, ownerAccountId, categoryId, title, expectedUpdatedAt, now, options = {}) {
+      const normalized = normalizeCategoryTitle(title)
+      const categoryObjectId = id(categoryId)
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId),
+          categories: { $elemMatch: { _id: categoryObjectId, updatedAt: expectedUpdatedAt,
+            status: { $ne: 'archived' } } },
+          $expr: { $not: { $in: [normalized, { $map: {
+            input: { $filter: { input: '$categories', as: 'category', cond: { $and: [
+              { $ne: ['$$category._id', categoryObjectId] }, { $ne: ['$$category.status', 'archived'] },
+            ] } } },
+            as: 'category', in: '$$category.titleNormalized',
+          } }] } } },
+        { $set: { 'categories.$[category].title': title, 'categories.$[category].titleNormalized': normalized,
+          'categories.$[category].updatedAt': now, updatedAt: now } },
+        { returnDocument: 'after', arrayFilters: [{ 'category._id': categoryObjectId }], ...options },
+      )
+    },
+    touch(eventId, ownerAccountId, now, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId) },
+        { $set: { updatedAt: now } },
+        { returnDocument: 'after', ...options },
+      )
+    },
+    archiveCategory({ eventId, ownerAccountId, categoryId, expectedEventUpdatedAt,
+      expectedCategoryUpdatedAt, categories, now }, options = {}) {
+      const categoryObjectId = id(categoryId)
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), updatedAt: expectedEventUpdatedAt,
+          categories: { $elemMatch: { _id: categoryObjectId, updatedAt: expectedCategoryUpdatedAt,
+            status: { $ne: 'archived' } } },
+          $expr: { $gt: [{ $size: { $filter: { input: '$categories', as: 'category',
+            cond: { $ne: ['$$category.status', 'archived'] } } } }, 1] } },
+        { $set: { categories, updatedAt: now } },
+        { returnDocument: 'after', ...options },
       )
     },
     listByOwner(ownerAccountId, { first = 20, after = null } = {}) {

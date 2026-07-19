@@ -511,6 +511,65 @@ main:focus {
   gap: 12px;
 }
 
+.category-remove-control {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.category-remove-control span {
+  max-width: 260px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.destructive-secondary-action,
+.destructive-action {
+  width: fit-content;
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 105, 111, 0.48);
+  border-radius: 999px;
+  color: #ff696f;
+  background: rgba(255, 105, 111, 0.08);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.destructive-action {
+  color: #fff;
+  background: #d83b42;
+}
+
+.destructive-secondary-action:disabled,
+.destructive-action:disabled { opacity: 0.48; cursor: not-allowed; }
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.remove-category-dialog {
+  width: min(100%, 480px);
+  padding: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.remove-category-dialog h2 { margin-top: 0; }
+.remove-category-dialog p { color: var(--color-text-muted); line-height: 1.55; }
+.remove-category-dialog .form-error { color: #ff8b90; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
 .add-category-action {
   margin-top: 18px;
 }
@@ -540,6 +599,40 @@ main:focus {
   display: block;
   margin-top: 5px;
   color: var(--color-text-muted);
+}
+
+.event-entry-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.event-entry-title-field {
+  display: grid;
+  gap: 8px;
+}
+
+.event-entry-title-field > label {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.event-entry-title-field input {
+  width: 100%;
+}
+
+.event-entry-title-field small {
+  color: var(--color-danger, #ff696f);
+}
+
+.category-edit-error {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.category-edit-error p {
+  margin: 0;
 }
 
 .participant-card-list {
@@ -1476,5 +1569,8 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .add-entry-dialog *,
   .add-entry-dialog *::before,
-  .add-entry-dialog *::after { transition: none !important; }
+  .add-entry-dialog *::after,
+  .remove-category-dialog *,
+  .remove-category-dialog *::before,
+  .remove-category-dialog *::after { transition: none !important; animation: none !important; }
 }

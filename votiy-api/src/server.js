@@ -20,6 +20,7 @@ import { createProviderSender } from './email/provider-sender.js'
 import { createLogger } from './observability/logger.js'
 import { runEventSetupMigration } from './migrations/002-event-categories-entries.js'
 import { runEntryDerivedParticipantMigration } from './migrations/003-entry-derived-participants.js'
+import { runCategoryArchivalMigration } from './migrations/004-category-archival.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
@@ -49,6 +50,7 @@ const mongo = createMongoConnection({ uri: environment.mongoUri, databaseName: e
 await mongo.connect()
 await ensureCollectionsAndIndexes(mongo.database)
 await runEventSetupMigration({ database: mongo.database, logger })
+await runCategoryArchivalMigration({ database: mongo.database, logger })
 await enforceEventSetupValidators(mongo.database)
 await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 
@@ -144,7 +146,8 @@ const eventEntryService = createEventEntryService({
   withTransaction: mongo.withTransaction,
   logger,
 })
-const eventCategoryService = createEventCategoryService({ eventRepository, idempotencyRepository, logger })
+const eventCategoryService = createEventCategoryService({ eventRepository, eventEntryRepository, accountRepository,
+  idempotencyRepository, auditRepository, withTransaction: mongo.withTransaction, logger })
 const schema = await createGraphqlSchema()
 const rootValue = {
   ...createAccountResolvers({

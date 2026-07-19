@@ -31,6 +31,7 @@ type EventEntry {
   ownerDisplayName: String!
   status: EventEntryStatus!
   createdAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type EventCategory {
@@ -144,6 +145,24 @@ input AddEventParticipantInput {
 input RegisterForEventInput { eventId: ID! entries: [ParticipantEntryInput!]! idempotencyKey: ID! }
 input AddEventCategoryInput { eventId: ID! title: String! idempotencyKey: ID! }
 input RenameEventCategoryInput { eventId: ID! categoryId: ID! title: String! idempotencyKey: ID! }
+input CategoryEntryTitleUpdateInput { entryId: ID! title: String! expectedUpdatedAt: DateTime! }
+input UpdateEventCategoryInput {
+  eventId: ID!
+  categoryId: ID!
+  title: String!
+  expectedCategoryUpdatedAt: DateTime!
+  entryTitles: [CategoryEntryTitleUpdateInput!]!
+  idempotencyKey: ID!
+}
+input CategoryRemovalEntrySnapshotInput { entryId: ID! expectedUpdatedAt: DateTime! }
+input ArchiveEventCategoryInput {
+  eventId: ID!
+  categoryId: ID!
+  expectedEventUpdatedAt: DateTime!
+  expectedCategoryUpdatedAt: DateTime!
+  activeEntries: [CategoryRemovalEntrySnapshotInput!]!
+  idempotencyKey: ID!
+}
 input ArchiveEventEntryInput { eventId: ID! entryId: ID! idempotencyKey: ID! }
 input ArchiveEventParticipantEntriesInput { eventId: ID! accountId: ID! idempotencyKey: ID! }
 input ProvisionalEntryOwnerInput { displayName: String! email: String phone: String }
@@ -176,6 +195,8 @@ type Mutation {
   setEventRegistrationPolicy(input: SetEventRegistrationPolicyInput!): EventResult!
   addEventCategory(input: AddEventCategoryInput!): EventResult!
   renameEventCategory(input: RenameEventCategoryInput!): EventResult!
+  updateEventCategory(input: UpdateEventCategoryInput!): EventResult!
+  archiveEventCategory(input: ArchiveEventCategoryInput!): EventResult!
   createSelfEventEntries(input: RegisterForEventInput!): EntryCreationResult!
   createEventEntriesForParticipant(input: AddEventParticipantInput!): EntryCreationResult!
   registerForEvent(input: RegisterForEventInput!): EventRegistrationResult! @deprecated(reason: "Use createSelfEventEntries")

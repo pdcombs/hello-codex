@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { AppRoutes } from '../../src/app/AppRouter.jsx'
 import EventParticipantsPanel from '../../src/features/events/EventParticipantsPanel.jsx'
 import OwnerEventPage from '../../src/features/events/OwnerEventPage.jsx'
+import EventCategoryList from '../../src/features/events/EventCategoryList.jsx'
 
 describe('accessibility and responsive shells', () => {
   it('exposes skip link and accessible primary navigation on public shell', async () => {
@@ -72,5 +73,22 @@ describe('accessibility and responsive shells', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'Board vote' })).toBeVisible()
+  })
+
+  it('supports keyboard-only entry-title editing with associated labels and errors', async () => {
+    const at = '2026-07-19T12:00:00.000Z'
+    const user = userEvent.setup()
+    render(<EventCategoryList eventId="event-1" editable updateCategory={vi.fn()} categories={[{
+      id: 'category-1', title: 'Desserts', updatedAt: at,
+      entries: [{ id: 'entry-1', title: 'Pie', ownerDisplayName: 'Peyton', updatedAt: at }],
+    }]} />)
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Add entry' })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByLabelText('Category title')).toHaveFocus()
+    await user.tab()
+    expect(screen.getByLabelText('Entry title for Peyton')).toHaveFocus()
   })
 })

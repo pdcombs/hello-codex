@@ -52,6 +52,10 @@ jobs:
         run: |
           pnpm --dir votiy-api exec vitest run tests/contract/add-entries.contract.test.js
           pnpm --dir votiy-web exec vitest run tests/component/add-entry-modal.test.jsx tests/component/add-entry-owner-choices.test.jsx tests/component/add-entry-owner-search.test.jsx tests/component/add-entry-provisional-owner.test.jsx
+      - name: Verify category editing and archival coverage
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/contract/edit-entry-titles.contract.test.js tests/unit/update-event-category-validation.test.js tests/unit/update-event-category-service.test.js tests/contract/remove-category.contract.test.js tests/contract/category-archival-persistence.contract.test.js tests/unit/archive-event-category-validation.test.js tests/unit/archive-event-category-service.test.js tests/unit/category-archival-domain.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/edit-entry-titles.test.jsx tests/component/remove-category.test.jsx tests/component/event-setup-view.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js

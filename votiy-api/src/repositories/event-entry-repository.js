@@ -17,6 +17,23 @@ export function createEventEntryRepository(database) {
       return collection.find({ eventId: id(eventId), status: 'active' }, options)
         .sort({ createdAt: 1, _id: 1 }).toArray()
     },
+    listActiveByEventAndCategory(eventId, categoryId, options = {}) {
+      return collection.find({ eventId: id(eventId), categoryId: id(categoryId), status: 'active' }, options)
+        .sort({ createdAt: 1, _id: 1 }).toArray()
+    },
+    async updateTitles(changes, now, options = {}) {
+      if (changes.length === 0) return []
+      const operations = changes.map((change) => ({ updateOne: {
+        filter: { _id: id(change.entryId), eventId: id(change.eventId), categoryId: id(change.categoryId),
+          status: 'active', updatedAt: change.expectedUpdatedAt },
+        update: { $set: { title: change.title, updatedAt: now } },
+      } }))
+      const result = await collection.bulkWrite(operations, options)
+      if (result.matchedCount !== changes.length || result.modifiedCount !== changes.length) {
+        throw new Error('STALE_ENTRY_SNAPSHOT')
+      }
+      return changes.map((change) => change.entryId)
+    },
     listActiveByEventAndOwner(eventId, ownerAccountId, options = {}) {
       return collection.find({ eventId: id(eventId), ownerAccountId: id(ownerAccountId), status: 'active' }, options)
         .sort({ createdAt: 1, _id: 1 }).toArray()
@@ -64,6 +81,18 @@ export function createEventEntryRepository(database) {
       if (result.modifiedCount !== entries.length) throw new Error('PARTIAL_ENTRY_ARCHIVE')
       return entries.map((entry) => ({ ...entry, status: 'archived', archiveReason: 'participant_removed',
         archivedAt: now, archivedByAccountId: id(archivedByAccountId), updatedAt: now }))
+    },
+    async archiveByCategory({ eventId, categoryId, entryIds, archivedByAccountId, now }, options = {}) {
+      if (entryIds.length === 0) return []
+      const filter = { eventId: id(eventId), categoryId: id(categoryId), status: 'active',
+        _id: { $in: entryIds.map(id) } }
+      const result = await collection.updateMany(filter, { $set: { status: 'archived',
+        archiveReason: 'category_removed', archivedAt: now, archivedByAccountId: id(archivedByAccountId),
+        updatedAt: now } }, options)
+      if (result.matchedCount !== entryIds.length || result.modifiedCount !== entryIds.length) {
+        throw new Error('STALE_CATEGORY_ENTRY_SNAPSHOT')
+      }
+      return entryIds
     },
   })
 }

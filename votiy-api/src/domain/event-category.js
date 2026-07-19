@@ -12,6 +12,10 @@ export function createCategory({ title, isDefault = false, now = new Date(), id 
     title: trimmed,
     titleNormalized: normalizeCategoryTitle(trimmed),
     isDefault: Boolean(isDefault),
+    status: 'active',
+    archiveReason: null,
+    archivedAt: null,
+    archivedByAccountId: null,
     createdAt: now,
     updatedAt: now,
   })
@@ -22,4 +26,8 @@ export function toCategoryView(category, entries = []) {
     id: String(category._id), title: category.title, isDefault: category.isDefault,
     entries, createdAt: category.createdAt, updatedAt: category.updatedAt,
   })
+}
+
+export function isActiveCategory(category) {
+  return category?.status !== 'archived'
 }

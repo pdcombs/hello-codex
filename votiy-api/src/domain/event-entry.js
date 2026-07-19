@@ -22,6 +22,7 @@ export function toEntryView(entry, owner) {
     ownerAccountId: String(owner._id ?? owner.id), ownerDisplayName: owner.displayName,
     status: entry.status === 'archived' ? 'ARCHIVED' : 'ACTIVE',
     createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
   })
 }
 

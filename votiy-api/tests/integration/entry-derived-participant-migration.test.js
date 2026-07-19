@@ -25,6 +25,7 @@ describe('entry-derived participant migration', () => {
     await mongo.database.collection('events').insertOne({ _id: eventId, ownerAccountId: hostId, publicId: 'migration-003',
       title: 'Migration', description: null, location: null, registrationPolicy: 'admin_managed',
       categories: [{ _id: categoryId, title: 'People', titleNormalized: 'people', isDefault: true,
+        status: 'active', archiveReason: null, archivedAt: null, archivedByAccountId: null,
         createdAt: now, updatedAt: now }], createdAt: now, updatedAt: now, schemaVersion: 2 })
     const embedded = (id, title) => ({ _id: id, categoryId, title, createdByAccountId: hostId, createdAt: now, schemaVersion: 1 })
     await mongo.database.collection('eventRegistrations').insertMany([

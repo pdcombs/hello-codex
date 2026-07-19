@@ -1,11 +1,19 @@
-export default function EventEntryRow({ entry, onRemove, iconOnly = false }) {
+export default function EventEntryRow({ entry, onRemove, iconOnly = false, editable = false,
+  value = entry.title, onTitleChange, error = null }) {
   async function confirmRemoval() {
     const confirmed = globalThis.confirm?.(`Remove and archive “${entry.title}”?`) ?? true
     if (confirmed) await onRemove?.(entry)
   }
   return (
     <li className="event-entry-row">
-      <div><strong>{entry.title}</strong><span>Owned by {entry.ownerDisplayName}</span></div>
+      <div className="event-entry-content">
+        {editable ? <div className="event-entry-title-field">
+          <label htmlFor={`entry-title-${entry.id}`}>Entry title for {entry.ownerDisplayName}</label>
+          <input id={`entry-title-${entry.id}`} value={value} onChange={(event) => onTitleChange?.(event.target.value)}
+            aria-invalid={Boolean(error)} aria-describedby={error ? `entry-title-error-${entry.id}` : undefined} />
+          {error && <small id={`entry-title-error-${entry.id}`} role="alert">{error}</small>}
+        </div> : <><strong>{entry.title}</strong><span>Owned by {entry.ownerDisplayName}</span></>}
+      </div>
       {onRemove && <button className={iconOnly ? 'entry-delete-action' : 'secondary-action'} type="button"
         onClick={confirmRemoval} aria-label={iconOnly ? `Delete ${entry.title}` : undefined} title="Delete entry">
         {iconOnly ? <TrashIcon /> : 'Remove entry'}

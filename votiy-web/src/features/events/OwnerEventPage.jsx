@@ -10,7 +10,7 @@ export default function OwnerEventPage({
   viewer,
   loader = loadEventByPublicId,
   addCategory,
-  renameCategory,
+  updateCategory,
   archiveEntry = archiveEventEntry,
   entryCreator,
   choicesLoader,
@@ -107,9 +107,12 @@ export default function OwnerEventPage({
 
       {state.error && <p role="alert">{state.error.message}</p>}
       {Array.isArray(state.event.categories) &&
-        <EventCategoryList categories={state.event.categories} eventId={state.event.id} editable
-          addCategory={addCategory} renameCategory={renameCategory} onRemoveEntry={onRemoveEntry}
-          onEventChange={reloadEvent} onAddEntry={(category, trigger) => setEntryModal({ category, trigger })} />}
+        <EventCategoryList categories={state.event.categories} eventId={state.event.id}
+          eventUpdatedAt={state.event.updatedAt} editable
+          addCategory={addCategory} updateCategory={updateCategory} onRemoveEntry={onRemoveEntry}
+          onEventChange={(event) => setState({ status: 'success', error: null, event })}
+          onRefresh={reloadEvent}
+          onAddEntry={(category, trigger) => setEntryModal({ category, trigger })} />}
       {entryModal && <AddEntryModal eventId={state.event.id} category={entryModal.category}
         creator={entryCreator} choicesLoader={choicesLoader} onSaved={reloadEvent} onClose={closeEntryModal} />}
     </main>

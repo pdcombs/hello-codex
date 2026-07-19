@@ -95,11 +95,11 @@ async function main() {
     const accountId = created.data.createEventEntry.result.affectedParticipant.accountId
     const projection = await graphql(`query SmokeEntryProjection($eventId: ID!) {
       ownedEvents(first: 20) { __typename
-        ... on EventListSuccess { events { nodes { id categories { id entries { id } } } } }
+        ... on EventListSuccess { events { nodes { id categories { id title updatedAt entries { id title updatedAt } } } } }
         ... on OperationError { code message }
       }
       eventParticipants(eventId: $eventId) { __typename
-        ... on ParticipantListSuccess { participants { accountId entryCount } }
+        ... on ParticipantListSuccess { participants { accountId entryCount entries { id title } } }
         ... on OperationError { code message }
       }
     }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeEntryProjection' })
@@ -110,6 +110,44 @@ async function main() {
     requireStatus(projectedEntries.some((entry) => entry.id === entryId), 'Synthetic entry missing from category projection')
     requireStatus(projection.data.eventParticipants?.participants
       ?.some((participant) => participant.accountId === accountId), 'Synthetic owner missing from participant projection')
+    const category = projectedEvent.categories.find((item) => item.id === syntheticCategoryId)
+    requireStatus(Boolean(category), 'Synthetic category missing from projection')
+    const originalEntry = category.entries.find((entry) => entry.id === entryId)
+    const editedTitle = `Smoke edited ${unique}`
+    const editInput = { eventId: syntheticEventId, categoryId: syntheticCategoryId, title: category.title,
+      expectedCategoryUpdatedAt: category.updatedAt,
+      entryTitles: category.entries.map((entry) => ({ entryId: entry.id,
+        title: entry.id === entryId ? editedTitle : entry.title, expectedUpdatedAt: entry.updatedAt })),
+      idempotencyKey: crypto.randomUUID() }
+    const edited = await graphql(`mutation SmokeUpdateCategory($input: UpdateEventCategoryInput!) {
+      updateEventCategory(input: $input) { __typename
+        ... on EventSuccess { event { categories { id title updatedAt entries { id title updatedAt } } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: editInput }, { cookie, operationName: 'SmokeUpdateCategory' })
+    requireStatus(edited.data.updateEventCategory?.__typename === 'EventSuccess',
+      `Synthetic title edit failed: ${JSON.stringify(edited.data)}`)
+    const editedCategory = edited.data.updateEventCategory.event.categories.find((item) => item.id === syntheticCategoryId)
+    requireStatus(editedCategory.entries.some((entry) => entry.id === entryId && entry.title === editedTitle),
+      'Synthetic title missing from category projection')
+    const editedParticipants = await graphql(`query SmokeEditedParticipants($eventId: ID!) {
+      eventParticipants(eventId: $eventId) { __typename
+        ... on ParticipantListSuccess { participants { entries { id title } } }
+        ... on OperationError { code message }
+      }
+    }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeEditedParticipants' })
+    requireStatus(editedParticipants.data.eventParticipants?.participants
+      ?.some((participant) => participant.entries.some((entry) => entry.id === entryId && entry.title === editedTitle)),
+    'Synthetic title missing from participant projection')
+    const restored = await graphql(`mutation SmokeRestoreCategory($input: UpdateEventCategoryInput!) {
+      updateEventCategory(input: $input) { __typename ... on EventSuccess { event { id } }
+        ... on OperationError { code message } }
+    }`, { input: { ...editInput, expectedCategoryUpdatedAt: editedCategory.updatedAt,
+      entryTitles: editedCategory.entries.map((entry) => ({ entryId: entry.id,
+        title: entry.id === entryId ? originalEntry.title : entry.title, expectedUpdatedAt: entry.updatedAt })),
+      idempotencyKey: crypto.randomUUID() } }, { cookie, operationName: 'SmokeRestoreCategory' })
+    requireStatus(restored.data.updateEventCategory?.__typename === 'EventSuccess',
+      `Synthetic title restoration failed: ${JSON.stringify(restored.data)}`)
     const archived = await graphql(`mutation SmokeArchiveEntry($input: ArchiveEventEntryInput!) {
       archiveEventEntry(input: $input) { __typename
         ... on EntryArchiveSuccess { result { archivedEntryIds affectedParticipant { accountId entryCount } } }
@@ -129,6 +167,62 @@ async function main() {
     requireStatus(participants.data.eventParticipants?.__typename === 'ParticipantListSuccess'
       && !participants.data.eventParticipants.participants.some((item) => item.accountId === accountId),
       'Archived synthetic owner remained in active participant view')
+
+    const categoryTitle = `Smoke category ${unique}`
+    const addedCategory = await graphql(`mutation SmokeAddCategory($input: AddEventCategoryInput!) {
+      addEventCategory(input: $input) { __typename
+        ... on EventSuccess { event { id updatedAt categories { id title isDefault updatedAt entries { id updatedAt } } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, title: categoryTitle, idempotencyKey: crypto.randomUUID() } },
+    { cookie, operationName: 'SmokeAddCategory' })
+    requireStatus(addedCategory.data.addEventCategory?.__typename === 'EventSuccess',
+      `Synthetic category creation failed: ${JSON.stringify(addedCategory.data)}`)
+    const categoryEvent = addedCategory.data.addEventCategory.event
+    const syntheticCategory = categoryEvent.categories.find((item) => item.title === categoryTitle)
+    requireStatus(Boolean(syntheticCategory), 'Synthetic category missing after creation')
+    requireStatus(categoryEvent.categories.length > 1, 'Synthetic event must retain another active category')
+
+    const categoryEntry = await graphql(`mutation SmokeCreateCategoryEntry($input: CreateEventEntryInput!) {
+      createEventEntry(input: $input) { __typename
+        ... on EntryCreationSuccess { result { createdEntries { id updatedAt } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, categoryId: syntheticCategory.id,
+      accountId: ownerAccountId, title: `Smoke category entry ${unique}`, idempotencyKey: crypto.randomUUID() } },
+    { cookie, operationName: 'SmokeCreateCategoryEntry' })
+    requireStatus(categoryEntry.data.createEventEntry?.__typename === 'EntryCreationSuccess',
+      `Synthetic category entry creation failed: ${JSON.stringify(categoryEntry.data)}`)
+    const categoryEntrySnapshot = categoryEntry.data.createEventEntry.result.createdEntries[0]
+
+    const beforeArchive = await graphql(`query SmokeCategorySnapshot {
+      ownedEvents(first: 100) { __typename
+        ... on EventListSuccess { events { nodes { id updatedAt categories { id title isDefault updatedAt entries { id updatedAt } } } } }
+        ... on OperationError { code message }
+      }
+    }`, {},
+    { cookie, operationName: 'SmokeCategorySnapshot' })
+    const archiveEvent = beforeArchive.data.ownedEvents?.events?.nodes?.find((item) => item.id === syntheticEventId)
+    const archiveCategory = archiveEvent?.categories.find((item) => item.id === syntheticCategory.id)
+    requireStatus(Boolean(archiveCategory), 'Synthetic category snapshot missing')
+    const categoryArchived = await graphql(`mutation SmokeArchiveCategory($input: ArchiveEventCategoryInput!) {
+      archiveEventCategory(input: $input) { __typename
+        ... on EventSuccess { event { id categories { id isDefault entries { id } } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, categoryId: archiveCategory.id,
+      expectedEventUpdatedAt: archiveEvent.updatedAt, expectedCategoryUpdatedAt: archiveCategory.updatedAt,
+      activeEntries: [{ entryId: categoryEntrySnapshot.id, expectedUpdatedAt: categoryEntrySnapshot.updatedAt }],
+      idempotencyKey: crypto.randomUUID() } }, { cookie, operationName: 'SmokeArchiveCategory' })
+    requireStatus(categoryArchived.data.archiveEventCategory?.__typename === 'EventSuccess',
+      `Synthetic category archive failed: ${JSON.stringify(categoryArchived.data)}`)
+    const activeCategories = categoryArchived.data.archiveEventCategory.event.categories
+    requireStatus(!activeCategories.some((item) => item.id === archiveCategory.id),
+      'Archived synthetic category remained in active projection')
+    requireStatus(!activeCategories.flatMap((item) => item.entries).some((item) => item.id === categoryEntrySnapshot.id),
+      'Category-archived entry remained in active projection')
+    requireStatus(activeCategories.length >= 1 && activeCategories.filter((item) => item.isDefault).length === 1,
+      'Category archive violated the active default invariant')
   }
 
   const deployedCommit = health.response.headers.get('x-app-commit') ?? ready.response.headers.get('x-app-commit')

@@ -17,6 +17,7 @@ describe('GraphQL schema contract', () => {
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('createEventEntry')
+    expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventCategory')
     expect(Object.keys(schema.getTypeMap()).filter((name) => !name.startsWith('__')).sort()).toMatchSnapshot()
   })
 
@@ -54,6 +55,7 @@ describe('GraphQL schema contract', () => {
     expect(stagedSchema.getMutationType().getFields()).toMatchObject({
       addEventCategory: expect.any(Object),
       renameEventCategory: expect.any(Object),
+      archiveEventCategory: expect.any(Object),
     })
     expect(runtimeSchema.getType('EventCategory')).toBeDefined()
     expect(runtimeSchema.getMutationType().getFields().addEventCategory).toBeDefined()

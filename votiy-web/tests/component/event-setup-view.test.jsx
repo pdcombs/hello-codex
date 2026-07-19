@@ -6,8 +6,9 @@ import EventSetupTabs from '../../src/features/events/EventSetupTabs.jsx'
 import { readEntries } from '../../src/features/events/participant-entry-form.js'
 
 const categories = [
-  { id: 'cat-1', title: 'Desserts', entries: [{ id: 'entry-1', title: 'Apple Pie', ownerDisplayName: 'Peyton' }] },
-  { id: 'cat-2', title: 'Drinks', entries: [] },
+  { id: 'cat-1', title: 'Desserts', updatedAt: '2026-07-19T12:00:00.000Z',
+    entries: [{ id: 'entry-1', title: 'Apple Pie', ownerDisplayName: 'Peyton', updatedAt: '2026-07-19T12:00:00.000Z' }] },
+  { id: 'cat-2', title: 'Drinks', updatedAt: '2026-07-19T12:00:00.000Z', entries: [] },
 ]
 
 describe('grouped event setup view', () => {
@@ -28,25 +29,28 @@ describe('grouped event setup view', () => {
   })
 
   it('keeps view cards read-only and edits categories with icon entry deletion', async () => {
-    const renameCategory = vi.fn().mockResolvedValue({
+    const updateCategory = vi.fn().mockResolvedValue({
       event: { id: 'event-1', categories: [{ ...categories[0], title: 'Baked goods' }] },
     })
     const onEventChange = vi.fn()
     const onRemoveEntry = vi.fn()
     const user = userEvent.setup()
     render(<EventCategoryList categories={[categories[0]]} eventId="event-1" editable
-      renameCategory={renameCategory} onEventChange={onEventChange} onRemoveEntry={onRemoveEntry} />)
+      updateCategory={updateCategory} onEventChange={onEventChange} onRemoveEntry={onRemoveEntry} />)
 
     expect(screen.queryByRole('button', { name: /delete apple pie/i })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Edit' }))
     expect(screen.getByLabelText('Category title')).toHaveValue('Desserts')
+    expect(screen.getByLabelText('Entry title for Peyton')).toHaveValue('Apple Pie')
     expect(screen.getByRole('button', { name: /delete apple pie/i })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Remove entry' })).not.toBeInTheDocument()
     await user.clear(screen.getByLabelText('Category title'))
     await user.type(screen.getByLabelText('Category title'), 'Baked goods')
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(renameCategory).toHaveBeenCalledWith(expect.objectContaining({
+    expect(updateCategory).toHaveBeenCalledWith(expect.objectContaining({
       eventId: 'event-1', categoryId: 'cat-1', title: 'Baked goods',
+      expectedCategoryUpdatedAt: categories[0].updatedAt,
+      entryTitles: [expect.objectContaining({ entryId: 'entry-1', title: 'Apple Pie' })],
     }))
     expect(onEventChange).toHaveBeenCalled()
   })
@@ -68,10 +72,10 @@ describe('grouped event setup view', () => {
   it('waits for the hydrated event refresh before leaving edit mode', async () => {
     let finishRefresh
     const onEventChange = vi.fn(() => new Promise((resolve) => { finishRefresh = resolve }))
-    const renameCategory = vi.fn().mockResolvedValue({ event: { id: 'event-1', categories: [] } })
+    const updateCategory = vi.fn().mockResolvedValue({ event: { id: 'event-1', categories: [] } })
     const user = userEvent.setup()
     render(<EventCategoryList categories={[categories[0]]} eventId="event-1" editable
-      renameCategory={renameCategory} onEventChange={onEventChange} />)
+      updateCategory={updateCategory} onEventChange={onEventChange} />)
 
     await user.click(screen.getByRole('button', { name: 'Edit' }))
     await user.click(screen.getByRole('button', { name: 'Save' }))

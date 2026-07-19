@@ -155,6 +155,21 @@ describe('GraphQL resolvers', () => {
     await expect(failingResolvers.removeEventParticipant({ input: {} }, context)).resolves.toMatchObject({ __typename: 'OperationError', code: 'CONFLICT' })
   })
 
+  it('resolves category archival and audits authorization denial', async () => {
+    const auditRepository = { append: vi.fn().mockResolvedValue(undefined) }
+    const eventCategoryService = { archiveCategory: vi.fn().mockResolvedValue({ event: { id: 'evt-1' } }) }
+    const context = { correlationId: 'cid', viewer: { account } }
+    const resolvers = createEventResolvers({ eventService: {}, eventRegistrationService: {},
+      eventCategoryService, auditRepository })
+    await expect(resolvers.archiveEventCategory({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EventSuccess' })
+    eventCategoryService.archiveCategory.mockRejectedValue(new ApplicationError(ErrorCode.FORBIDDEN))
+    await expect(resolvers.archiveEventCategory({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'OperationError', code: 'FORBIDDEN' })
+    expect(auditRepository.append).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'event.category_change_denied', outcome: 'denied' }))
+  })
+
   it('resolves entry-derived participant creation, reads, and archive results', async () => {
     const result = { createdEntries: [{ id: 'entry-1', createdAt: new Date() }], affectedParticipant: {
       accountId: 'account-1', displayName: 'Peyton', email: 'peyton@example.test', entryCount: 1,

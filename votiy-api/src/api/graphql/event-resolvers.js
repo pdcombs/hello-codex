@@ -44,6 +44,30 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
         return failure(error, context.correlationId)
       }
     },
+    async updateEventCategory({ input }, context) {
+      try {
+        const result = await eventCategoryService.updateCategory(input, context.viewer,
+          { correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) {
+        if (error.code === 'FORBIDDEN') await auditRepository?.append({ name: 'event.category_change_denied',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event', subjectId: input.eventId,
+          outcome: 'denied', correlationId: context.correlationId, metadata: { errorCode: error.code } })
+        return failure(error, context.correlationId)
+      }
+    },
+    async archiveEventCategory({ input }, context) {
+      try {
+        const result = await eventCategoryService.archiveCategory(input, context.viewer,
+          { correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) {
+        if (error.code === 'FORBIDDEN') await auditRepository?.append({ name: 'event.category_change_denied',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event', subjectId: input.eventId,
+          outcome: 'denied', correlationId: context.correlationId, metadata: { errorCode: error.code } })
+        return failure(error, context.correlationId)
+      }
+    },
     async ownedEvents({ first, after }, context) {
       try {
         const result = await eventService.ownedEvents({ viewer: context.viewer, first, after })

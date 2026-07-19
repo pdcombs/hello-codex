@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { addCategory, createHostedEvent, createVerifiedHost, signInHost } from './fixtures/event-setup.js'
 
 test('public shell exposes skip link and mobile-safe nav', async ({ page, isMobile }) => {
   await page.goto('/')
@@ -45,4 +46,51 @@ test('responsive add-entry dialog supports keyboard focus, errors, and mobile la
 
   const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
   expect(fitsViewport).toBe(true)
+})
+
+test('category entry-title editor remains keyboard and viewport safe', async ({ page }) => {
+  test.skip(!process.env.E2E_HOST_EMAIL || !process.env.E2E_HOST_PASSWORD || !process.env.E2E_OPEN_EVENT_PUBLIC_ID,
+    'Synthetic host and populated event required')
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(process.env.E2E_HOST_EMAIL)
+  await page.getByLabel('Password').fill(process.env.E2E_HOST_PASSWORD)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  const category = page.locator('.event-category-card').filter({ has: page.locator('.event-entry-row') }).first()
+  test.skip(await category.count() === 0, 'Synthetic event needs an active entry')
+  await category.getByRole('button', { name: 'Edit' }).focus()
+  await page.keyboard.press('Enter')
+  await expect(category.getByLabel('Category title')).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(category.getByLabel(/^Entry title for /).first()).toBeFocused()
+  const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+  expect(fitsViewport).toBe(true)
+})
+
+test('category removal warning is keyboard, reduced-motion, and short-viewport safe', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 520 })
+  if (process.env.E2E_HOST_EMAIL && process.env.E2E_HOST_PASSWORD && process.env.E2E_OPEN_EVENT_PUBLIC_ID) {
+    await signInHost(page)
+    await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
+  } else {
+    await createVerifiedHost(page, testInfo, 'responsive-category')
+    await createHostedEvent(page, `Responsive category ${Date.now()}`)
+    await addCategory(page, `Second category ${Date.now()}`)
+  }
+  const cards = page.locator('.event-category-card')
+  test.skip(await cards.count() < 2, 'Synthetic event needs two active categories')
+  const trigger = cards.first().getByRole('button', { name: 'Edit' })
+  await trigger.click()
+  const remove = cards.first().getByRole('button', { name: 'Remove category' })
+  await remove.focus()
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('alertdialog')
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused()
+  await expect(dialog).toContainText(/This will remove \d+ entr(?:y|ies)/)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(remove).toBeFocused()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })

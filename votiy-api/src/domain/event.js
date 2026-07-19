@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { createCategory } from './event-category.js'
 import { toCategoryView } from './event-category.js'
+import { isActiveCategory } from './event-category.js'
 
 const REGISTRATION_POLICIES = new Set(['admin_managed', 'open'])
 
@@ -49,7 +50,7 @@ export function toEventView(event, viewerAccountId = null) {
     location: event.location,
     registrationPolicy: event.registrationPolicy === 'open' ? 'OPEN' : 'ADMIN_MANAGED',
     isOwner: viewerAccountId ? String(viewerAccountId) === ownerId : false,
-    categories: (event.categories ?? []).map((category) => toCategoryView(category)),
+    categories: (event.categories ?? []).filter(isActiveCategory).map((category) => toCategoryView(category)),
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
   })

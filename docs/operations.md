@@ -54,6 +54,8 @@ volume reset.
 - Entry archival: `entry.archived` and `participant.entries_archived` success/error rate
 - Add-entry owner lookup: `operation:"entry.owner_choices_read"` p50/p95, errors, denials, and result count
 - Add-entry creation: `operation:"event.entry_create"` p50/p95, success, conflict, denial, and rollback rate
+- Category batch title update: `operation:"event.category_batch_update"` p50/p95, errors, conflicts,
+  denials, changed-entry count, and category-title-changed rate
 
 ## Render / Atlas query ideas
 
@@ -70,6 +72,7 @@ volume reset.
   - `operation:"event.participants_read" outcome:"failure"`
   - `operation:"entry.owner_choices_read" outcome:"failure"`
   - `operation:"event.entry_create" outcome:"failure"`
+  - `operation:"event.category_batch_update" outcome:"failure"`
 - Atlas:
   - connection count and wait queue
   - primary CPU and memory
@@ -91,12 +94,27 @@ volume reset.
 - entry archive mutation errors above 5% for 10 minutes
 - owner-choice or entry-create errors above 5% for 10 minutes
 - owner-choice or entry-create p95 above 1 second for 10 minutes
+- category batch-update errors above 5% or p95 above 2 seconds for 10 minutes
+- category archive errors above 5% or p95 above 2 seconds for 10 minutes
+- any `004-category-archival` migration failure or event with zero active categories
 
 Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
 category titles, entry titles, display names, email addresses, or phone numbers.
 
 Add-entry logs may contain operation, outcome, duration, result count, correlation ID, event/category/
 entry/owner IDs, and provisional boolean. Never log search text, display names, email, phone, or entry title.
+
+Category batch-update logs may contain outcome, duration, correlation ID, changed-entry count, safe error
+code, and category-title-changed boolean. Never log category or entry title values. A conflict normally means
+an entry was added, archived, or edited after the form opened; refresh the event and reapply the intended
+changes. Repeated transaction failures require checking Atlas replica-set health and matched-write counts.
+
+Category archival logs may contain operation, outcome, duration, correlation ID, affected entry count,
+safe error code, and whether a default was promoted. They must never contain category/entry titles or
+account contact fields. Query `event.category_archive` for the two-second p95 and 5% error alerts. Diagnose
+conflicts by comparing event, category, and entry timestamps. Migration 004 is additive and idempotent;
+rollback the application commit but never reverse the migration, restore archived records, or hard-delete
+history. Confirm every event retains exactly one active default category after any incident.
 
 ## Add Entries diagnostics
 

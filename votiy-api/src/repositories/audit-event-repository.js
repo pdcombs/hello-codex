@@ -8,12 +8,14 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
   'participant.entries_created',
   'event.category_created', 'event.category_renamed', 'event.category_change_denied',
   'entry.created', 'entry.archived', 'participant.entries_archived',
+  'entry.title_changed',
+  'event.category_archived',
 ])
 
 const outcomes = new Set(['success', 'denied', 'failure'])
 const metadataKeys = new Set(['errorCode', 'registrationPolicy', 'registrationSource', 'lifecycleStatus',
   'verificationStatus', 'entryCount', 'archiveReason', 'categoryId', 'entryId', 'ownerAccountId',
-  'provisionalCreated'])
+  'provisionalCreated', 'promotedCategoryId'])
 
 function sanitizeMetadata(metadata = {}) {
   const entries = Object.entries(metadata)
@@ -24,7 +26,7 @@ function sanitizeMetadata(metadata = {}) {
 export function createAuditEventRepository(database) {
   const collection = database.collection('auditEvents')
   return Object.freeze({
-    async append({ name, actorAccountId = null, subjectType, subjectId, outcome, correlationId, metadata = {} }) {
+    async append({ name, actorAccountId = null, subjectType, subjectId, outcome, correlationId, metadata = {} }, options = {}) {
       if (!AUDIT_EVENT_NAMES.includes(name)) throw new TypeError('Unknown audit event name')
       if (!outcomes.has(outcome)) throw new TypeError('Unknown audit event outcome')
       if (!subjectType || !subjectId || !correlationId) throw new TypeError('Audit subject and correlation ID are required')
@@ -32,7 +34,7 @@ export function createAuditEventRepository(database) {
         _id: new ObjectId(), name, actorAccountId, subjectType, subjectId: String(subjectId), outcome,
         correlationId, metadata: sanitizeMetadata(metadata), createdAt: new Date(), schemaVersion: 1,
       }
-      await collection.insertOne(document)
+      await collection.insertOne(document, options)
       return Object.freeze({ ...document })
     },
   })

@@ -101,6 +101,43 @@ export const renameEventCategoryInputSchema = z.object({
   idempotencyKey: idempotencyKeySchema,
 }).strict()
 
+const validTimestamp = z.coerce.date().refine((value) => !Number.isNaN(value.getTime()), 'Enter a valid timestamp')
+
+export const updateEventCategoryInputSchema = z.object({
+  eventId: z.string().min(1),
+  categoryId: z.string().min(1),
+  title: trimmedRequiredText(120, 'Category title'),
+  expectedCategoryUpdatedAt: validTimestamp,
+  entryTitles: z.array(z.object({
+    entryId: z.string().min(1),
+    title: trimmedRequiredText(160, 'Entry title'),
+    expectedUpdatedAt: validTimestamp,
+  }).strict()).max(5_000, 'A category can contain at most 5,000 editable entries'),
+  idempotencyKey: idempotencyKeySchema,
+}).strict().superRefine((value, context) => {
+  const seen = new Set()
+  value.entryTitles.forEach((entry, index) => {
+    if (seen.has(entry.entryId)) context.addIssue({ code: 'custom', path: ['entryTitles', index, 'entryId'],
+      message: 'Each entry can appear only once.' })
+    seen.add(entry.entryId)
+  })
+})
+
+export const archiveEventCategoryInputSchema = z.object({
+  eventId: z.string().min(1), categoryId: z.string().min(1),
+  expectedEventUpdatedAt: validTimestamp, expectedCategoryUpdatedAt: validTimestamp,
+  activeEntries: z.array(z.object({ entryId: z.string().min(1), expectedUpdatedAt: validTimestamp }).strict())
+    .max(5_000, 'A category can contain at most 5,000 active entries'),
+  idempotencyKey: idempotencyKeySchema,
+}).strict().superRefine((value, context) => {
+  const seen = new Set()
+  value.activeEntries.forEach((entry, index) => {
+    if (seen.has(entry.entryId)) context.addIssue({ code: 'custom', path: ['activeEntries', index, 'entryId'],
+      message: 'Each entry can appear only once.' })
+    seen.add(entry.entryId)
+  })
+})
+
 const optionalEmailSchema = z.string().trim().transform((value) => value || null).nullish()
   .transform((value) => value ?? null)
   .refine((value) => value === null || z.string().email().safeParse(value).success, 'Enter a valid email address')

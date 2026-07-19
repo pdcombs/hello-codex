@@ -7,9 +7,12 @@ exports[`GraphQL schema contract > loads the checked-in account, event, and regi
   "AccountSuccess",
   "AddEventCategoryInput",
   "AddEventParticipantInput",
+  "ArchiveEventCategoryInput",
   "ArchiveEventEntryInput",
   "ArchiveEventParticipantEntriesInput",
   "Boolean",
+  "CategoryEntryTitleUpdateInput",
+  "CategoryRemovalEntrySnapshotInput",
   "CreateEventEntryInput",
   "CreateEventInput",
   "DateTime",
@@ -63,6 +66,7 @@ exports[`GraphQL schema contract > loads the checked-in account, event, and regi
   "SignOutResult",
   "SignOutSuccess",
   "String",
+  "UpdateEventCategoryInput",
   "VerifyEmailInput",
 ]
 `;

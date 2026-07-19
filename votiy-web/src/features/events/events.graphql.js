@@ -1,6 +1,6 @@
 import { graphqlRequest, isSchemaMismatch, unwrapGraphqlResult } from '../../lib/graphql.js'
 
-const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName status createdAt'
+const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName status createdAt updatedAt'
 const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } }`
 const REGISTRATION_FIELDS = `id accountId email phone displayName entryCount entries { ${ENTRY_FIELDS} } accountCompleted status source createdAt`
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
@@ -110,6 +110,12 @@ export const ADD_EVENT_CATEGORY = `mutation AddEventCategory($input: AddEventCat
 }`
 export const RENAME_EVENT_CATEGORY = `mutation RenameEventCategory($input: RenameEventCategoryInput!) {
   renameEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
+export const UPDATE_EVENT_CATEGORY = `mutation UpdateEventCategory($input: UpdateEventCategoryInput!) {
+  updateEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
+export const ARCHIVE_EVENT_CATEGORY = `mutation ArchiveEventCategory($input: ArchiveEventCategoryInput!) {
+  archiveEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
 export const ENTRY_OWNER_CHOICES = `query EntryOwnerChoices($eventId: ID!, $search: String, $first: Int) {
   entryOwnerChoices(eventId: $eventId, search: $search, first: $first) {
@@ -231,6 +237,17 @@ export async function addEventCategory(input) {
 export async function renameEventCategory(input) {
   const data = await graphqlRequest({ query: RENAME_EVENT_CATEGORY, variables: { input }, operationName: 'RenameEventCategory' })
   return unwrapGraphqlResult(data.renameEventCategory)
+}
+
+export async function updateEventCategory(input) {
+  const data = await graphqlRequest({ query: UPDATE_EVENT_CATEGORY, variables: { input }, operationName: 'UpdateEventCategory' })
+  return unwrapGraphqlResult(data.updateEventCategory)
+}
+
+export async function archiveEventCategory(input) {
+  const data = await graphqlRequest({ query: ARCHIVE_EVENT_CATEGORY, variables: { input },
+    operationName: 'ArchiveEventCategory' })
+  return normalizeEventSetup(unwrapGraphqlResult(data.archiveEventCategory))
 }
 
 export async function loadEntryOwnerChoices(eventId, search = null, first = 10) {
