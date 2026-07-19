@@ -48,7 +48,8 @@ export function createProvisionalAccount({
     _id: new ObjectId(),
     emailNormalized,
     phoneNormalized,
-    referredByAccountId: referredByAccountId instanceof ObjectId ? referredByAccountId : new ObjectId(referredByAccountId),
+    referredByAccountId: referredByAccountId == null ? null
+      : referredByAccountId instanceof ObjectId ? referredByAccountId : new ObjectId(referredByAccountId),
     lifecycleStatus: 'provisional',
     passwordHash: null,
     verificationStatus: 'pending',

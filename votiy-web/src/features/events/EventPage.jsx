@@ -7,8 +7,11 @@ import { FormSurface } from '../../components/Form.jsx'
 import ParticipantEntryFields from './ParticipantEntryFields.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
 import { readEntries } from './participant-entry-form.js'
+import EventBallot from '../voting/EventBallot.jsx'
+import { loadEventVotingCapability } from '../voting/voting.graphql.js'
 
-export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent }) {
+export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent,
+  capabilityLoader = loadEventVotingCapability }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null, registrationState: 'idle' })
   const [entryCount, setEntryCount] = useState(1)
@@ -18,9 +21,12 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
     let active = true
     setState({ status: 'loading', error: null, event: null, registrationState: 'idle' })
     loader(publicId)
-      .then((result) => {
+      .then(async (result) => {
         if (!active) return
-        setState({ status: 'success', error: null, event: result.event, registrationState: 'idle' })
+        const capability = result.event.voting ? await capabilityLoader(result.event.id) : null
+        if (!active) return
+        setState({ status: 'success', error: null, event: capability ? { ...result.event, voting: capability } : result.event,
+          registrationState: 'idle' })
       })
       .catch((error) => {
         if (!active) return
@@ -29,7 +35,7 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
     return () => {
       active = false
     }
-  }, [publicId, loader])
+  }, [publicId, loader, capabilityLoader])
 
   async function onRegister(submitEvent) {
     submitEvent.preventDefault()
@@ -99,6 +105,8 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
       </div>
 
       {Array.isArray(state.event.categories) && <EventCategoryList categories={state.event.categories} />}
+
+      {!state.event.isOwner && state.event.voting && <EventBallot event={state.event} />}
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
         <SectionCard title="Join this event">

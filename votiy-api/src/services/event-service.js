@@ -66,7 +66,7 @@ export function createEventService({
       }
       const timestamp = now()
       const event = await eventRepository.create({
-        schemaVersion: 2,
+        schemaVersion: 3,
         ownerAccountId,
         publicId: generatePublicId(),
         title: input.title,
@@ -103,7 +103,10 @@ export function createEventService({
       const event = await eventRepository.findByPublicId(publicId)
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
       try {
-        return { event: await projectSetup(event, viewer?.account?._id ?? null) }
+        const projected = await projectSetup(event, viewer?.account?._id ?? null)
+        logger?.info({ operation: 'event.rules_read', outcome: 'success', rulesVersion: event.votingRules?.version ?? null,
+          accessPolicy: event.votingRules?.accessPolicy ?? null }, 'Event voting rules read')
+        return { event: projected }
       } catch (error) {
         logGroupedView(logger, { outcome: 'failure', durationMs: 0, errorCode: error.code ?? ErrorCode.SERVICE_UNAVAILABLE })
         throw error

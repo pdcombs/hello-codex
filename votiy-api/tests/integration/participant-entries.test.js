@@ -4,6 +4,7 @@ import { createAccountRepository } from '../../src/repositories/account-reposito
 import { createEventRegistrationRepository } from '../../src/repositories/event-registration-repository.js'
 import { createEventRepository } from '../../src/repositories/event-repository.js'
 import { createIdempotencyRepository } from '../../src/repositories/idempotency-repository.js'
+import { createEventVoterAccessRepository } from '../../src/repositories/event-voter-access-repository.js'
 import { ensureCollectionsAndIndexes } from '../../src/repositories/indexes.js'
 import { createEventRegistrationService } from '../../src/services/event-registration-service.js'
 import { createTestMongo } from '../support/mongo.js'
@@ -38,5 +39,24 @@ describe('participant entries transaction', () => {
       entries: [{ title: 'Bad', categoryId: String(new ObjectId()) }],
       idempotencyKey: '123e4567-e89b-12d3-a456-426614174000' }, viewer)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' })
     expect(await mongo.database.collection('accounts').countDocuments()).toBe(before)
+  })
+
+  it('does not project event voter access as participant registration', async () => {
+    const accountRepository = createAccountRepository(mongo.database)
+    const eventRepository = createEventRepository(mongo.database)
+    const registrationRepository = createEventRegistrationRepository(mongo.database)
+    const host = await accountRepository.createPending({ displayName: 'Voter Host',
+      emailNormalized: 'voter-host@example.test', passwordHash: 'hash' })
+    const voter = await accountRepository.createProvisional({ displayName: 'Voter',
+      emailNormalized: 'only-voter@example.test', referredByAccountId: null })
+    const event = await eventRepository.create({ schemaVersion: 2, ownerAccountId: host._id,
+      publicId: 'voter-not-participant', title: 'Voter Test' })
+    await createEventVoterAccessRepository(mongo.database).grant({ eventId: event._id, accountId: voter._id,
+      source: 'code', codeId: new ObjectId(), now: new Date() })
+    const service = createEventRegistrationService({ eventRepository,
+      eventRegistrationRepository: registrationRepository, accountRepository,
+      idempotencyRepository: createIdempotencyRepository(mongo.database) })
+    expect((await service.listRegistrations({ eventId: String(event._id) },
+      { account: { ...host, verificationStatus: 'verified' } })).registrations).toEqual([])
   })
 })

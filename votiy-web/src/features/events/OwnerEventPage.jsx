@@ -5,6 +5,9 @@ import EventPage from './EventPage.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
 import AddEntryModal from './AddEntryModal.jsx'
 import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
+import EventRulesEditor from '../voting/EventRulesEditor.jsx'
+import { updateEventVotingRules } from '../voting/voting.graphql.js'
+import VotingCodeManager from '../voting/VotingCodeManager.jsx'
 
 export default function OwnerEventPage({
   viewer,
@@ -82,6 +85,10 @@ export default function OwnerEventPage({
       <div className="event-title-row">
         <h1 data-page-title="true">{state.event.title}</h1>
       </div>
+
+      {state.event.voting?.rules && <EventRulesEditor event={state.event} saver={updateEventVotingRules}
+        onSaved={() => reloadEvent()} />}
+      {state.event.voting?.rules?.accessPolicy === 'CODE' && <VotingCodeManager eventId={state.event.id} />}
 
       <div className="event-summary">
         {state.event.description && <p className="event-description">{state.event.description}</p>}

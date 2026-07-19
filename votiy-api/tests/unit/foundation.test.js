@@ -32,7 +32,7 @@ describe('environment configuration', () => {
   it('rejects unsafe production settings when account features are wired', () => {
     const environment = loadEnvironment({ NODE_ENV: 'production' })
     expect(() => assertAccountFeatureEnvironment(environment)).toThrow(
-      'Invalid production configuration: TOKEN_PEPPER, EMAIL_TRANSPORT, APP_ORIGIN | detected=',
+      'Invalid production configuration: TOKEN_PEPPER, VOTING_CODE_ENCRYPTION_KEY, EMAIL_TRANSPORT, APP_ORIGIN | detected=',
     )
   })
 
@@ -55,6 +55,7 @@ describe('environment configuration', () => {
       NODE_ENV: 'production',
       APP_ORIGIN: 'https://hello-codex-dc65.onrender.com',
       TOKEN_PEPPER: 'a'.repeat(32),
+      VOTING_CODE_ENCRYPTION_KEY: 'a'.repeat(64),
       EMAIL_TRANSPORT: 'fake',
     })
     expect(assertAccountFeatureEnvironment(environment).emailTransport).toBe('fake')

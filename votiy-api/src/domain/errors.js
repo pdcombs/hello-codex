@@ -9,6 +9,15 @@ export const ErrorCode = Object.freeze({
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   CONFLICT: 'CONFLICT',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  VOTING_NOT_CONFIGURED: 'VOTING_NOT_CONFIGURED',
+  VOTING_NOT_OPEN: 'VOTING_NOT_OPEN',
+  VOTING_CLOSED: 'VOTING_CLOSED',
+  ACCOUNT_REQUIREMENTS_NOT_MET: 'ACCOUNT_REQUIREMENTS_NOT_MET',
+  BALLOT_LIMIT_REACHED: 'BALLOT_LIMIT_REACHED',
+  INVALID_ACCESS_CODE: 'INVALID_ACCESS_CODE',
+  ACCESS_CODE_USED: 'ACCESS_CODE_USED',
+  INVALID_BALLOT: 'INVALID_BALLOT',
+  RULES_CHANGED: 'RULES_CHANGED',
 })
 
 const SAFE_MESSAGES = Object.freeze({
@@ -22,6 +31,15 @@ const SAFE_MESSAGES = Object.freeze({
   [ErrorCode.VALIDATION_FAILED]: 'Check the highlighted fields and try again.',
   [ErrorCode.CONFLICT]: 'The request conflicts with the current state.',
   [ErrorCode.SERVICE_UNAVAILABLE]: 'The service is temporarily unavailable.',
+  [ErrorCode.VOTING_NOT_CONFIGURED]: 'Voting has not been configured.',
+  [ErrorCode.VOTING_NOT_OPEN]: 'Voting is not open yet.',
+  [ErrorCode.VOTING_CLOSED]: 'Voting has closed.',
+  [ErrorCode.ACCOUNT_REQUIREMENTS_NOT_MET]: 'Complete required account details to vote.',
+  [ErrorCode.BALLOT_LIMIT_REACHED]: 'This account has reached its ballot limit.',
+  [ErrorCode.INVALID_ACCESS_CODE]: 'The voting code is invalid or unavailable.',
+  [ErrorCode.ACCESS_CODE_USED]: 'The voting code is invalid or unavailable.',
+  [ErrorCode.INVALID_BALLOT]: 'Review ballot selections and try again.',
+  [ErrorCode.RULES_CHANGED]: 'Voting rules changed. Refresh and try again.',
 })
 
 export class ApplicationError extends Error {

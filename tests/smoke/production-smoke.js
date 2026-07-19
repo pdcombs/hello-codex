@@ -5,6 +5,10 @@ const syntheticEmail = process.env.PRODUCTION_SYNTHETIC_HOST_EMAIL ?? ''
 const syntheticPassword = process.env.PRODUCTION_SYNTHETIC_HOST_PASSWORD ?? ''
 const syntheticEventId = process.env.PRODUCTION_SYNTHETIC_EVENT_ID ?? ''
 const syntheticCategoryId = process.env.PRODUCTION_SYNTHETIC_CATEGORY_ID ?? ''
+const auditMongoUri = process.env.PRODUCTION_SMOKE_MONGODB_URI ?? ''
+const auditMongoDatabase = process.env.PRODUCTION_SMOKE_MONGODB_DATABASE ?? 'votiy'
+const votingTimings = []
+const smokeStartedAt = new Date()
 
 if (!origin) throw new Error('PRODUCTION_ORIGIN is required')
 
@@ -14,6 +18,7 @@ async function fetchText(path) {
 }
 
 async function graphql(query, variables, { cookie = '', operationName = 'SmokeEventSetup' } = {}) {
+  const startedAt = performance.now()
   const response = await fetch(`${origin}/graphql`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'votiy-web', ...(cookie ? { Cookie: cookie } : {}) },
@@ -21,6 +26,10 @@ async function graphql(query, variables, { cookie = '', operationName = 'SmokeEv
   })
   const payload = await response.json()
   requireStatus(response.ok && !payload.errors, `Setup GraphQL failed: status=${response.status} body=${JSON.stringify(payload)}`)
+  const durationMs = performance.now() - startedAt
+  if (/Voting|Ballot|Code/.test(operationName)) votingTimings.push(durationMs)
+  requireStatus(durationMs < Number(process.env.VOTING_P95_BUDGET_MS ?? 2000),
+    `${operationName} exceeded voting latency budget`)
   return { data: payload.data, response }
 }
 
@@ -95,7 +104,8 @@ async function main() {
     const accountId = created.data.createEventEntry.result.affectedParticipant.accountId
     const projection = await graphql(`query SmokeEntryProjection($eventId: ID!) {
       ownedEvents(first: 20) { __typename
-        ... on EventListSuccess { events { nodes { id categories { id title updatedAt entries { id title updatedAt } } } } }
+        ... on EventListSuccess { events { nodes { id updatedAt voting { rules { version } }
+          categories { id title updatedAt entries { id title updatedAt } } } } }
         ... on OperationError { code message }
       }
       eventParticipants(eventId: $eventId) { __typename
@@ -113,6 +123,73 @@ async function main() {
     const category = projectedEvent.categories.find((item) => item.id === syntheticCategoryId)
     requireStatus(Boolean(category), 'Synthetic category missing from projection')
     const originalEntry = category.entries.find((entry) => entry.id === entryId)
+
+    const opensAt = new Date(Date.now() - 60_000).toISOString()
+    const closesAt = new Date(Date.now() + 600_000).toISOString()
+    const configured = await graphql(`mutation SmokeConfigureVoting($input: UpdateEventVotingRulesInput!) {
+      updateEventVotingRules(input: $input) { __typename
+        ... on EventSuccess { event { id updatedAt voting { rules { version } } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, expectedEventUpdatedAt: projectedEvent.updatedAt,
+      expectedRulesVersion: projectedEvent.voting.rules.version, opensAt, closesAt, accessPolicy: 'CODE',
+      unrestrictedRepeatPolicy: null, maximumBallotsPerAccount: null, codeRequiresCompletedAccount: false,
+      defaultCategoryRule: { categoryId: null, method: 'SINGLE', minimumSelections: null, maximumSelections: null },
+      categoryRules: [], idempotencyKey: crypto.randomUUID() } }, { cookie, operationName: 'SmokeConfigureVoting' })
+    requireStatus(configured.data.updateEventVotingRules?.__typename === 'EventSuccess',
+      `Synthetic voting configuration failed: ${JSON.stringify(configured.data)}`)
+    const rulesVersion = configured.data.updateEventVotingRules.event.voting.rules.version
+    const generatedCodes = await graphql(`mutation SmokeGenerateCode($input: GenerateVotingCodesInput!) {
+      generateVotingCodes(input: $input) { __typename
+        ... on VotingCodeGenerationSuccess { codes { id code status } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, quantity: 1, idempotencyKey: crypto.randomUUID() } },
+    { cookie, operationName: 'SmokeGenerateCode' })
+    requireStatus(generatedCodes.data.generateVotingCodes?.__typename === 'VotingCodeGenerationSuccess',
+      `Synthetic code generation failed: ${JSON.stringify(generatedCodes.data)}`)
+    const votingCode = generatedCodes.data.generateVotingCodes.codes[0]
+    const categoryBallots = projectedEvent.categories.filter((item) => item.entries.length > 0)
+      .map((item) => ({ categoryId: item.id, entryIds: [item.entries[0].id] }))
+    const ballotInput = { eventId: syntheticEventId, expectedRulesVersion: rulesVersion, accessCode: votingCode.code,
+      provisionalVoter: { email: `smoke-voter-${unique}@example.test`, phone: null }, categoryBallots,
+      idempotencyKey: crypto.randomUUID() }
+    const ballot = await graphql(`mutation SmokeSubmitBallot($input: SubmitEventBallotInput!) {
+      submitEventBallot(input: $input) { __typename
+        ... on BallotSubmissionSuccess { receipt { id rulesVersion } }
+        ... on OperationError { code message }
+      }
+    }`, { input: ballotInput }, { operationName: 'SmokeSubmitBallot' })
+    requireStatus(ballot.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess',
+      `Synthetic ballot failed: ${JSON.stringify(ballot.data)}`)
+    const reused = await graphql(`mutation SmokeReuseCode($input: SubmitEventBallotInput!) {
+      submitEventBallot(input: $input) { __typename ... on OperationError { code message } }
+    }`, { input: { ...ballotInput, idempotencyKey: crypto.randomUUID(),
+      provisionalVoter: { email: `smoke-reuse-${unique}@example.test`, phone: null } } },
+    { operationName: 'SmokeReuseCode' })
+    requireStatus(reused.data.submitEventBallot?.__typename === 'OperationError'
+      && reused.data.submitEventBallot.code === 'INVALID_ACCESS_CODE', 'Synthetic voting code reuse was not denied')
+    const inventory = await graphql(`query SmokeVotingInventory($eventId: ID!) {
+      eventVotingCodes(eventId: $eventId, first: 100) { __typename
+        ... on VotingCodeListSuccess { codes { nodes { id status claimantAccountId } } }
+        ... on OperationError { code message }
+      }
+    }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeVotingInventory' })
+    requireStatus(inventory.data.eventVotingCodes?.codes?.nodes
+      ?.some((item) => item.id === votingCode.id && item.status === 'USED' && item.claimantAccountId),
+    'Synthetic code inventory did not report the consumed claim')
+    if (auditMongoUri) {
+      const { MongoClient } = await import('../../votiy-api/node_modules/mongodb/lib/index.js')
+      const client = new MongoClient(auditMongoUri)
+      try {
+        await client.connect()
+        const names = await client.db(auditMongoDatabase).collection('auditEvents').distinct('name', {
+          name: { $in: ['voting.codes_generated', 'voting.code_consumed', 'voting.ballot_submitted'] },
+          createdAt: { $gte: smokeStartedAt },
+        })
+        requireStatus(names.length === 3, `Voting audit smoke incomplete: ${names.join(',')}`)
+      } finally { await client.close() }
+    }
     const editedTitle = `Smoke edited ${unique}`
     const editInput = { eventId: syntheticEventId, categoryId: syntheticCategoryId, title: category.title,
       expectedCategoryUpdatedAt: category.updatedAt,
@@ -231,10 +308,15 @@ async function main() {
     requireStatus(deployedCommit === expectedCommit, `Commit mismatch. expected=${expectedCommit} actual=${deployedCommit}`)
   }
 
-  console.log('Production smoke passed')
+  const sorted = [...votingTimings].sort((left, right) => left - right)
+  const votingP95Ms = sorted.length ? sorted[Math.ceil(sorted.length * 0.95) - 1] : 0
+  console.log(JSON.stringify({ event: 'production_smoke.completed', outcome: 'success',
+    votingP95Ms: Math.round(votingP95Ms), votingOperationCount: sorted.length,
+    errorRateAlertPercent: Number(process.env.VOTING_ERROR_RATE_ALERT_PERCENT ?? 5) }))
 }
 
 main().catch((error) => {
-  console.error(error)
+  console.error(JSON.stringify({ event: 'production_smoke.completed', outcome: 'failure',
+    alert: 'voting_smoke_or_invariant_failure', diagnostic: error.message }))
   process.exitCode = 1
 })

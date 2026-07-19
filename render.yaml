@@ -24,6 +24,12 @@ services:
         value: 86400
       - key: TOKEN_PEPPER
         generateValue: true
+      - key: VOTING_CODE_ENCRYPTION_KEY
+        sync: false
+      - key: VOTING_P95_BUDGET_MS
+        value: 2000
+      - key: VOTING_ERROR_RATE_ALERT_PERCENT
+        value: 5
       - key: EMAIL_TRANSPORT
         value: fake
       - key: EMAIL_FROM

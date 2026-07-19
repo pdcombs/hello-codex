@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const LOCAL_TOKEN_PEPPER = 'local-development-token-pepper-change-before-production'
+const LOCAL_VOTING_CODE_ENCRYPTION_KEY = '0'.repeat(64)
 const csv = z.string().default('').transform((value) =>
   value
     .split(',')
@@ -15,6 +16,10 @@ function productionDiagnostics(environment) {
     hasTokenPepper: Boolean(environment.tokenPepper && environment.tokenPepper !== LOCAL_TOKEN_PEPPER),
     hasEmailProviderEndpoint: Boolean(environment.emailProviderEndpoint),
     hasEmailProviderApiKey: Boolean(environment.emailProviderApiKey),
+    hasVotingCodeEncryptionKey: Boolean(
+      environment.votingCodeEncryptionKey
+      && environment.votingCodeEncryptionKey !== LOCAL_VOTING_CODE_ENCRYPTION_KEY
+    ),
     mongoDatabase: environment.mongoDatabase,
   })
 }
@@ -31,6 +36,7 @@ const environmentSchema = z.object({
   SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(1_209_600),
   SESSION_IDLE_TTL_SECONDS: z.coerce.number().int().positive().default(604_800),
   TOKEN_PEPPER: z.string().min(32).default(LOCAL_TOKEN_PEPPER),
+  VOTING_CODE_ENCRYPTION_KEY: z.string().regex(/^[a-fA-F0-9]{64}$/).default(LOCAL_VOTING_CODE_ENCRYPTION_KEY),
   VERIFICATION_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
   EMAIL_TRANSPORT: z.enum(['fake', 'mailpit', 'provider']).default('mailpit'),
   EMAIL_FROM: z.string().trim().min(3).default('Votiy <no-reply@votiy.local>'),
@@ -49,6 +55,9 @@ export function assertAccountFeatureEnvironment(environment) {
   const problems = []
 
   if (environment.tokenPepper === LOCAL_TOKEN_PEPPER) problems.push('TOKEN_PEPPER')
+  if (environment.votingCodeEncryptionKey === LOCAL_VOTING_CODE_ENCRYPTION_KEY) {
+    problems.push('VOTING_CODE_ENCRYPTION_KEY')
+  }
   if (!['fake', 'provider'].includes(environment.emailTransport)) problems.push('EMAIL_TRANSPORT')
   if (environment.emailTransport === 'provider' && !environment.emailProviderEndpoint) problems.push('EMAIL_PROVIDER_ENDPOINT')
   if (environment.emailTransport === 'provider' && !environment.emailProviderApiKey) problems.push('EMAIL_PROVIDER_API_KEY')
@@ -86,6 +95,7 @@ export function loadEnvironment(source = process.env) {
     sessionTtlSeconds: result.data.SESSION_TTL_SECONDS,
     sessionIdleTtlSeconds: result.data.SESSION_IDLE_TTL_SECONDS,
     tokenPepper: result.data.TOKEN_PEPPER,
+    votingCodeEncryptionKey: result.data.VOTING_CODE_ENCRYPTION_KEY,
     verificationTtlSeconds: result.data.VERIFICATION_TTL_SECONDS,
     emailTransport: result.data.EMAIL_TRANSPORT,
     emailFrom: result.data.EMAIL_FROM,

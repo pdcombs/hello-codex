@@ -48,6 +48,12 @@ jobs:
       - run: pnpm --dir votiy-web test:coverage
       - run: pnpm --dir votiy-api test:contract
       - run: pnpm --dir votiy-api test:integration
+      - name: Verify voting rules, access, code races, privacy, and contracts
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/unit/event-voting-rules.test.js tests/unit/ballot-submission.test.js tests/unit/voter-eligibility.test.js tests/unit/voting-code-management.test.js
+          pnpm --dir votiy-api exec vitest run tests/contract/event-voting-rules.contract.test.js tests/contract/event-ballot.contract.test.js tests/contract/voter-access.contract.test.js tests/contract/voting-code-management.contract.test.js
+          pnpm --dir votiy-api exec vitest run tests/integration/event-voting-rules.test.js tests/integration/event-ballot-submission.test.js tests/integration/voter-access.test.js tests/integration/voting-code-claim.test.js tests/integration/event-voting-observability.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/event-rules-editor.test.jsx tests/component/event-ballot.test.jsx tests/component/voter-access.test.jsx tests/component/voting-code-manager.test.jsx
       - name: Verify Add Entries contract and browser coverage
         run: |
           pnpm --dir votiy-api exec vitest run tests/contract/add-entries.contract.test.js
@@ -62,3 +68,4 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e --project=chromium
       - run: pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"
+      - run: pnpm test:e2e tests/e2e/event-voting-rules.spec.js tests/e2e/responsive-accessibility.spec.js

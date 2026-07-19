@@ -21,6 +21,7 @@ import { createLogger } from './observability/logger.js'
 import { runEventSetupMigration } from './migrations/002-event-categories-entries.js'
 import { runEntryDerivedParticipantMigration } from './migrations/003-entry-derived-participants.js'
 import { runCategoryArchivalMigration } from './migrations/004-category-archival.js'
+import { runEventVotingRulesMigration } from './migrations/005-event-voting-rules.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
@@ -40,6 +41,12 @@ import { createEventEntryService } from './services/event-entry-service.js'
 import { createEventAccessService } from './services/event-access-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
+import { createEventVotingRulesService } from './services/event-voting-rules-service.js'
+import { createEventVotingService } from './services/event-voting-service.js'
+import { createBallotSubmissionRepository } from './repositories/ballot-submission-repository.js'
+import { createEventVoterAccessRepository } from './repositories/event-voter-access-repository.js'
+import { createVotingAccessCodeRepository } from './repositories/voting-access-code-repository.js'
+import { digestVotingCode } from './domain/voting-access-code.js'
 
 const environment = assertAccountFeatureEnvironment(loadEnvironment())
 const sourceDirectory = dirname(fileURLToPath(import.meta.url))
@@ -51,6 +58,7 @@ await mongo.connect()
 await ensureCollectionsAndIndexes(mongo.database)
 await runEventSetupMigration({ database: mongo.database, logger })
 await runCategoryArchivalMigration({ database: mongo.database, logger })
+await runEventVotingRulesMigration({ database: mongo.database, logger })
 await enforceEventSetupValidators(mongo.database)
 await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 
@@ -62,6 +70,9 @@ const eventRegistrationRepository = createEventRegistrationRepository(mongo.data
 const eventEntryRepository = createEventEntryRepository(mongo.database)
 const idempotencyRepository = createIdempotencyRepository(mongo.database)
 const auditRepository = createAuditEventRepository(mongo.database)
+const ballotRepository = createBallotSubmissionRepository(mongo.database)
+const voterAccessRepository = createEventVoterAccessRepository(mongo.database)
+const accessCodeRepository = createVotingAccessCodeRepository(mongo.database)
 const eventAccessService = createEventAccessService({ eventRepository })
 const transport =
   environment.emailTransport === 'provider'
@@ -148,6 +159,13 @@ const eventEntryService = createEventEntryService({
 })
 const eventCategoryService = createEventCategoryService({ eventRepository, eventEntryRepository, accountRepository,
   idempotencyRepository, auditRepository, withTransaction: mongo.withTransaction, logger })
+const eventVotingRulesService = createEventVotingRulesService({ eventRepository, auditRepository, logger })
+const eventVotingService = createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
+  idempotencyRepository, auditRepository, accountRepository, voterAccessRepository, accessCodeRepository,
+  digestCode: (eventId, code) => digestVotingCode({ eventId, code, key: environment.votingCodeEncryptionKey }),
+  digestBrowserMarker: (marker) => digestSecret(marker, environment.tokenPepper),
+  generateBrowserMarker: generateOpaqueToken, votingCodeEncryptionKey: environment.votingCodeEncryptionKey,
+  withTransaction: mongo.withTransaction, logger })
 const schema = await createGraphqlSchema()
 const rootValue = {
   ...createAccountResolvers({
@@ -157,7 +175,8 @@ const rootValue = {
     auditRepository,
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),
-  ...createEventResolvers({ eventService, eventRegistrationService, eventEntryService, eventCategoryService, auditRepository }),
+  ...createEventResolvers({ eventService, eventRegistrationService, eventEntryService, eventCategoryService,
+    eventVotingRulesService, eventVotingService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,

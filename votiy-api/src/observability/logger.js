@@ -3,6 +3,8 @@ import pino from 'pino'
 const redactPaths = [
   'password', '*.password', 'req.headers.authorization', 'req.headers.cookie',
   'request.headers.authorization', 'request.headers.cookie', 'token', '*.token',
+  'code', '*.code', 'accessCode', '*.accessCode', 'browserMarker', '*.browserMarker',
+  'choices', '*.choices', 'ranks', '*.ranks', 'entryIds', '*.entryIds', 'categoryBallots', '*.categoryBallots',
   'email', '*.email', 'phone', '*.phone',
   'displayName', '*.displayName', 'title', '*.title',
   'verificationToken', '*.verificationToken', 'to', '*.to', 'subject', '*.subject', 'text', '*.text',

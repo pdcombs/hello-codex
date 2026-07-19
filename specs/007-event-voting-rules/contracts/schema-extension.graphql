@@ -1,0 +1,133 @@
+enum VotingRulesStatus { DRAFT CONFIGURED }
+enum VotingAccessPolicy { UNRESTRICTED ACCOUNT CODE }
+enum UnrestrictedRepeatPolicy { UNLIMITED BROWSER_LIMITED }
+enum CategoryVotingMethod { SINGLE MULTIPLE RANKING }
+enum VotingStatus { NOT_CONFIGURED UPCOMING OPEN CLOSED }
+enum VotingCodeStatus { UNUSED USED REVOKED }
+
+extend enum ErrorCode {
+  VOTING_NOT_CONFIGURED
+  VOTING_NOT_OPEN
+  VOTING_CLOSED
+  ACCOUNT_REQUIREMENTS_NOT_MET
+  BALLOT_LIMIT_REACHED
+  INVALID_ACCESS_CODE
+  ACCESS_CODE_USED
+  INVALID_BALLOT
+  RULES_CHANGED
+}
+
+type CategoryVotingRule {
+  categoryId: ID
+  method: CategoryVotingMethod!
+  minimumSelections: Int
+  maximumSelections: Int
+}
+
+type EventVotingRules {
+  status: VotingRulesStatus!
+  version: Int!
+  opensAt: DateTime
+  closesAt: DateTime
+  accessPolicy: VotingAccessPolicy!
+  unrestrictedRepeatPolicy: UnrestrictedRepeatPolicy
+  maximumBallotsPerAccount: Int
+  codeRequiresCompletedAccount: Boolean
+  defaultCategoryRule: CategoryVotingRule!
+  categoryRules: [CategoryVotingRule!]!
+  updatedAt: DateTime!
+}
+
+type EventVotingCapability {
+  votingStatus: VotingStatus!
+  canVote: Boolean!
+  reasonCode: String
+  remainingBallots: Int
+  hasEventAccess: Boolean!
+  rules: EventVotingRules!
+}
+
+type EventVotingCapabilitySuccess { capability: EventVotingCapability! }
+union EventVotingCapabilityResult = EventVotingCapabilitySuccess | OperationError
+
+type VotingAccessCode {
+  id: ID!
+  code: String!
+  status: VotingCodeStatus!
+  claimantAccountId: ID
+  claimantDisplayName: String
+  claimantEmail: String
+  createdAt: DateTime!
+  usedAt: DateTime
+}
+
+type VotingCodePage { nodes: [VotingAccessCode!]! nextCursor: String }
+type VotingCodeListSuccess { codes: VotingCodePage! }
+union VotingCodeListResult = VotingCodeListSuccess | OperationError
+
+type VotingCodeGenerationSuccess { codes: [VotingAccessCode!]! }
+union VotingCodeGenerationResult = VotingCodeGenerationSuccess | OperationError
+
+input CategoryVotingRuleInput {
+  categoryId: ID
+  method: CategoryVotingMethod!
+  minimumSelections: Int
+  maximumSelections: Int
+}
+
+input UpdateEventVotingRulesInput {
+  eventId: ID!
+  expectedEventUpdatedAt: DateTime!
+  expectedRulesVersion: Int!
+  opensAt: DateTime!
+  closesAt: DateTime!
+  accessPolicy: VotingAccessPolicy!
+  unrestrictedRepeatPolicy: UnrestrictedRepeatPolicy
+  maximumBallotsPerAccount: Int
+  codeRequiresCompletedAccount: Boolean
+  defaultCategoryRule: CategoryVotingRuleInput!
+  categoryRules: [CategoryVotingRuleInput!]!
+  idempotencyKey: ID!
+}
+
+input GenerateVotingCodesInput { eventId: ID! quantity: Int! idempotencyKey: ID! }
+
+input CategoryBallotInput {
+  categoryId: ID!
+  entryIds: [ID!]!
+}
+
+input ProvisionalVoterInput { email: String! phone: String }
+
+input SubmitEventBallotInput {
+  eventId: ID!
+  expectedRulesVersion: Int!
+  categoryBallots: [CategoryBallotInput!]!
+  accessCode: String
+  provisionalVoter: ProvisionalVoterInput
+  idempotencyKey: ID!
+}
+
+type BallotSubmissionReceipt {
+  id: ID!
+  eventId: ID!
+  rulesVersion: Int!
+  submittedAt: DateTime!
+}
+type BallotSubmissionSuccess { receipt: BallotSubmissionReceipt! capability: EventVotingCapability! }
+union BallotSubmissionResult = BallotSubmissionSuccess | OperationError
+
+extend type Event {
+  voting: EventVotingCapability!
+}
+
+extend type Query {
+  eventVotingCapability(eventId: ID!): EventVotingCapabilityResult!
+  eventVotingCodes(eventId: ID!, first: Int, after: String): VotingCodeListResult!
+}
+
+extend type Mutation {
+  updateEventVotingRules(input: UpdateEventVotingRulesInput!): EventResult!
+  generateVotingCodes(input: GenerateVotingCodesInput!): VotingCodeGenerationResult!
+  submitEventBallot(input: SubmitEventBallotInput!): BallotSubmissionResult!
+}

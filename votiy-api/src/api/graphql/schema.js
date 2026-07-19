@@ -5,6 +5,7 @@ import { buildSchema, Kind, parse, validate } from 'graphql'
 
 const directory = dirname(fileURLToPath(import.meta.url))
 const contractPath = join(directory, '..', '..', '..', '..', 'specs', '003-entry-derived-participants', 'contracts', 'schema.graphql')
+const votingContractPath = join(directory, '..', '..', '..', '..', 'specs', '007-event-voting-rules', 'contracts', 'schema-extension.graphql')
 
 function configureDateTimeScalar(schema) {
   const scalar = schema.getType('DateTime')
@@ -22,8 +23,11 @@ function configureDateTimeScalar(schema) {
 }
 
 export async function createGraphqlSchema() {
-  const source = await readFile(contractPath, 'utf8')
-  const schema = buildSchema(source)
+  const [source, votingSource] = await Promise.all([
+    readFile(contractPath, 'utf8'),
+    readFile(votingContractPath, 'utf8'),
+  ])
+  const schema = buildSchema(`${source}\n${votingSource}`)
   configureDateTimeScalar(schema)
   return schema
 }

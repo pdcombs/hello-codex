@@ -94,6 +94,11 @@ pnpm test:e2e --project=chromium
 pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"
 ```
 
+Migration 005 adds closed-by-default voting rules, encrypted one-time codes, voter access, and immutable
+ballots. Local startup runs migrations automatically. Set `VOTING_CODE_ENCRYPTION_KEY` to 64 hexadecimal
+characters (32 bytes); changing or losing it makes existing code inventory unreadable. Generated batches
+accept 1–1,000 codes, with at most 100,000 codes per event.
+
 For test-only accounts, you can bypass email delivery while still exercising the verification flow by
 setting `VERIFICATION_BYPASS_EMAILS` or `VERIFICATION_BYPASS_DOMAINS` in `votiy-api/.env.local`. When a
 registration matches that allowlist, the register screen shows the verification token instead of sending
@@ -106,6 +111,7 @@ Render builds React and serves it from the Node API. Set these secret environmen
 - `MONGODB_URI`: MongoDB Atlas connection string for the restricted application user
 - `NODE_ENV`: `production`
 - `TOKEN_PEPPER`
+- `VOTING_CODE_ENCRYPTION_KEY`: stable 64-character hexadecimal secret; generate once and retain it
 - `EMAIL_PROVIDER_ENDPOINT` and `EMAIL_PROVIDER_API_KEY` when using real provider delivery
 
 For temporary MVP deployments without a real email provider, production can run with
@@ -114,6 +120,10 @@ verification link and token so you can complete the flow manually from Render lo
 
 Render service config lives in [render.yaml](./render.yaml). It now uses `/ready` for health gating and
 declares app origin, cookie name, token TTLs, and log level without committing secret values.
+
+Voting logs contain counters, timings, correlation IDs, and safe error codes only. Raw voting codes,
+contacts, ballot choices/ranks, and browser markers are redacted. Browser-limited unrestricted voting is
+a lightweight deterrent, not strong identity enforcement: clearing browser storage can permit another vote.
 
 The service exposes `/health` for health checks and `/graphql` for same-origin requests from the application.
 
@@ -126,3 +136,20 @@ Post-deploy smoke workflow hits:
 - public home page
 - optional synthetic public event path
 - deployed commit header when available
+
+With all `PRODUCTION_SYNTHETIC_*` variables set, smoke also validates legacy event setup plus voting-rule
+update, code generation, ballot submission, used-code inventory, and reuse denial. Alert when rules,
+eligibility, or ballot p95 exceeds two seconds, voting errors exceed 5%, migration readiness fails, an
+event invariant fails, or code-claim conflicts spike. Correlate diagnostics by `correlationId`; never paste
+codes or voter contact into logs.
+
+Set the CI-only secret `PRODUCTION_SMOKE_MONGODB_URI` (and optionally
+`PRODUCTION_SMOKE_MONGODB_DATABASE`) to verify the three synthetic voting audits directly without
+exposing an audit query through the public API.
+
+### Voting rollback
+
+On a failed deployment, roll back the application to the prior tested commit and retain migration 005.
+Do not delete or rewrite voting rules, codes, voter-access grants, ballots, idempotency records, or audits.
+Keep `VOTING_CODE_ENCRYPTION_KEY` unchanged. Confirm `/ready`, rerun production smoke, then inspect
+structured migration, invariant, and claim-conflict events before restoring traffic.

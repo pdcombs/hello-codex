@@ -22,7 +22,8 @@ describe('persistence definitions', () => {
   it('defines validators and every required index', () => {
     expect(Object.keys(collectionDefinitions)).toEqual([
       'accounts', 'emailVerifications', 'sessions', 'events', 'eventRegistrations',
-      'eventEntries', 'idempotencyRecords', 'auditEvents',
+      'eventEntries', 'votingAccessCodes', 'eventVoterAccess', 'ballotSubmissions',
+      'idempotencyRecords', 'auditEvents',
     ])
     const indexNames = Object.values(collectionDefinitions).flatMap(({ indexes }) => indexes.map(({ name }) => name))
     expect(indexNames).toContain('account_email_unique')

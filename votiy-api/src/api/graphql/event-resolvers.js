@@ -8,6 +8,10 @@ const successParticipants = (participants) => ({ __typename: 'ParticipantListSuc
 const successCreation = (result) => ({ __typename: 'EntryCreationSuccess', result })
 const successArchive = (result) => ({ __typename: 'EntryArchiveSuccess', result })
 const successOwnerChoices = (choices) => ({ __typename: 'EntryOwnerChoiceListSuccess', choices })
+const successVotingCapability = (capability) => ({ __typename: 'EventVotingCapabilitySuccess', capability })
+const successBallot = (result) => ({ __typename: 'BallotSubmissionSuccess', ...result })
+const successCodeGeneration = (codes) => ({ __typename: 'VotingCodeGenerationSuccess', codes })
+const successCodeList = (codes) => ({ __typename: 'VotingCodeListSuccess', codes })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -16,8 +20,42 @@ const legacyRegistration = (participant, source) => ({
 })
 const failure = (error, correlationId) => ({ __typename: 'OperationError', ...toClientError(error, correlationId) })
 
-export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null, eventCategoryService, auditRepository }) {
+export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null,
+  eventCategoryService, eventVotingRulesService = null, eventVotingService = null, auditRepository }) {
   return Object.freeze({
+    async updateEventVotingRules({ input }, context) {
+      try {
+        const result = await eventVotingRulesService.updateRules(input, context.viewer,
+          { correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async eventVotingCapability({ eventId }, context) {
+      try { return successVotingCapability(await eventVotingService.capability({ eventId }, context.viewer)) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async submitEventBallot({ input }, context) {
+      try {
+        const result = await eventVotingService.submit({ ...input, browserMarker: context.votingBrowserMarker }, context.viewer,
+          { correlationId: context.correlationId })
+        if (result.browserMarker && result.browserMarker !== context.votingBrowserMarker) {
+          context.setVotingBrowserMarker(result.browserMarker)
+        }
+        return successBallot(result)
+      }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async generateVotingCodes({ input }, context) {
+      try { return successCodeGeneration(await eventVotingService.generateCodes(input, context.viewer,
+        { correlationId: context.correlationId })) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventVotingCodes({ eventId, first, after }, context) {
+      try { return successCodeList(await eventVotingService.listCodes({ eventId, first, after }, context.viewer)) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
     async addEventCategory({ input }, context) {
       try {
         const result = await eventCategoryService.addCategory(input, context.viewer)

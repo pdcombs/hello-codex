@@ -94,3 +94,26 @@ test('category removal warning is keyboard, reduced-motion, and short-viewport s
   await expect(remove).toBeFocused()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })
+
+test('voting rules and code inventory are keyboard and short-viewport safe', async ({ page }) => {
+  test.skip(!process.env.E2E_HOST_EMAIL || !process.env.E2E_HOST_PASSWORD || !process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID,
+    'Synthetic host and code event required')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 520 })
+  await signInHost(page); await page.goto(`/events/${process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID}`)
+  await expect(page.getByRole('heading', { name: 'Voting rules' })).toBeVisible()
+  await page.getByLabel('Voting opens').focus(); await expect(page.getByLabel('Voting opens')).toBeFocused()
+  await page.getByLabel('Number of codes').focus(); await expect(page.getByLabel('Number of codes')).toBeFocused()
+  await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Generate codes' })).toBeFocused()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+})
+
+test('ballot controls expose labels, announced errors, and no narrow overflow', async ({ page }) => {
+  test.skip(!process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID, 'Synthetic code event required')
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.setViewportSize({ width: 390, height: 520 })
+  await page.goto(`/events/${process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID}`)
+  const code = page.getByLabel('Voting code'); await code.focus(); await expect(code).toBeFocused()
+  await code.fill('bad'); await page.getByRole('button', { name: 'Submit ballot' }).click()
+  await expect(code).toBeFocused()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+})

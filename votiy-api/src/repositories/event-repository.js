@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { createEventDocument, withEventVersion2 } from '../domain/event.js'
+import { createEventDocument, withEventVersion2, withEventVersion3 } from '../domain/event.js'
 import { normalizeCategoryTitle } from '../domain/event-category.js'
 
 const id = (value) => (value instanceof ObjectId ? value : new ObjectId(value))
@@ -9,9 +9,9 @@ export function createEventRepository(database) {
 
   return Object.freeze({
     async create(input, options = {}) {
-      const event = input.schemaVersion === 2
-        ? withEventVersion2(createEventDocument(input), { now: input.now })
-        : createEventDocument(input)
+      const base = createEventDocument(input)
+      const event = input.schemaVersion === 3 ? withEventVersion3(base, { now: input.now })
+        : input.schemaVersion === 2 ? withEventVersion2(base, { now: input.now }) : base
       await collection.insertOne(event, options)
       return event
     },
@@ -101,6 +101,14 @@ export function createEventRepository(database) {
         { _id: id(eventId), ownerAccountId: id(ownerAccountId) },
         { $set: { registrationPolicy, updatedAt: now } },
         { returnDocument: 'after' },
+      )
+    },
+    updateVotingRules(eventId, ownerAccountId, expectedUpdatedAt, expectedRulesVersion, votingRules, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), updatedAt: expectedUpdatedAt,
+          'votingRules.version': expectedRulesVersion },
+        { $set: { votingRules, updatedAt: votingRules.updatedAt } },
+        { returnDocument: 'after', ...options },
       )
     },
   })

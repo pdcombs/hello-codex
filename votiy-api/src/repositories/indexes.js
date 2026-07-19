@@ -138,6 +138,48 @@ export const collectionDefinitions = Object.freeze({
       { key: { eventId: 1, status: 1, createdAt: -1, ownerAccountId: 1, _id: 1 }, name: 'entry_event_recent_owners' },
     ],
   },
+  votingAccessCodes: {
+    validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
+      required: ['eventId', 'codeDigest', 'codeCiphertext', 'codeIv', 'codeAuthTag', 'keyVersion', 'status',
+        'batchId', 'claimedByAccountId', 'usedByBallotId', 'createdByAccountId', 'createdAt', 'usedAt',
+        'revokedAt', 'updatedAt', 'schemaVersion'],
+      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, codeDigest: { bsonType: 'string' },
+        codeCiphertext: { bsonType: 'string' }, codeIv: { bsonType: 'string' }, codeAuthTag: { bsonType: 'string' },
+        keyVersion: { bsonType: 'int', minimum: 1 }, status: { enum: ['unused', 'used', 'revoked'] },
+        batchId: { bsonType: 'objectId' }, claimedByAccountId: objectIdOrNull, usedByBallotId: objectIdOrNull,
+        createdByAccountId: { bsonType: 'objectId' }, createdAt: { bsonType: 'date' }, usedAt: dateOrNull,
+        revokedAt: dateOrNull, updatedAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } } },
+    indexes: [
+      { key: { eventId: 1, codeDigest: 1 }, name: 'voting_code_event_digest_unique', unique: true },
+      { key: { eventId: 1, status: 1, createdAt: 1, _id: 1 }, name: 'voting_code_event_inventory' },
+    ],
+  },
+  eventVoterAccess: {
+    validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
+      required: ['eventId', 'accountId', 'source', 'codeId', 'status', 'grantedAt', 'revokedAt', 'createdAt', 'updatedAt', 'schemaVersion'],
+      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: { bsonType: 'objectId' },
+        source: { enum: ['account_policy', 'code'] }, codeId: objectIdOrNull, status: { enum: ['active', 'revoked'] },
+        grantedAt: { bsonType: 'date' }, revokedAt: dateOrNull, createdAt: { bsonType: 'date' },
+        updatedAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } } },
+    indexes: [{ key: { eventId: 1, accountId: 1 }, name: 'voter_access_event_account_unique', unique: true }],
+  },
+  ballotSubmissions: {
+    validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
+      required: ['eventId', 'accountId', 'accessCodeId', 'browserMarkerDigest', 'rulesVersion', 'accessPolicy',
+        'categoryBallots', 'submittedAt', 'createdAt', 'schemaVersion'],
+      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: objectIdOrNull,
+        accessCodeId: objectIdOrNull, browserMarkerDigest: stringOrNull, rulesVersion: { bsonType: 'int', minimum: 1 },
+        accessPolicy: { enum: ['unrestricted', 'account', 'code'] }, categoryBallots: { bsonType: 'array', items: { bsonType: 'object' } },
+        submittedAt: { bsonType: 'date' }, createdAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } } },
+    indexes: [
+      { key: { eventId: 1, submittedAt: 1, _id: 1 }, name: 'ballot_event_submitted' },
+      { key: { eventId: 1, accountId: 1, submittedAt: 1 }, name: 'ballot_event_account' },
+      { key: { eventId: 1, browserMarkerDigest: 1 }, name: 'ballot_event_browser_unique', unique: true,
+        partialFilterExpression: { browserMarkerDigest: { $type: 'string' } } },
+      { key: { accessCodeId: 1 }, name: 'ballot_access_code_unique', unique: true,
+        partialFilterExpression: { accessCodeId: { $type: 'objectId' } } },
+    ],
+  },
   idempotencyRecords: {
     validator: {
       $jsonSchema: {
@@ -226,6 +268,26 @@ installTransitionalSchema('eventRegistrations', {
   properties: { entries: { bsonType: 'array', minItems: 1, maxItems: 100, items: entrySchema } },
 })
 
+const votingRulesSchema = {
+  bsonType: 'object', additionalProperties: false,
+  required: ['status', 'version', 'opensAt', 'closesAt', 'accessPolicy', 'unrestrictedRepeatPolicy',
+    'maxBallotsPerAccount', 'codeRequiresCompletedAccount', 'defaultCategoryMethod', 'defaultMultipleMin',
+    'defaultMultipleMax', 'categoryOverrides', 'updatedByAccountId', 'createdAt', 'updatedAt'],
+  properties: {
+    status: { enum: ['draft', 'configured'] }, version: { bsonType: 'int', minimum: 1 },
+    opensAt: dateOrNull, closesAt: dateOrNull, accessPolicy: { enum: ['unrestricted', 'account', 'code'] },
+    unrestrictedRepeatPolicy: { bsonType: ['string', 'null'] }, maxBallotsPerAccount: { bsonType: ['int', 'null'] },
+    codeRequiresCompletedAccount: { bsonType: ['bool', 'null'] }, defaultCategoryMethod: { enum: ['single', 'multiple', 'ranking'] },
+    defaultMultipleMin: { bsonType: ['int', 'null'] }, defaultMultipleMax: { bsonType: ['int', 'null'] },
+    categoryOverrides: { bsonType: 'array', maxItems: 100, items: { bsonType: 'object' } },
+    updatedByAccountId: { bsonType: 'objectId' }, createdAt: { bsonType: 'date' }, updatedAt: { bsonType: 'date' },
+  },
+}
+const eventSchemas = collectionDefinitions.events.validator.$jsonSchema.oneOf
+const eventV2 = eventSchemas[1]
+eventSchemas.push({ ...eventV2, required: [...eventV2.required, 'votingRules'],
+  properties: { ...eventV2.properties, votingRules: votingRulesSchema, schemaVersion: { enum: [3] } } })
+
 export async function ensureCollectionsAndIndexes(database) {
   const existing = new Set((await database.listCollections({}, { nameOnly: true }).toArray()).map(({ name }) => name))
 
@@ -241,7 +303,8 @@ export async function ensureCollectionsAndIndexes(database) {
 
 export async function enforceEventSetupValidators(database) {
   for (const name of ['accounts', 'events', 'eventRegistrations']) {
-    const strictSchema = collectionDefinitions[name].validator.$jsonSchema.oneOf[1]
+    const schemas = collectionDefinitions[name].validator.$jsonSchema.oneOf
+    const strictSchema = schemas.at(-1)
     await database.command({
       collMod: name,
       validator: { $jsonSchema: strictSchema },
