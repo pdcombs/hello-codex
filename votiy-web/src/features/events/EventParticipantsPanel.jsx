@@ -102,25 +102,29 @@ export default function EventParticipantsPanel({
 
   return (
     <SectionCard title="Participants">
-      <p>Add by email, with an optional phone number. Unfinished accounts stay provisional until that person completes sign up.</p>
-
-      <FormSurface onSubmit={onAdd} noValidate>
-        {eventSetupAvailable && (
-          <FormField label="Display name" htmlFor="participant-display-name" error={state.fieldErrors.displayName}>
-            <input id="participant-display-name" name="displayName" type="text" required />
-          </FormField>
-        )}
-        <FormField label="Email" htmlFor="participant-email" error={state.fieldErrors.email}>
-          <input id="participant-email" name="email" type="email" placeholder="participant@example.com" />
-        </FormField>
-        {eventSetupAvailable && <ParticipantEntryFields categories={categories} count={entryCount} errors={state.fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />}
-        <FormField label="Phone" htmlFor="participant-phone" optional error={state.fieldErrors.phone}>
-          <input id="participant-phone" name="phone" type="tel" placeholder="(555) 123-4567" />
-        </FormField>
-        <button type="submit" disabled={state.saving}>
-          {state.saving ? 'Saving…' : 'Add participant'}
-        </button>
-      </FormSurface>
+      <details className="participant-add-disclosure">
+        <summary>Add a participant</summary>
+        <div className="participant-add-content">
+          <p>Add by email, with an optional phone number. Unfinished accounts stay provisional until that person completes sign up.</p>
+          <FormSurface onSubmit={onAdd} noValidate>
+            {eventSetupAvailable && (
+              <FormField label="Display name" htmlFor="participant-display-name" error={state.fieldErrors.displayName}>
+                <input id="participant-display-name" name="displayName" type="text" required />
+              </FormField>
+            )}
+            <FormField label="Email" htmlFor="participant-email" error={state.fieldErrors.email}>
+              <input id="participant-email" name="email" type="email" placeholder="participant@example.com" />
+            </FormField>
+            {eventSetupAvailable && <ParticipantEntryFields categories={categories} count={entryCount} errors={state.fieldErrors} onAdd={() => setEntryCount((count) => count + 1)} />}
+            <FormField label="Phone" htmlFor="participant-phone" optional error={state.fieldErrors.phone}>
+              <input id="participant-phone" name="phone" type="tel" placeholder="(555) 123-4567" />
+            </FormField>
+            <button type="submit" disabled={state.saving}>
+              {state.saving ? 'Saving…' : 'Add participant'}
+            </button>
+          </FormSurface>
+        </div>
+      </details>
 
       {state.status === 'loading' && <LoadingState message="Loading participants…" />}
       {Object.keys(state.fieldErrors).length > 0 && (

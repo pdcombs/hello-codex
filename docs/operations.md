@@ -52,6 +52,8 @@ volume reset.
 - Grouped setup reads: `event.setup_view.completed` latency, category/entry counts, and failure rate
 - Entry-derived participant reads: `operation:"event.participants_read"` latency, participant count, and failure rate
 - Entry archival: `entry.archived` and `participant.entries_archived` success/error rate
+- Add-entry owner lookup: `operation:"entry.owner_choices_read"` p50/p95, errors, denials, and result count
+- Add-entry creation: `operation:"event.entry_create"` p50/p95, success, conflict, denial, and rollback rate
 
 ## Render / Atlas query ideas
 
@@ -66,6 +68,8 @@ volume reset.
   - `event:"migration.stage.completed" migration:"002-event-categories-entries"`
   - `event:"migration.completed" migration:"003-entry-derived-participants"`
   - `operation:"event.participants_read" outcome:"failure"`
+  - `operation:"entry.owner_choices_read" outcome:"failure"`
+  - `operation:"event.entry_create" outcome:"failure"`
 - Atlas:
   - connection count and wait queue
   - primary CPU and memory
@@ -85,9 +89,25 @@ volume reset.
 - any `002-event-categories-entries` migration failure or `/ready` migration dependency failure
 - any `003-entry-derived-participants` migration failure
 - entry archive mutation errors above 5% for 10 minutes
+- owner-choice or entry-create errors above 5% for 10 minutes
+- owner-choice or entry-create p95 above 1 second for 10 minutes
 
 Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
 category titles, entry titles, display names, email addresses, or phone numbers.
+
+Add-entry logs may contain operation, outcome, duration, result count, correlation ID, event/category/
+entry/owner IDs, and provisional boolean. Never log search text, display names, email, phone, or entry title.
+
+## Add Entries diagnostics
+
+1. Filter owner-choice and entry-create logs by correlation ID and operation.
+2. For lookup latency, compare `durationMs` p95 with Atlas slow-query records for `accounts` and
+   `eventEntries`; confirm `entry_event_recent_owners` and normalized contact indexes are used.
+3. For error rates, group safe error codes. A 5% rate or one-second p95 for 10 minutes pages operator.
+4. For conflicts, confirm contact unique indexes and idempotency digest behavior before inspecting records.
+5. Run dedicated synthetic fixture only: host account, owned event, category, and reusable host owner.
+6. Smoke performs owner lookup, one idempotent entry create, category/participant projection reads, then archive cleanup.
+7. Roll back application commit on repeated failure; additive schema/indexes and entry history remain intact.
 
 ## Setup diagnostics and privacy checks
 

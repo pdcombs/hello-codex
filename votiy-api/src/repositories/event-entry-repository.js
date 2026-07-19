@@ -21,6 +21,24 @@ export function createEventEntryRepository(database) {
       return collection.find({ eventId: id(eventId), ownerAccountId: id(ownerAccountId), status: 'active' }, options)
         .sort({ createdAt: 1, _id: 1 }).toArray()
     },
+    listRecentOwners(eventId, limit = 10, options = {}) {
+      return collection.aggregate([
+        { $match: { eventId: id(eventId), status: 'active' } },
+        { $sort: { createdAt: -1, _id: -1 } },
+        { $group: { _id: '$ownerAccountId', latestEntryCreatedAt: { $first: '$createdAt' } } },
+        { $sort: { latestEntryCreatedAt: -1, _id: 1 } },
+        { $limit: Math.min(limit, 10) },
+        { $project: { _id: 0, ownerAccountId: '$_id', latestEntryCreatedAt: 1 } },
+      ], { ...options, hint: 'entry_event_recent_owners' }).toArray()
+    },
+    latestActiveByEventAndOwners(eventId, ownerAccountIds, options = {}) {
+      if (ownerAccountIds.length === 0) return []
+      return collection.aggregate([
+        { $match: { eventId: id(eventId), status: 'active', ownerAccountId: { $in: ownerAccountIds.map(id) } } },
+        { $group: { _id: '$ownerAccountId', latestEntryCreatedAt: { $max: '$createdAt' } } },
+        { $project: { _id: 0, ownerAccountId: '$_id', latestEntryCreatedAt: 1 } },
+      ], options).toArray()
+    },
     async createMany({ eventId, ownerAccountId, createdByAccountId, entries, now }, options = {}) {
       const documents = entries.map((entry) => createEventEntryDocument({
         ...entry, eventId, ownerAccountId, createdByAccountId, now,

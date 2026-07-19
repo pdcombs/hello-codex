@@ -45,6 +45,7 @@ describe('accessibility and responsive shells', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'No participants yet' })).toBeVisible()
+    await userEvent.setup().click(screen.getByText('Add a participant'))
     expect(screen.getByLabelText('Email')).toBeVisible()
     expect(screen.getByLabelText('Phone')).toBeVisible()
   })

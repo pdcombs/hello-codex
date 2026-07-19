@@ -12,10 +12,11 @@ describe('GraphQL schema contract', () => {
   it('loads the checked-in account, event, and registration operations', async () => {
     const schema = await createGraphqlSchema()
     expect(Object.keys(schema.getQueryType().getFields())).toEqual([
-      'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'eventRegistrations',
+      'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'entryOwnerChoices', 'eventRegistrations',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')
+    expect(Object.keys(schema.getMutationType().getFields())).toContain('createEventEntry')
     expect(Object.keys(schema.getTypeMap()).filter((name) => !name.startsWith('__')).sort()).toMatchSnapshot()
   })
 

@@ -48,6 +48,10 @@ jobs:
       - run: pnpm --dir votiy-web test:coverage
       - run: pnpm --dir votiy-api test:contract
       - run: pnpm --dir votiy-api test:integration
+      - name: Verify Add Entries contract and browser coverage
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/contract/add-entries.contract.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/add-entry-modal.test.jsx tests/component/add-entry-owner-choices.test.jsx tests/component/add-entry-owner-search.test.jsx tests/component/add-entry-provisional-owner.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js

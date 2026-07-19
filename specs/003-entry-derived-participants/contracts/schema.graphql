@@ -87,6 +87,16 @@ type EntryArchivePayload {
   affectedParticipant: ParticipantCard
 }
 
+type EntryOwnerChoice {
+  accountId: ID!
+  displayName: String!
+  email: String
+  phone: String
+  isEventParticipant: Boolean!
+  latestEntryCreatedAt: DateTime
+}
+type EntryOwnerChoiceListSuccess { choices: [EntryOwnerChoice!]! }
+
 type OwnedEventConnection { nodes: [Event!]! nextCursor: String }
 type AccountSuccess { account: Account! verificationToken: String }
 type SessionSuccess { session: SessionPayload! }
@@ -109,6 +119,7 @@ union EventRegistrationResult = EventRegistrationSuccess | OperationError
 union EventRegistrationListResult = EventRegistrationListSuccess | OperationError
 union EntryCreationResult = EntryCreationSuccess | OperationError
 union EntryArchiveResult = EntryArchiveSuccess | OperationError
+union EntryOwnerChoiceListResult = EntryOwnerChoiceListSuccess | OperationError
 
 input RegisterInput { displayName: String! email: String! password: String! idempotencyKey: ID! }
 input VerifyEmailInput { token: String! }
@@ -135,6 +146,15 @@ input AddEventCategoryInput { eventId: ID! title: String! idempotencyKey: ID! }
 input RenameEventCategoryInput { eventId: ID! categoryId: ID! title: String! idempotencyKey: ID! }
 input ArchiveEventEntryInput { eventId: ID! entryId: ID! idempotencyKey: ID! }
 input ArchiveEventParticipantEntriesInput { eventId: ID! accountId: ID! idempotencyKey: ID! }
+input ProvisionalEntryOwnerInput { displayName: String! email: String phone: String }
+input CreateEventEntryInput {
+  eventId: ID!
+  categoryId: ID!
+  title: String!
+  accountId: ID
+  provisionalOwner: ProvisionalEntryOwnerInput
+  idempotencyKey: ID!
+}
 input RemoveEventParticipantInput { eventId: ID! registrationId: ID! }
 
 type Query {
@@ -142,6 +162,7 @@ type Query {
   ownedEvents(first: Int = 20, after: String): EventListResult!
   eventByPublicId(publicId: String!): EventResult!
   eventParticipants(eventId: ID!): ParticipantListResult!
+  entryOwnerChoices(eventId: ID!, search: String, first: Int = 10): EntryOwnerChoiceListResult!
   eventRegistrations(eventId: ID!): EventRegistrationListResult! @deprecated(reason: "Use eventParticipants")
 }
 
@@ -162,4 +183,5 @@ type Mutation {
   removeEventParticipant(input: RemoveEventParticipantInput!): EventRegistrationResult! @deprecated(reason: "Use archiveEventParticipantEntries")
   archiveEventEntry(input: ArchiveEventEntryInput!): EntryArchiveResult!
   archiveEventParticipantEntries(input: ArchiveEventParticipantEntriesInput!): EntryArchiveResult!
+  createEventEntry(input: CreateEventEntryInput!): EntryCreationResult!
 }

@@ -100,3 +100,45 @@ export const renameEventCategoryInputSchema = z.object({
   title: trimmedRequiredText(120, 'Category title'),
   idempotencyKey: idempotencyKeySchema,
 }).strict()
+
+const optionalEmailSchema = z.string().trim().transform((value) => value || null).nullish()
+  .transform((value) => value ?? null)
+  .refine((value) => value === null || z.string().email().safeParse(value).success, 'Enter a valid email address')
+const optionalPhoneSchema = z.string().trim().transform((value) => value || null).nullish()
+  .transform((value) => value ?? null)
+  .refine((value) => value === null || /^\+[1-9]\d{7,14}$/.test(value), 'Enter a phone number in E.164 format')
+
+export const entryOwnerChoicesInputSchema = z.object({
+  eventId: z.string().min(1),
+  search: z.string().trim().max(254).nullish().transform((value) => value || null),
+  first: z.number().int().min(1).max(10).default(10),
+}).strict().superRefine((value, context) => {
+  if (value.search) {
+    const searchableLength = /[a-z@]/i.test(value.search)
+      ? value.search.replace(/\s/g, '').length
+      : value.search.replace(/\D/g, '').length
+    if (searchableLength < 3) {
+      context.addIssue({ code: 'custom', path: ['search'], message: 'Enter at least 3 characters.' })
+    }
+  }
+})
+
+export const createEventEntryInputSchema = z.object({
+  eventId: z.string().min(1),
+  categoryId: z.string().min(1, 'Category is required'),
+  title: trimmedRequiredText(160, 'Entry title'),
+  accountId: z.string().min(1).nullish().transform((value) => value ?? null),
+  provisionalOwner: z.object({
+    displayName: trimmedRequiredText(100, 'Display name'),
+    email: optionalEmailSchema,
+    phone: optionalPhoneSchema,
+  }).strict().nullish().transform((value) => value ?? null),
+  idempotencyKey: idempotencyKeySchema,
+}).strict().superRefine((value, context) => {
+  if (Boolean(value.accountId) === Boolean(value.provisionalOwner)) {
+    context.addIssue({ code: 'custom', path: ['accountId'], message: 'Choose one existing or new participant.' })
+  }
+  if (value.provisionalOwner && !value.provisionalOwner.email && !value.provisionalOwner.phone) {
+    context.addIssue({ code: 'custom', path: ['provisionalOwner'], message: 'Enter an email or phone number.' })
+  }
+})

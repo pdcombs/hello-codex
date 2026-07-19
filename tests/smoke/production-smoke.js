@@ -67,22 +67,49 @@ async function main() {
       signIn(input: $input) { __typename ... on SessionSuccess { session { account { id } } } ... on OperationError { code message } }
     }`, { input: { email: syntheticEmail, password: syntheticPassword } }, { operationName: 'SmokeSignIn' })
     requireStatus(signIn.data.signIn?.__typename === 'SessionSuccess', `Synthetic sign-in failed: ${JSON.stringify(signIn.data)}`)
+    const ownerAccountId = signIn.data.signIn.session.account.id
     const cookie = signIn.response.headers.get('set-cookie')?.split(';')[0] ?? ''
     requireStatus(Boolean(cookie), 'Synthetic sign-in cookie missing')
+    const choices = await graphql(`query SmokeEntryOwnerChoices($eventId: ID!) {
+      entryOwnerChoices(eventId: $eventId) { __typename
+        ... on EntryOwnerChoiceListSuccess { choices { accountId isEventParticipant } }
+        ... on OperationError { code message }
+      }
+    }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeEntryOwnerChoices' })
+    requireStatus(choices.data.entryOwnerChoices?.__typename === 'EntryOwnerChoiceListSuccess',
+      `Synthetic owner lookup failed: ${JSON.stringify(choices.data)}`)
+    requireStatus(!/"(email|phone|displayName)"\s*:/.test(JSON.stringify(choices.data)),
+      'Synthetic smoke query requested identity fields')
     const unique = Date.now().toString(36)
-    const created = await graphql(`mutation SmokeCreateEntry($input: AddEventParticipantInput!) {
-      addEventParticipant(input: $input) { __typename
+    const created = await graphql(`mutation SmokeCreateEntry($input: CreateEventEntryInput!) {
+      createEventEntry(input: $input) { __typename
         ... on EntryCreationSuccess { result { createdEntries { id } affectedParticipant { accountId entryCount } } }
         ... on OperationError { code message }
       }
-    }`, { input: { eventId: syntheticEventId, displayName: 'Smoke Participant',
-      email: `votiy-smoke@example.test`, phone: null,
-      entries: [{ title: `Smoke ${unique}`, categoryId: syntheticCategoryId }],
+    }`, { input: { eventId: syntheticEventId, categoryId: syntheticCategoryId,
+      accountId: ownerAccountId, title: `Smoke ${unique}`,
       idempotencyKey: crypto.randomUUID() } }, { cookie, operationName: 'SmokeCreateEntry' })
-    requireStatus(created.data.addEventParticipant?.__typename === 'EntryCreationSuccess',
+    requireStatus(created.data.createEventEntry?.__typename === 'EntryCreationSuccess',
       `Synthetic entry creation failed: ${JSON.stringify(created.data)}`)
-    const entryId = created.data.addEventParticipant.result.createdEntries[0]?.id
-    const accountId = created.data.addEventParticipant.result.affectedParticipant.accountId
+    const entryId = created.data.createEventEntry.result.createdEntries[0]?.id
+    const accountId = created.data.createEventEntry.result.affectedParticipant.accountId
+    const projection = await graphql(`query SmokeEntryProjection($eventId: ID!) {
+      ownedEvents(first: 20) { __typename
+        ... on EventListSuccess { events { nodes { id categories { id entries { id } } } } }
+        ... on OperationError { code message }
+      }
+      eventParticipants(eventId: $eventId) { __typename
+        ... on ParticipantListSuccess { participants { accountId entryCount } }
+        ... on OperationError { code message }
+      }
+    }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeEntryProjection' })
+    const projectedEvent = projection.data.ownedEvents?.events?.nodes
+      ?.find((event) => event.id === syntheticEventId)
+    const projectedEntries = projectedEvent?.categories
+      ?.flatMap((category) => category.entries) ?? []
+    requireStatus(projectedEntries.some((entry) => entry.id === entryId), 'Synthetic entry missing from category projection')
+    requireStatus(projection.data.eventParticipants?.participants
+      ?.some((participant) => participant.accountId === accountId), 'Synthetic owner missing from participant projection')
     const archived = await graphql(`mutation SmokeArchiveEntry($input: ArchiveEventEntryInput!) {
       archiveEventEntry(input: $input) { __typename
         ... on EntryArchiveSuccess { result { archivedEntryIds affectedParticipant { accountId entryCount } } }
@@ -101,7 +128,7 @@ async function main() {
     }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeParticipants' })
     requireStatus(participants.data.eventParticipants?.__typename === 'ParticipantListSuccess'
       && !participants.data.eventParticipants.participants.some((item) => item.accountId === accountId),
-      'Archived synthetic participant remained in active participant view')
+      'Archived synthetic owner remained in active participant view')
   }
 
   const deployedCommit = health.response.headers.get('x-app-commit') ?? ready.response.headers.get('x-app-commit')

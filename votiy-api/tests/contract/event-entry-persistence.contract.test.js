@@ -8,7 +8,7 @@ describe('event entry persistence contract', () => {
       'eventId', 'categoryId', 'ownerAccountId', 'status', 'archiveReason', 'archivedAt', 'archivedByAccountId',
     ]))
     expect(definition.indexes.map(({ name }) => name)).toEqual([
-      'entry_event_category_active', 'entry_event_owner_active', 'entry_owner_status_event',
+      'entry_event_category_active', 'entry_event_owner_active', 'entry_owner_status_event', 'entry_event_recent_owners',
     ])
     expect(definition.indexes.some(({ expireAfterSeconds }) => expireAfterSeconds !== undefined)).toBe(false)
   })

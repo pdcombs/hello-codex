@@ -10,6 +10,11 @@ export function createAccountRepository(database) {
     findByIds: (accountIds, options = {}) => collection.find({ _id: { $in: accountIds.map(id) } }, options).toArray(),
     findByEmailNormalized: (emailNormalized, options = {}) => collection.findOne({ emailNormalized }, options),
     findByPhoneNormalized: (phoneNormalized, options = {}) => collection.findOne({ phoneNormalized }, options),
+    searchByContactPrefix({ type, prefix, limit = 10 }, options = {}) {
+      const field = type === 'phone' ? 'phoneNormalized' : 'emailNormalized'
+      return collection.find({ [field]: { $type: 'string', $gte: prefix, $lt: `${prefix}\uffff` } }, options)
+        .sort({ _id: 1 }).limit(Math.min(limit, 10)).toArray()
+    },
     async createPending(input, options = {}) {
       const account = createPendingAccount(input)
       await collection.insertOne(account, options)

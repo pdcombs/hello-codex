@@ -7,6 +7,7 @@ const ERROR_FIELDS = 'code message correlationId fieldErrors { field code messag
 const LEGACY_EVENT_FIELDS = 'id publicId title description location registrationPolicy isOwner createdAt updatedAt'
 const LEGACY_REGISTRATION_FIELDS = 'id accountId email phone accountCompleted status source createdAt'
 const PARTICIPANT_FIELDS = `accountId displayName email entryCount entries { ${ENTRY_FIELDS} }`
+const OWNER_CHOICE_FIELDS = 'accountId displayName email phone isEventParticipant latestEntryCreatedAt'
 
 export const OWNED_EVENTS = `query OwnedEvents($first: Int, $after: String) {
   ownedEvents(first: $first, after: $after) {
@@ -109,6 +110,20 @@ export const ADD_EVENT_CATEGORY = `mutation AddEventCategory($input: AddEventCat
 }`
 export const RENAME_EVENT_CATEGORY = `mutation RenameEventCategory($input: RenameEventCategoryInput!) {
   renameEventCategory(input: $input) { __typename ... on EventSuccess { event { ${EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
+}`
+export const ENTRY_OWNER_CHOICES = `query EntryOwnerChoices($eventId: ID!, $search: String, $first: Int) {
+  entryOwnerChoices(eventId: $eventId, search: $search, first: $first) {
+    __typename
+    ... on EntryOwnerChoiceListSuccess { choices { ${OWNER_CHOICE_FIELDS} } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const CREATE_EVENT_ENTRY = `mutation CreateEventEntry($input: CreateEventEntryInput!) {
+  createEventEntry(input: $input) {
+    __typename
+    ... on EntryCreationSuccess { result { createdEntries { ${ENTRY_FIELDS} } affectedParticipant { ${PARTICIPANT_FIELDS} } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
 }`
 
 export async function loadOwnedEvents(variables = { first: 20 }) {
@@ -216,4 +231,15 @@ export async function addEventCategory(input) {
 export async function renameEventCategory(input) {
   const data = await graphqlRequest({ query: RENAME_EVENT_CATEGORY, variables: { input }, operationName: 'RenameEventCategory' })
   return unwrapGraphqlResult(data.renameEventCategory)
+}
+
+export async function loadEntryOwnerChoices(eventId, search = null, first = 10) {
+  const data = await graphqlRequest({ query: ENTRY_OWNER_CHOICES,
+    variables: { eventId, search: search || null, first }, operationName: 'EntryOwnerChoices' })
+  return unwrapGraphqlResult(data.entryOwnerChoices)
+}
+
+export async function createSingleEventEntry(input) {
+  const data = await graphqlRequest({ query: CREATE_EVENT_ENTRY, variables: { input }, operationName: 'CreateEventEntry' })
+  return unwrapGraphqlResult(data.createEventEntry)
 }

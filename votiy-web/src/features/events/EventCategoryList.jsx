@@ -5,7 +5,7 @@ import { addEventCategory, renameEventCategory } from './events.graphql.js'
 
 export default function EventCategoryList({ categories = [], eventId, editable = false,
   addCategory = addEventCategory, renameCategory = renameEventCategory,
-  onEventChange = () => {}, onRemoveEntry }) {
+  onEventChange = () => {}, onRemoveEntry, onAddEntry }) {
   const [editingId, setEditingId] = useState(null)
   const [adding, setAdding] = useState(false)
   const [state, setState] = useState({ saving: false, error: null, titleError: null })
@@ -64,10 +64,19 @@ export default function EventCategoryList({ categories = [], eventId, editable =
           <>
             <div className="section-card-head">
               <h2 id={`category-${category.id}`}>{category.title}</h2>
-              {editable && <button className="secondary-action" type="button"
-                onClick={() => beginEdit(category.id)}>Edit</button>}
+              {editable && <div className="category-card-actions">
+                {(category.entries ?? []).length > 0 && <button className="secondary-action" type="button"
+                  onClick={(event) => onAddEntry?.(category, event.currentTarget)}>Add entry</button>}
+                <button className="secondary-action" type="button" onClick={() => beginEdit(category.id)}>Edit</button>
+              </div>}
             </div>
-            <div className="section-card-body"><EntryList category={category} /></div>
+            <div className="section-card-body">
+              {(category.entries ?? []).length === 0 && editable
+                ? <div className="category-entry-empty"><p>No entries in this category.</p>
+                    <button className="primary-action" type="button"
+                      onClick={(event) => onAddEntry?.(category, event.currentTarget)}>Add entry</button></div>
+                : <EntryList category={category} />}
+            </div>
           </>
         )}
       </section>

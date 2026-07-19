@@ -78,3 +78,15 @@ export function toParticipantCard(entries, account) {
     entryCount: activeEntries.length,
   })
 }
+
+export function toEntryOwnerChoice(account, { latestEntryCreatedAt = null } = {}) {
+  if (!account?._id || !account.displayName) throw new TypeError('Entry owner choice requires account identity')
+  return Object.freeze({
+    accountId: String(account._id),
+    displayName: account.displayName,
+    email: account.emailNormalized ?? null,
+    phone: account.phoneNormalized ?? null,
+    isEventParticipant: latestEntryCreatedAt instanceof Date,
+    latestEntryCreatedAt,
+  })
+}

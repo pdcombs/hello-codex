@@ -36,6 +36,7 @@ import { createEventRegistrationService } from './services/event-registration-se
 import { createEventCategoryService } from './services/event-category-service.js'
 import { createEventService } from './services/event-service.js'
 import { createEventEntryService } from './services/event-entry-service.js'
+import { createEventAccessService } from './services/event-access-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
 
@@ -59,6 +60,7 @@ const eventRegistrationRepository = createEventRegistrationRepository(mongo.data
 const eventEntryRepository = createEventEntryRepository(mongo.database)
 const idempotencyRepository = createIdempotencyRepository(mongo.database)
 const auditRepository = createAuditEventRepository(mongo.database)
+const eventAccessService = createEventAccessService({ eventRepository })
 const transport =
   environment.emailTransport === 'provider'
     ? createProviderSender({ endpoint: environment.emailProviderEndpoint, apiKey: environment.emailProviderApiKey })
@@ -79,6 +81,7 @@ const registrationService = createRegistrationService({
   accountRepository,
   verificationRepository,
   idempotencyRepository,
+  eventAccessService,
   emailSender,
   passwordHasher: { hash: (password) => argon2.hash(password, { type: argon2.argon2id }) },
   generateToken: generateOpaqueToken,

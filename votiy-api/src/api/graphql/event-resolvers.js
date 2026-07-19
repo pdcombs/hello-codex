@@ -7,6 +7,7 @@ const successRegistrations = (registrations) => ({ __typename: 'EventRegistratio
 const successParticipants = (participants) => ({ __typename: 'ParticipantListSuccess', participants })
 const successCreation = (result) => ({ __typename: 'EntryCreationSuccess', result })
 const successArchive = (result) => ({ __typename: 'EntryArchiveSuccess', result })
+const successOwnerChoices = (choices) => ({ __typename: 'EntryOwnerChoiceListSuccess', choices })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -75,6 +76,14 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
       try {
         const result = await eventEntryService.listParticipants({ eventId }, context.viewer)
         return successParticipants(result.participants)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async entryOwnerChoices({ eventId, search, first }, context) {
+      try {
+        const result = await eventEntryService.entryOwnerChoices({ eventId, search, first }, context.viewer)
+        return successOwnerChoices(result.choices)
       } catch (error) {
         return failure(error, context.correlationId)
       }
@@ -224,6 +233,19 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
         await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
           subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
           metadata: { entryCount: result.createdEntries.length } })
+        return successCreation(result)
+      } catch (error) {
+        return failure(error, context.correlationId)
+      }
+    },
+    async createEventEntry({ input }, context) {
+      try {
+        const result = await eventEntryService.createEntry(input, context.viewer)
+        const entry = result.createdEntries[0]
+        await auditRepository?.append({ name: 'entry.created', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: input.eventId, outcome: 'success', correlationId: context.correlationId,
+          metadata: { entryCount: 1, categoryId: entry.categoryId, entryId: entry.id,
+            ownerAccountId: entry.ownerAccountId, provisionalCreated: result.provisionalCreated } })
         return successCreation(result)
       } catch (error) {
         return failure(error, context.correlationId)

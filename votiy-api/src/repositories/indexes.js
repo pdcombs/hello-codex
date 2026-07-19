@@ -135,6 +135,7 @@ export const collectionDefinitions = Object.freeze({
       { key: { eventId: 1, status: 1, categoryId: 1, createdAt: 1, _id: 1 }, name: 'entry_event_category_active' },
       { key: { eventId: 1, status: 1, ownerAccountId: 1, createdAt: 1, _id: 1 }, name: 'entry_event_owner_active' },
       { key: { ownerAccountId: 1, status: 1, eventId: 1 }, name: 'entry_owner_status_event' },
+      { key: { eventId: 1, status: 1, createdAt: -1, ownerAccountId: 1, _id: 1 }, name: 'entry_event_recent_owners' },
     ],
   },
   idempotencyRecords: {

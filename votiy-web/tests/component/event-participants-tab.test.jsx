@@ -42,4 +42,13 @@ describe('participant secondary page', () => {
       loader={() => Promise.reject(new GraphqlClientError('Participants failed.'))} /></MemoryRouter>)
     expect(await screen.findByRole('alert')).toHaveTextContent('Participants failed.')
   })
+
+  it('keeps participant creation collapsed until requested', async () => {
+    render(<MemoryRouter><EventParticipantsPanel eventId="evt-1" categories={event.categories}
+      loader={() => Promise.resolve({ participants: [] })} /></MemoryRouter>)
+    const disclosure = screen.getByText('Add a participant').closest('details')
+    expect(disclosure).not.toHaveAttribute('open')
+    await userEvent.setup().click(screen.getByText('Add a participant'))
+    expect(disclosure).toHaveAttribute('open')
+  })
 })

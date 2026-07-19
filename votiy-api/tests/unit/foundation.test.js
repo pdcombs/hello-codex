@@ -8,6 +8,7 @@ import {
   digestSecret,
   generateOpaqueToken,
   normalizeEmail,
+  normalizePhone,
 } from '../../src/domain/security.js'
 import { createVerificationBypassPolicy } from '../../src/domain/verification-bypass.js'
 import {
@@ -97,6 +98,15 @@ describe('security helpers', () => {
     expect(normalizeEmail('  Host@Example.COM ')).toBe('host@example.com')
   })
 
+  it('normalizes optional US and international phone values', () => {
+    expect(normalizePhone(null)).toBeNull()
+    expect(normalizePhone('   ')).toBeNull()
+    expect(normalizePhone('(555) 123-4567')).toBe('+15551234567')
+    expect(normalizePhone('1-555-123-4567')).toBe('+15551234567')
+    expect(normalizePhone('+44 20 7946 0958')).toBe('+442079460958')
+    expect(normalizePhone('extension-only')).toBe('extension-only')
+  })
+
   it('creates opaque secrets and deterministic peppered digests', () => {
     const token = generateOpaqueToken()
     expect(token.length).toBeGreaterThan(32)
@@ -107,12 +117,16 @@ describe('security helpers', () => {
 
   it('rejects weak token and digest inputs', () => {
     expect(() => generateOpaqueToken(8)).toThrow('at least 16')
+    expect(() => generateOpaqueToken(16.5)).toThrow('at least 16')
     expect(() => digestSecret('', 'pepper')).toThrow('required')
+    expect(() => digestSecret('secret', '')).toThrow('required')
   })
 
   it('digests equivalent object inputs independent of key order', () => {
     expect(digestIdempotencyRequest({ title: 'Vote', nested: { b: 2, a: 1 } }))
       .toBe(digestIdempotencyRequest({ nested: { a: 1, b: 2 }, title: 'Vote' }))
+    expect(digestIdempotencyRequest([{ b: 2, a: 1 }, null]))
+      .toBe(digestIdempotencyRequest([{ a: 1, b: 2 }, null]))
   })
 })
 

@@ -12,7 +12,8 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
 
 const outcomes = new Set(['success', 'denied', 'failure'])
 const metadataKeys = new Set(['errorCode', 'registrationPolicy', 'registrationSource', 'lifecycleStatus',
-  'verificationStatus', 'entryCount', 'archiveReason'])
+  'verificationStatus', 'entryCount', 'archiveReason', 'categoryId', 'entryId', 'ownerAccountId',
+  'provisionalCreated'])
 
 function sanitizeMetadata(metadata = {}) {
   const entries = Object.entries(metadata)

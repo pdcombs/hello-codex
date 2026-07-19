@@ -348,6 +348,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    await user.click(screen.getByText('Add a participant'))
     await user.click(screen.getByRole('button', { name: 'Add participant' }))
     expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
     expect(screen.getByLabelText('Phone')).not.toHaveAttribute('aria-invalid')

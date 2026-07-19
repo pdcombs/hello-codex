@@ -25,7 +25,7 @@ test('auth pages stay usable on desktop and mobile', async ({ page }) => {
   await expect(page.getByLabel('Password')).toBeVisible()
 })
 
-test('responsive event setup supports keyboard focus, labels, errors, and mobile layout', async ({ page }) => {
+test('responsive add-entry dialog supports keyboard focus, errors, and mobile layout', async ({ page }) => {
   test.skip(!process.env.E2E_HOST_EMAIL || !process.env.E2E_HOST_PASSWORD || !process.env.E2E_OPEN_EVENT_PUBLIC_ID,
     'Synthetic host and event required')
   await page.goto('/sign-in')
@@ -34,25 +34,14 @@ test('responsive event setup supports keyboard focus, labels, errors, and mobile
   await page.getByRole('button', { name: 'Sign in' }).click()
   await page.goto(`/events/${process.env.E2E_OPEN_EVENT_PUBLIC_ID}`)
 
-  const setupTab = page.getByRole('tab', { name: 'Setup' })
-  await setupTab.focus()
-  await expect(setupTab).toBeFocused()
-  await page.keyboard.press('Tab')
-  await expect(page.getByRole('tab', { name: 'Participants' })).toBeFocused()
-  await page.keyboard.press('Enter')
-  await expect(page.getByRole('tabpanel', { name: 'Participants' })).toBeVisible()
-  await expect(page.getByLabel('Display name')).toBeVisible()
-  await expect(page.getByLabel('Entry 1 title')).toBeVisible()
-  await page.getByRole('button', { name: 'Add participant' }).click()
-  await expect(page.getByRole('alert')).toContainText('Email')
-  await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
-
-  const cards = page.locator('.participant-card')
-  if (await cards.count()) {
-    await expect(cards.first().getByRole('heading')).toBeVisible()
-    await expect(cards.first().locator('.participant-entry-count')).toHaveAttribute('aria-label', /\d+ entries/)
-    await expect(cards.first().getByRole('button', { name: 'Remove participant' })).toBeVisible()
-  }
+  const trigger = page.getByRole('button', { name: 'Add entry' }).first()
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Who is this entry for?' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByLabel('Search by email or phone')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
 
   const fitsViewport = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
   expect(fitsViewport).toBe(true)

@@ -4,6 +4,16 @@ export function normalizeEmail(value) {
   return value.trim().toLocaleLowerCase('en-US')
 }
 
+export function normalizePhone(value) {
+  if (value == null || String(value).trim() === '') return null
+  const source = String(value).trim()
+  const digits = source.replace(/\D/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
+  if (source.startsWith('+') && digits.length >= 8 && digits.length <= 15) return `+${digits}`
+  return source
+}
+
 export function generateOpaqueToken(byteLength = 32) {
   if (!Number.isSafeInteger(byteLength) || byteLength < 16) {
     throw new TypeError('Token byte length must be an integer of at least 16')

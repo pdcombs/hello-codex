@@ -1,0 +1,41 @@
+"Additive schema extension composed with feature 003 GraphQL contract."
+
+type EntryOwnerChoice {
+  accountId: ID!
+  displayName: String!
+  email: String
+  phone: String
+  isEventParticipant: Boolean!
+  latestEntryCreatedAt: DateTime
+}
+
+type EntryOwnerChoiceListSuccess {
+  choices: [EntryOwnerChoice!]!
+}
+
+union EntryOwnerChoiceListResult = EntryOwnerChoiceListSuccess | OperationError
+
+input ProvisionalEntryOwnerInput {
+  displayName: String!
+  email: String
+  phone: String
+}
+
+input CreateEventEntryInput {
+  eventId: ID!
+  categoryId: ID!
+  title: String!
+  accountId: ID
+  provisionalOwner: ProvisionalEntryOwnerInput
+  idempotencyKey: ID!
+}
+
+extend type Query {
+  "Empty search returns recent active participants; 3+ characters returns bounded global contact matches."
+  entryOwnerChoices(eventId: ID!, search: String, first: Int = 10): EntryOwnerChoiceListResult!
+}
+
+extend type Mutation {
+  "Exactly one of accountId or provisionalOwner must be provided."
+  createEventEntry(input: CreateEventEntryInput!): EntryCreationResult!
+}

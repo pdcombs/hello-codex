@@ -163,8 +163,11 @@ describe('GraphQL resolvers', () => {
     const archive = { archivedEntryIds: ['entry-1'], affectedParticipant: null }
     const eventEntryService = {
       listParticipants: vi.fn().mockResolvedValue({ participants: [result.affectedParticipant] }),
+      entryOwnerChoices: vi.fn().mockResolvedValue({ choices: [{ accountId: 'account-1', displayName: 'Peyton' }] }),
       registerForEvent: vi.fn().mockResolvedValue(result),
       addParticipant: vi.fn().mockResolvedValue(result),
+      createEntry: vi.fn().mockResolvedValue({ ...result, provisionalCreated: false,
+        createdEntries: [{ ...result.createdEntries[0], categoryId: 'category-1', ownerAccountId: 'account-1' }] }),
       archiveEntry: vi.fn().mockResolvedValue(archive),
       archiveParticipantEntries: vi.fn().mockResolvedValue(archive),
     }
@@ -176,6 +179,8 @@ describe('GraphQL resolvers', () => {
       .resolves.toMatchObject({ __typename: 'ParticipantListSuccess' })
     await expect(resolvers.eventRegistrations({ eventId: 'evt-1' }, context))
       .resolves.toMatchObject({ __typename: 'EventRegistrationListSuccess' })
+    await expect(resolvers.entryOwnerChoices({ eventId: 'evt-1', search: null, first: 10 }, context))
+      .resolves.toMatchObject({ __typename: 'EntryOwnerChoiceListSuccess' })
     await expect(resolvers.registerForEvent({ input: { eventId: 'evt-1' } }, context))
       .resolves.toMatchObject({ __typename: 'EventRegistrationSuccess' })
     await expect(resolvers.addEventParticipant({ input: { eventId: 'evt-1' } }, context))
@@ -183,6 +188,8 @@ describe('GraphQL resolvers', () => {
     await expect(resolvers.createSelfEventEntries({ input: { eventId: 'evt-1' } }, context))
       .resolves.toMatchObject({ __typename: 'EntryCreationSuccess' })
     await expect(resolvers.createEventEntriesForParticipant({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ __typename: 'EntryCreationSuccess' })
+    await expect(resolvers.createEventEntry({ input: { eventId: 'evt-1' } }, context))
       .resolves.toMatchObject({ __typename: 'EntryCreationSuccess' })
     await expect(resolvers.archiveEventEntry({ input: { eventId: 'evt-1' } }, context))
       .resolves.toMatchObject({ __typename: 'EntryArchiveSuccess' })
@@ -195,8 +202,12 @@ describe('GraphQL resolvers', () => {
       eventEntryService[method].mockRejectedValue(new ApplicationError(ErrorCode.FORBIDDEN))
     }
     await expect(resolvers.eventParticipants({ eventId: 'evt-1' }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.entryOwnerChoices({ eventId: 'evt-1', search: null, first: 10 }, context))
+      .resolves.toMatchObject({ code: 'FORBIDDEN' })
     await expect(resolvers.createSelfEventEntries({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
     await expect(resolvers.createEventEntriesForParticipant({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(resolvers.createEventEntry({ input: { eventId: 'evt-1' } }, context))
+      .resolves.toMatchObject({ code: 'FORBIDDEN' })
     await expect(resolvers.archiveEventEntry({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
     await expect(resolvers.archiveEventParticipantEntries({ input: { eventId: 'evt-1' } }, context)).resolves.toMatchObject({ code: 'FORBIDDEN' })
   })
