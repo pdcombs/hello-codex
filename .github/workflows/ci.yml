@@ -62,6 +62,13 @@ jobs:
         run: |
           pnpm --dir votiy-api exec vitest run tests/contract/edit-entry-titles.contract.test.js tests/unit/update-event-category-validation.test.js tests/unit/update-event-category-service.test.js tests/contract/remove-category.contract.test.js tests/contract/category-archival-persistence.contract.test.js tests/unit/archive-event-category-validation.test.js tests/unit/archive-event-category-service.test.js tests/unit/category-archival-domain.test.js
           pnpm --dir votiy-web exec vitest run tests/component/edit-entry-titles.test.jsx tests/component/remove-category.test.jsx tests/component/event-setup-view.test.jsx
+      - name: Verify event workspace, media contracts, and native image processing
+        run: |
+          pnpm --dir votiy-api exec node -e "import('sharp').then(({default: sharp}) => sharp({create:{width:1,height:1,channels:3,background:'#000'}}).webp().toBuffer())"
+          pnpm --dir votiy-api exec vitest run tests/unit/event-analytics.test.js tests/unit/event-photo.test.js
+          pnpm --dir votiy-api exec vitest run tests/contract/event-workspace-schema.contract.test.js tests/contract/event-photo-persistence.contract.test.js
+          pnpm --dir votiy-api exec vitest run tests/integration/event-photo-lifecycle.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/event-workspace-summary.test.jsx tests/component/event-workspace-tabs.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js
@@ -69,3 +76,4 @@ jobs:
       - run: pnpm test:e2e --project=chromium
       - run: pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"
       - run: pnpm test:e2e tests/e2e/event-voting-rules.spec.js tests/e2e/responsive-accessibility.spec.js
+      - run: pnpm test:e2e tests/e2e/event-details-navigation.spec.js

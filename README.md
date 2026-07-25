@@ -153,3 +153,10 @@ On a failed deployment, roll back the application to the prior tested commit and
 Do not delete or rewrite voting rules, codes, voter-access grants, ballots, idempotency records, or audits.
 Keep `VOTING_CODE_ENCRYPTION_KEY` unchanged. Confirm `/ready`, rerun production smoke, then inspect
 structured migration, invariant, and claim-conflict events before restoring traffic.
+# Event photos
+
+Event hosts can upload one JPEG, PNG, or WebP photo per event. The API—not the browser—validates and
+compresses input. Uploads are limited to 10 MiB and 40 megapixels, normalized to a metadata-free square
+WebP no larger than 640×640 and 350 KiB, using quality 80, 70, then 60. Production requires Sharp's native
+module to load during CI/Render installation. Photo documents live in the additive `eventPhotos`
+collection; rollback must retain that collection because older releases safely ignore it.

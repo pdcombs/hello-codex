@@ -22,7 +22,7 @@ describe('persistence definitions', () => {
   it('defines validators and every required index', () => {
     expect(Object.keys(collectionDefinitions)).toEqual([
       'accounts', 'emailVerifications', 'sessions', 'events', 'eventRegistrations',
-      'eventEntries', 'votingAccessCodes', 'eventVoterAccess', 'ballotSubmissions',
+      'eventEntries', 'eventPhotos', 'votingAccessCodes', 'eventVoterAccess', 'ballotSubmissions',
       'idempotencyRecords', 'auditEvents',
     ])
     const indexNames = Object.values(collectionDefinitions).flatMap(({ indexes }) => indexes.map(({ name }) => name))

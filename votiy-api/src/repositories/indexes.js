@@ -138,6 +138,37 @@ export const collectionDefinitions = Object.freeze({
       { key: { eventId: 1, status: 1, createdAt: -1, ownerAccountId: 1, _id: 1 }, name: 'entry_event_recent_owners' },
     ],
   },
+  eventPhotos: {
+    validator: {
+      $jsonSchema: {
+        bsonType: 'object',
+        required: ['eventId', 'publicId', 'data', 'contentType', 'width', 'height', 'byteLength', 'revision',
+          'etag', 'createdByAccountId', 'updatedByAccountId', 'createdAt', 'updatedAt', 'schemaVersion'],
+        additionalProperties: false,
+        properties: {
+          _id: { bsonType: 'objectId' },
+          eventId: { bsonType: 'objectId' },
+          publicId: { bsonType: 'string' },
+          data: { bsonType: 'binData' },
+          contentType: { enum: ['image/webp'] },
+          width: { bsonType: 'int', minimum: 1, maximum: 640 },
+          height: { bsonType: 'int', minimum: 1, maximum: 640 },
+          byteLength: { bsonType: 'int', minimum: 1, maximum: 358400 },
+          revision: { bsonType: 'int', minimum: 1 },
+          etag: { bsonType: 'string' },
+          createdByAccountId: { bsonType: 'objectId' },
+          updatedByAccountId: { bsonType: 'objectId' },
+          createdAt: { bsonType: 'date' },
+          updatedAt: { bsonType: 'date' },
+          schemaVersion: { enum: [1] },
+        },
+      },
+    },
+    indexes: [
+      { key: { eventId: 1 }, name: 'event_photo_event_unique', unique: true },
+      { key: { publicId: 1 }, name: 'event_photo_public_unique', unique: true },
+    ],
+  },
   votingAccessCodes: {
     validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
       required: ['eventId', 'codeDigest', 'codeCiphertext', 'codeIv', 'codeAuthTag', 'keyVersion', 'status',

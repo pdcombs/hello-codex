@@ -7,6 +7,7 @@ const redactPaths = [
   'choices', '*.choices', 'ranks', '*.ranks', 'entryIds', '*.entryIds', 'categoryBallots', '*.categoryBallots',
   'email', '*.email', 'phone', '*.phone',
   'displayName', '*.displayName', 'title', '*.title',
+  'filename', '*.filename', 'checksum', '*.checksum', 'data', '*.data', 'metadata', '*.metadata',
   'verificationToken', '*.verificationToken', 'to', '*.to', 'subject', '*.subject', 'text', '*.text',
 ]
 

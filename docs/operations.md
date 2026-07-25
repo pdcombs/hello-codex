@@ -56,6 +56,10 @@ volume reset.
 - Add-entry creation: `operation:"event.entry_create"` p50/p95, success, conflict, denial, and rollback rate
 - Category batch title update: `operation:"event.category_batch_update"` p50/p95, errors, conflicts,
   denials, changed-entry count, and category-title-changed rate
+- Event workspace availability: successful `event.setup_view.completed` divided by successful plus
+  unexpected failures over 15 minutes; exclude intentional authorization and not-found responses.
+- Event photo: `event.photo_upload` processing p95/error rate and `GET /event-media/:publicId/photo`
+  request p95/404 rate. Never query or log image bytes, filenames, metadata, or checksums.
 
 ## Render / Atlas query ideas
 
@@ -73,6 +77,8 @@ volume reset.
   - `operation:"entry.owner_choices_read" outcome:"failure"`
   - `operation:"event.entry_create" outcome:"failure"`
   - `operation:"event.category_batch_update" outcome:"failure"`
+  - `event:"event.photo_upload" outcome:"failure"`
+  - `operation:"GET /event-media/:publicId/photo"`
 - Atlas:
   - connection count and wait queue
   - primary CPU and memory
@@ -97,6 +103,20 @@ volume reset.
 - category batch-update errors above 5% or p95 above 2 seconds for 10 minutes
 - category archive errors above 5% or p95 above 2 seconds for 10 minutes
 - any `004-category-archival` migration failure or event with zero active categories
+- event workspace availability below 99%, or p95 above 2 seconds, for 15 minutes
+- event photo upload failures above 5%, or processing p95 above 3 seconds, for 15 minutes
+
+## Event workspace saved queries
+
+1. Availability: group `event.setup_view.completed` by outcome for 15 minutes; exclude expected
+   `FORBIDDEN` and `NOT_FOUND`; alert when success/total is below 99%.
+2. Latency: p95 `durationMs` for successful setup-view events; alert above 2,000 ms.
+3. Media: p95 `durationMs` for `event.photo_upload` and photo-read request completions; alert upload
+   processing above 3,000 ms.
+4. Critical journey: require each post-deploy smoke to read summary analytics, visit Participants,
+   Results, and Settings, and complete synthetic upload/read/replace/delete.
+5. First diagnostic: use correlation ID to join request completion, workspace/photo event, audit event,
+   and Atlas metrics at the same UTC minute.
 
 Grouped-view logs contain counts, duration, outcome, and error codes only. They must never include
 category titles, entry titles, display names, email addresses, or phone numbers.
@@ -157,6 +177,10 @@ history. Confirm every event retains exactly one active default category after a
 For event-setup rollback, do not reverse migration 002: version-2 documents remain readable by
 transitional code. Roll back application commit, confirm `/ready`, verify grouped public reads and
 host participant summaries, then forward-fix. Never delete categories or entries during rollback.
+
+For event-photo rollback, revert the application commit but retain `eventPhotos`. Old code ignores the
+additive collection. Each accepted image is a metadata-stripped WebP no larger than 640×640 or 350 KiB;
+input is JPEG/PNG/WebP, at most 10 MiB and 40 megapixels, encoded at quality 80, 70, then 60.
 
 For entry-derived participant rollback, never delete `eventEntries` or reverse migration 003. Archived
 entries are retained indefinitely without a TTL. Roll back the application commit, verify legacy embedded

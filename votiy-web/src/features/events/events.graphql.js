@@ -6,7 +6,10 @@ const VOTING_FIELDS = `voting { votingStatus canVote reasonCode remainingBallots
   codeRequiresCompletedAccount updatedAt defaultCategoryRule { method minimumSelections maximumSelections }
   categoryRules { categoryId method minimumSelections maximumSelections }
 } }`
-const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } } ${VOTING_FIELDS}`
+const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt
+  photo { url revision width height updatedAt }
+  analytics { categoryCount participantCount entryCount }
+  categories { id title isDefault createdAt updatedAt entries { ${ENTRY_FIELDS} } } ${VOTING_FIELDS}`
 const REGISTRATION_FIELDS = `id accountId email phone displayName entryCount entries { ${ENTRY_FIELDS} } accountCompleted status source createdAt`
 const ERROR_FIELDS = 'code message correlationId fieldErrors { field code message }'
 const LEGACY_EVENT_FIELDS = 'id publicId title description location registrationPolicy isOwner createdAt updatedAt'

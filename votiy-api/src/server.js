@@ -2,6 +2,8 @@ import { createServer } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import argon2 from 'argon2'
+import { parseCookie } from 'cookie'
+import { createEventPhotoHandler } from './api/event-photo-handler.js'
 import { createAccountResolvers } from './api/graphql/account-resolvers.js'
 import { createEventResolvers } from './api/graphql/event-resolvers.js'
 import { createGraphqlHandler } from './api/graphql/handler.js'
@@ -27,6 +29,7 @@ import { createAuditEventRepository } from './repositories/audit-event-repositor
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
 import { createEventEntryRepository } from './repositories/event-entry-repository.js'
 import { createEventRepository } from './repositories/event-repository.js'
+import { createEventPhotoRepository } from './repositories/event-photo-repository.js'
 import { createIdempotencyRepository } from './repositories/idempotency-repository.js'
 import { enforceEventSetupValidators, ensureCollectionsAndIndexes } from './repositories/indexes.js'
 import { createMongoConnection } from './repositories/mongo.js'
@@ -37,6 +40,7 @@ import { createAuthenticationService } from './services/authentication-service.j
 import { createEventRegistrationService } from './services/event-registration-service.js'
 import { createEventCategoryService } from './services/event-category-service.js'
 import { createEventService } from './services/event-service.js'
+import { createEventPhotoService } from './services/event-photo-service.js'
 import { createEventEntryService } from './services/event-entry-service.js'
 import { createEventAccessService } from './services/event-access-service.js'
 import { createSessionService } from './services/session-service.js'
@@ -66,6 +70,7 @@ const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
 const sessionRepository = createSessionRepository(mongo.database)
 const eventRepository = createEventRepository(mongo.database)
+const eventPhotoRepository = createEventPhotoRepository(mongo.database)
 const eventRegistrationRepository = createEventRegistrationRepository(mongo.database)
 const eventEntryRepository = createEventEntryRepository(mongo.database)
 const idempotencyRepository = createIdempotencyRepository(mongo.database)
@@ -94,6 +99,7 @@ const registrationService = createRegistrationService({
   accountRepository,
   verificationRepository,
   idempotencyRepository,
+  photoRepository: eventPhotoRepository,
   eventAccessService,
   emailSender,
   passwordHasher: { hash: (password) => argon2.hash(password, { type: argon2.argon2id }) },
@@ -166,6 +172,28 @@ const eventVotingService = createEventVotingService({ eventRepository, eventEntr
   digestBrowserMarker: (marker) => digestSecret(marker, environment.tokenPepper),
   generateBrowserMarker: generateOpaqueToken, votingCodeEncryptionKey: environment.votingCodeEncryptionKey,
   withTransaction: mongo.withTransaction, logger })
+const eventPhotoService = createEventPhotoService({
+  eventRepository,
+  photoRepository: eventPhotoRepository,
+  idempotencyRepository,
+  auditRepository,
+  logger,
+})
+const eventPhotoHandler = createEventPhotoHandler({
+  service: eventPhotoService,
+  appOrigin: environment.appOrigin,
+  isProduction: environment.isProduction,
+  authenticate: async (request) => {
+    const secret = parseCookie(request.headers.cookie ?? '')[environment.sessionCookieName]
+    if (!secret) return null
+    try {
+      const { account } = await authenticationService.viewer({ secret })
+      return { account }
+    } catch {
+      return null
+    }
+  },
+})
 const schema = await createGraphqlSchema()
 const rootValue = {
   ...createAccountResolvers({
@@ -200,7 +228,14 @@ const graphqlHandler = createGraphqlHandler({
   },
 })
 const { healthHandler, readyHandler } = createHealthHandlers({ mongo, migrationReady: true })
-const application = createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger })
+const application = createApplication({
+  frontendDirectory,
+  graphqlHandler,
+  eventPhotoHandler,
+  healthHandler,
+  readyHandler,
+  logger,
+})
 const server = createServer(application)
 const host = environment.isProduction ? '0.0.0.0' : '127.0.0.1'
 

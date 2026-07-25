@@ -10,6 +10,8 @@ import EventDashboardPage from '../features/events/EventDashboardPage.jsx'
 import EventPage from '../features/events/EventPage.jsx'
 import OwnerEventPage from '../features/events/OwnerEventPage.jsx'
 import OwnerEventParticipantsPage from '../features/events/OwnerEventParticipantsPage.jsx'
+import OwnerEventResultsPage from '../features/events/OwnerEventResultsPage.jsx'
+import EventSettingsPage from '../features/events/EventSettingsPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
 
 function SiteHeader({ viewer }) {
@@ -64,12 +66,13 @@ function PlaceholderPage({ title }) {
   )
 }
 
-function Protected({ viewer, children }) {
+function Protected({ viewer, loading = false, children }) {
   const location = useLocation()
+  if (loading) return <main id="main-content" className="page-shell"><p role="status">Loading account…</p></main>
   return viewer ? children : <Navigate to="/sign-in" replace state={{ from: location }} />
 }
 
-export function AppRoutes({ viewer = null, onVerified }) {
+export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
   return (
     <div className="app-shell">
       <SiteHeader viewer={viewer} />
@@ -77,12 +80,18 @@ export function AppRoutes({ viewer = null, onVerified }) {
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
         <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
         <Route path="/events/:publicId/participants" element={
-          <Protected viewer={viewer}><OwnerEventParticipantsPage /></Protected>
+          <Protected viewer={viewer} loading={authLoading}><OwnerEventParticipantsPage /></Protected>
+        } />
+        <Route path="/events/:publicId/results" element={
+          <Protected viewer={viewer} loading={authLoading}><OwnerEventResultsPage /></Protected>
+        } />
+        <Route path="/events/:publicId/settings" element={
+          <Protected viewer={viewer} loading={authLoading}><EventSettingsPage /></Protected>
         } />
         <Route
           path="/events/new"
           element={
-            <Protected viewer={viewer}>
+            <Protected viewer={viewer} loading={authLoading}>
               <CreateEventPage />
             </Protected>
           }
@@ -97,9 +106,9 @@ export function AppRoutes({ viewer = null, onVerified }) {
 }
 
 function AuthenticatedRoutes() {
-  const { viewer, setViewer } = useAuth()
+  const { viewer, setViewer, loading } = useAuth()
   useRouteFocus()
-  return <AppRoutes viewer={viewer} onVerified={setViewer} />
+  return <AppRoutes viewer={viewer} authLoading={loading} onVerified={setViewer} />
 }
 
 function useRouteFocus() {

@@ -1,0 +1,24 @@
+type EventPhoto {
+  url: String!
+  revision: Int!
+  width: Int!
+  height: Int!
+  updatedAt: DateTime!
+}
+
+type EventAnalytics {
+  categoryCount: Int!
+  participantCount: Int!
+  entryCount: Int!
+}
+
+extend type Event {
+  photo: EventPhoto
+  analytics: EventAnalytics
+}
+
+# eventByPublicId guarantees analytics for an existing event.
+# Legacy Event-producing mutations may return null and the client reloads eventByPublicId.
+
+# Binary upload, read, replace, and delete use contracts/event-photo-http.md.
+# Existing Event fields, queries, mutations, and result unions remain unchanged.

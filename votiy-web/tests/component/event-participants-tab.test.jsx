@@ -24,13 +24,13 @@ describe('participant secondary page', () => {
     const user = userEvent.setup()
     expect(await screen.findByRole('heading', { name: 'Event' })).toBeVisible()
     expect(participantsLoader).not.toHaveBeenCalled()
-    await user.click(screen.getByRole('link', { name: 'View all participants' }))
+    await user.click(screen.getByRole('tab', { name: 'Participants' }))
     expect(screen.getByText('Loading participants…')).toBeVisible()
     resolve({ registrations: [{ id: 'reg-1', accountId: 'account-1', displayName: 'Peyton', email: null,
       phone: null, entryCount: 3, accountCompleted: true }] })
     expect(await screen.findByText('Peyton')).toBeVisible()
     expect(screen.getByLabelText('3 entries')).toHaveTextContent('3')
-    expect(screen.getByRole('link', { name: 'Back to event' })).toHaveAttribute('href', '/events/event')
+    expect(screen.getByRole('tab', { name: 'Entries' })).toHaveAttribute('href', '/events/event')
   })
 
   it('shows empty and error states', async () => {

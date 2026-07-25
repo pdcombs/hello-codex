@@ -18,6 +18,10 @@ export const ErrorCode = Object.freeze({
   ACCESS_CODE_USED: 'ACCESS_CODE_USED',
   INVALID_BALLOT: 'INVALID_BALLOT',
   RULES_CHANGED: 'RULES_CHANGED',
+  INVALID_IMAGE: 'INVALID_IMAGE',
+  IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
+  UNSUPPORTED_IMAGE_TYPE: 'UNSUPPORTED_IMAGE_TYPE',
+  IMAGE_PROCESSING_FAILED: 'IMAGE_PROCESSING_FAILED',
 })
 
 const SAFE_MESSAGES = Object.freeze({
@@ -40,6 +44,10 @@ const SAFE_MESSAGES = Object.freeze({
   [ErrorCode.ACCESS_CODE_USED]: 'The voting code is invalid or unavailable.',
   [ErrorCode.INVALID_BALLOT]: 'Review ballot selections and try again.',
   [ErrorCode.RULES_CHANGED]: 'Voting rules changed. Refresh and try again.',
+  [ErrorCode.INVALID_IMAGE]: 'Choose a valid JPEG, PNG, or WebP image.',
+  [ErrorCode.IMAGE_TOO_LARGE]: 'The image must be 10 MiB or smaller.',
+  [ErrorCode.UNSUPPORTED_IMAGE_TYPE]: 'Choose a JPEG, PNG, or WebP image.',
+  [ErrorCode.IMAGE_PROCESSING_FAILED]: 'The image could not be safely compressed.',
 })
 
 export class ApplicationError extends Error {

@@ -4,6 +4,7 @@ import { toEntryView } from '../domain/event-entry.js'
 import { digestIdempotencyRequest, generateOpaqueToken } from '../domain/security.js'
 import { eventInputSchema, setEventRegistrationPolicyInputSchema } from '../domain/validation.js'
 import { logGroupedView } from '../observability/logger.js'
+import { deriveEventAnalytics } from '../domain/event-analytics.js'
 
 function validationError(error) {
   return new ApplicationError(ErrorCode.VALIDATION_FAILED, {
@@ -20,6 +21,7 @@ export function createEventService({
   eventRegistrationRepository = null,
   eventEntryRepository = null,
   accountRepository = null,
+  photoRepository = null,
   idempotencyRepository,
   generatePublicId = () => generateOpaqueToken(16),
   digestRequest = digestIdempotencyRequest,
@@ -30,9 +32,23 @@ export function createEventService({
     if (!accountRepository) return toEventView(event, viewerAccountId)
     const startedAt = process.hrtime.bigint()
     if (eventEntryRepository) {
-      const entries = await eventEntryRepository.listActiveByEvent(event._id)
+      const [entries, photo] = await Promise.all([
+        eventEntryRepository.listActiveByEvent(event._id),
+        photoRepository?.findByEventId(event._id) ?? null,
+      ])
       const accounts = await accountRepository.findByIds(entries.map(({ ownerAccountId }) => ownerAccountId))
-      const result = projectEventEntries(event, entries, accounts, viewerAccountId)
+      const base = projectEventEntries(event, entries, accounts, viewerAccountId)
+      const result = Object.freeze({
+        ...base,
+        analytics: deriveEventAnalytics(event, entries),
+        photo: photo ? {
+          url: `/event-media/${photo.publicId}/photo`,
+          revision: photo.revision,
+          width: photo.width,
+          height: photo.height,
+          updatedAt: photo.updatedAt,
+        } : null,
+      })
       const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
       logGroupedView(logger, { outcome: 'success', durationMs, categoryCount: result.categories.length,
         entryCount: entries.length })

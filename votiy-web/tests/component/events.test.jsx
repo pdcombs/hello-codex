@@ -177,13 +177,14 @@ describe('event UI', () => {
     )
 
     const user = userEvent.setup()
-    expect(await screen.findByText('Admin managed')).toBeVisible()
+    expect(await screen.findByRole('tab', { name: 'Entries' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.queryByRole('link', { name: 'Back to events' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Make open' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('link', { name: 'View all participants' }))
-    expect(await screen.findByRole('link', { name: 'Back to event' })).toBeVisible()
+    await user.click(screen.getByRole('tab', { name: 'Participants' }))
+    expect(await screen.findByRole('tab', { name: 'Entries' })).toBeVisible()
 
+    await user.click(screen.getByText('Add a participant'))
     await user.type(screen.getByLabelText('Display name'), 'New Participant')
     await user.type(screen.getByLabelText('Email'), 'new@example.com')
     await user.click(screen.getByRole('button', { name: 'Add participant' }))

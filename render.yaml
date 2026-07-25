@@ -30,6 +30,12 @@ services:
         value: 2000
       - key: VOTING_ERROR_RATE_ALERT_PERCENT
         value: 5
+      - key: EVENT_WORKSPACE_P95_BUDGET_MS
+        value: 2000
+      - key: EVENT_WORKSPACE_AVAILABILITY_PERCENT
+        value: 99
+      - key: EVENT_PHOTO_PROCESSING_P95_BUDGET_MS
+        value: 3000
       - key: EMAIL_TRANSPORT
         value: fake
       - key: EMAIL_FROM

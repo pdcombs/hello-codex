@@ -54,7 +54,7 @@ async function serveFrontend(request, response, frontendDirectory) {
   }
 }
 
-export function createApplication({ frontendDirectory, graphqlHandler, healthHandler, readyHandler, logger }) {
+export function createApplication({ frontendDirectory, graphqlHandler, eventPhotoHandler, healthHandler, readyHandler, logger }) {
   if (!frontendDirectory || !graphqlHandler || !healthHandler) {
     throw new TypeError('frontendDirectory, graphqlHandler, and healthHandler are required')
   }
@@ -73,6 +73,10 @@ export function createApplication({ frontendDirectory, graphqlHandler, healthHan
       if (pathname === '/health') return healthHandler(request, response)
       if (pathname === '/ready' && readyHandler) return readyHandler(request, response)
       if (pathname === '/graphql') return graphqlHandler(request, response)
+      if (eventPhotoHandler && (pathname.startsWith('/api/events/') || pathname.startsWith('/event-media/'))) {
+        const handled = await eventPhotoHandler(request, response)
+        if (handled !== false) return handled
+      }
       if (request.method === 'GET' || request.method === 'HEAD') {
         return serveFrontend(request, response, frontendDirectory)
       }
