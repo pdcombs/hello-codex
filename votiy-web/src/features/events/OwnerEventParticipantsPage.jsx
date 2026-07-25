@@ -8,7 +8,6 @@ import EventWorkspaceLayout from './EventWorkspaceLayout.jsx'
 export default function OwnerEventParticipantsPage({
   loader = loadEventByPublicId,
   participantsLoader,
-  addParticipant,
   removeParticipant,
 }) {
   const { publicId } = useParams()
@@ -26,6 +25,12 @@ export default function OwnerEventParticipantsPage({
     return () => { active = false }
   }, [loader, publicId])
 
+  async function reloadEvent() {
+    const result = await loader(publicId)
+    if (!result.event.isOwner) throw new Error('Only the event host can view this participant list.')
+    setState({ status: 'success', event: result.event, error: null })
+  }
+
   if (state.status === 'loading') {
     return <main id="main-content" className="page-shell" tabIndex="-1"><LoadingState message="Loading participants…" /></main>
   }
@@ -37,10 +42,9 @@ export default function OwnerEventParticipantsPage({
 
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
-      <EventWorkspaceLayout event={state.event}>
+      <EventWorkspaceLayout event={state.event} onChanged={reloadEvent}>
         <EventParticipantsPanel eventId={state.event.id} loader={participantsLoader}
-          addParticipant={addParticipant} removeParticipant={removeParticipant}
-          categories={state.event.categories ?? []} />
+          removeParticipant={removeParticipant} />
       </EventWorkspaceLayout>
     </main>
   )

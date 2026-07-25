@@ -55,18 +55,11 @@ describe('grouped event setup view', () => {
     expect(onEventChange).toHaveBeenCalled()
   })
 
-  it('adds a draft category card at the bottom and saves it', async () => {
-    const addCategory = vi.fn().mockResolvedValue({ event: { id: 'event-1', categories } })
-    const user = userEvent.setup()
-    render(<EventCategoryList categories={categories} eventId="event-1" editable addCategory={addCategory} />)
-
-    await user.click(screen.getByRole('button', { name: 'Add category' }))
-    const title = screen.getByLabelText('Category title')
-    await user.type(title, 'Main courses')
-    await user.click(screen.getByRole('button', { name: 'Save' }))
-    expect(addCategory).toHaveBeenCalledWith(expect.objectContaining({
-      eventId: 'event-1', title: 'Main courses',
-    }))
+  it('keeps category cards focused on viewing and editing', () => {
+    render(<EventCategoryList categories={categories} eventId="event-1" editable />)
+    expect(screen.queryByRole('button', { name: 'Add category' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add entry' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(2)
   })
 
   it('waits for the hydrated event refresh before leaving edit mode', async () => {

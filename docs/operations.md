@@ -147,6 +147,23 @@ history. Confirm every event retains exactly one active default category after a
 6. Smoke performs owner lookup, one idempotent entry create, category/participant projection reads, then archive cleanup.
 7. Roll back application commit on repeated failure; additive schema/indexes and entry history remain intact.
 
+## Unified Add diagnostics
+
+1. Browser sheet state is transient and must never be logged. Diagnose persistence only through existing
+   `event.category_add` and `event.entry_create` operation/correlation records.
+2. Group safe error codes by operation. Never log owner search text, category/entry titles, display names,
+   emails, phone numbers, or provisional account payloads.
+3. If Add succeeds but workspace stays stale, correlate mutation completion with the following
+   `event.setup_view.completed` read and compare event revision/counts.
+4. If Entry cannot resolve a default category, verify exactly one active event category has
+   `isDefault:true`; use category archival/migration diagnostics before changing data.
+5. Replayed category/entry saves must return the idempotent result. Duplicate records require checking
+   idempotency digest and normalized account identity indexes.
+6. Alert when unified Add category/entry failure rate exceeds 5% or successful event refresh p95 exceeds
+   two seconds for 10 minutes.
+7. Production smoke may mutate only the dedicated synthetic event and must archive created entries or
+   categories according to existing audit-retention rules.
+
 ## Setup diagnostics and privacy checks
 
 - Mutation error rate: count `OperationError` results for `addEventParticipant`, `registerForEvent`,

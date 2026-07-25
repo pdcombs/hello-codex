@@ -36,19 +36,17 @@ describe('participant secondary page', () => {
   it('shows empty and error states', async () => {
     const { unmount } = render(<MemoryRouter><EventParticipantsPanel eventId="evt-1" categories={event.categories}
       loader={() => Promise.resolve({ registrations: [] })} /></MemoryRouter>)
-    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    expect(await screen.findByText(/Use Add, then choose Entry/)).toBeVisible()
     unmount()
     render(<MemoryRouter><EventParticipantsPanel eventId="evt-1" categories={event.categories}
       loader={() => Promise.reject(new GraphqlClientError('Participants failed.'))} /></MemoryRouter>)
     expect(await screen.findByRole('alert')).toHaveTextContent('Participants failed.')
   })
 
-  it('keeps participant creation collapsed until requested', async () => {
+  it('does not expose direct participant creation', async () => {
     render(<MemoryRouter><EventParticipantsPanel eventId="evt-1" categories={event.categories}
       loader={() => Promise.resolve({ participants: [] })} /></MemoryRouter>)
-    const disclosure = screen.getByText('Add a participant').closest('details')
-    expect(disclosure).not.toHaveAttribute('open')
-    await userEvent.setup().click(screen.getByText('Add a participant'))
-    expect(disclosure).toHaveAttribute('open')
+    expect(await screen.findByText(/Use Add, then choose Entry/)).toBeVisible()
+    expect(screen.queryByText('Add a participant')).not.toBeInTheDocument()
   })
 })

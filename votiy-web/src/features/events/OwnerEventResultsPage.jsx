@@ -11,10 +11,14 @@ export default function OwnerEventResultsPage({ loader = loadEventByPublicId }) 
     loader(publicId).then(({ event }) => setState({ status: 'success', event, error: null }))
       .catch((error) => setState({ status: 'error', event: null, error }))
   }, [loader, publicId])
+  async function reloadEvent() {
+    const result = await loader(publicId)
+    setState({ status: 'success', event: result.event, error: null })
+  }
   if (state.status === 'loading') return <main id="main-content" className="page-shell"><LoadingState message="Loading event…" /></main>
   if (state.status === 'error') return <main id="main-content" className="page-shell"><ErrorState title="Event unavailable" message={state.error.message} /></main>
   return <main id="main-content" className="page-shell">
-    <EventWorkspaceLayout event={state.event}>
+    <EventWorkspaceLayout event={state.event} onChanged={reloadEvent}>
       <section className="coming-soon" aria-labelledby="results-title">
         <h2 id="results-title">🎉 Feature Coming Soon</h2>
       </section>

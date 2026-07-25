@@ -127,6 +127,17 @@ a lightweight deterrent, not strong identity enforcement: clearing browser stora
 
 The service exposes `/health` for health checks and `/graphql` for same-origin requests from the application.
 
+## Event setup workflow
+
+Event hosts use one primary **Add** button beside Event Settings on Entries, Participants, and Results.
+Choose **Category** to create a category. Choose **Entry** to select an active category, select or create
+its owner account, and enter the entry title. Entry creation defaults to the event category marked
+`isDefault`; display order never determines the default.
+
+Participants are derived from active entry ownership. Participant cards and removal remain available, but
+there is no separate Add Participant form. Existing direct participant API operations remain temporarily
+for backward compatibility and are not exposed by the current web UI.
+
 ## Production smoke
 
 Post-deploy smoke workflow hits:

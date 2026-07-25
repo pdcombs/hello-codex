@@ -6,7 +6,10 @@ const eventId = process.env.E2E_OPEN_EVENT_PUBLIC_ID
 async function openAddEntry(page) {
   await signInHost(page)
   await page.goto(`/events/${eventId}`)
-  await page.getByRole('button', { name: 'Add entry' }).first().click()
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Add to event' })
+    .getByRole('button', { name: 'Entry' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByRole('dialog', { name: 'Who is this entry for?' })).toBeVisible()
 }
 
@@ -32,7 +35,10 @@ test('CUF-003 last-used participant is promoted in recent choices', async ({ pag
   await choices.first().click()
   await page.getByLabel('Entry title').fill(`Recent owner ${Date.now()}`)
   await page.getByRole('button', { name: 'Save entry' }).click()
-  await page.getByRole('button', { name: 'Add entry' }).first().click()
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Add to event' })
+    .getByRole('button', { name: 'Entry' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByRole('option').first().locator('strong')).toHaveText(ownerName)
 })
 
@@ -60,5 +66,5 @@ test('CUF-005 nonmanager cannot access owner choices or entry creation', async (
   await page.getByLabel('Password').fill(process.env.E2E_PARTICIPANT_PASSWORD)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await page.goto(`/events/${eventId}`)
-  await expect(page.getByRole('button', { name: 'Add entry' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Add', exact: true })).toHaveCount(0)
 })

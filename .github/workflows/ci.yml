@@ -69,6 +69,10 @@ jobs:
           pnpm --dir votiy-api exec vitest run tests/contract/event-workspace-schema.contract.test.js tests/contract/event-photo-persistence.contract.test.js
           pnpm --dir votiy-api exec vitest run tests/integration/event-photo-lifecycle.test.js
           pnpm --dir votiy-web exec vitest run tests/component/event-workspace-summary.test.jsx tests/component/event-workspace-tabs.test.jsx
+      - name: Verify unified Add flow and derived participants
+        run: |
+          pnpm --dir votiy-web exec vitest run tests/component/unified-add-session.test.js tests/component/unified-add-flow.test.jsx tests/component/event-participants-derived-only.test.jsx
+          pnpm --dir votiy-api exec vitest run tests/contract/add-entries.contract.test.js tests/contract/event-setup.contract.test.js
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js

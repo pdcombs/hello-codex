@@ -2,21 +2,19 @@ import { useState } from 'react'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import EventEntryRow from './EventEntryRow.jsx'
 import RemoveCategoryDialog from './RemoveCategoryDialog.jsx'
-import { addEventCategory, archiveEventCategory, updateEventCategory } from './events.graphql.js'
+import { archiveEventCategory, updateEventCategory } from './events.graphql.js'
 
 export default function EventCategoryList({ categories = [], eventId, eventUpdatedAt, editable = false,
-  addCategory = addEventCategory, updateCategory = updateEventCategory,
+  updateCategory = updateEventCategory,
   removeCategory = archiveEventCategory,
-  onEventChange = () => {}, onRefresh, onRemoveEntry, onAddEntry }) {
+  onEventChange = () => {}, onRefresh, onRemoveEntry }) {
   const [editingId, setEditingId] = useState(null)
-  const [adding, setAdding] = useState(false)
   const [state, setState] = useState({ saving: false, error: null, titleError: null, entryErrors: {} })
   const [draft, setDraft] = useState({ title: '', entryTitles: {} })
   const [removal, setRemoval] = useState(null)
 
   function beginEdit(categoryId) {
     const category = categories.find(({ id }) => id === categoryId)
-    setAdding(false)
     setEditingId(categoryId)
     setDraft({ title: category?.title ?? '', entryTitles: Object.fromEntries(
       (category?.entries ?? []).map((entry) => [entry.id, entry.title])) })
@@ -24,7 +22,6 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
   }
 
   function cancelEdit() {
-    setAdding(false)
     setEditingId(null)
     setState({ saving: false, error: null, titleError: null, entryErrors: {} })
   }
@@ -49,7 +46,7 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
   async function saveCategory(event, categoryId = null) {
     event.preventDefault()
     const category = categories.find(({ id }) => id === categoryId)
-    const title = categoryId ? draft.title.trim() : new FormData(event.currentTarget).get('title')?.trim()
+    const title = draft.title.trim()
     if (!title) {
       setState((current) => ({ ...current, titleError: 'Enter a category title.' }))
       return
@@ -66,13 +63,11 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
     }
     setState({ saving: true, error: null, titleError: null, entryErrors: {} })
     try {
-      const result = categoryId ? await updateCategory({ eventId, categoryId, title,
+      const result = await updateCategory({ eventId, categoryId, title,
         expectedCategoryUpdatedAt: category.updatedAt,
         entryTitles: (category.entries ?? []).map((entry) => ({ entryId: entry.id,
           title: draft.entryTitles[entry.id].trim(), expectedUpdatedAt: entry.updatedAt })),
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-category` })
-        : await addCategory({ eventId, title,
-          idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-category` })
       await onEventChange(result.event)
       cancelEdit()
     } catch (error) {
@@ -126,16 +121,12 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
             <div className="section-card-head">
               <h2 id={`category-${category.id}`}>{category.title}</h2>
               {editable && <div className="category-card-actions">
-                {(category.entries ?? []).length > 0 && <button className="secondary-action" type="button"
-                  onClick={(event) => onAddEntry?.(category, event.currentTarget)}>Add entry</button>}
                 <button className="secondary-action" type="button" onClick={() => beginEdit(category.id)}>Edit</button>
               </div>}
             </div>
             <div className="section-card-body">
               {(category.entries ?? []).length === 0 && editable
-                ? <div className="category-entry-empty"><p>No entries in this category.</p>
-                    <button className="primary-action" type="button"
-                      onClick={(event) => onAddEntry?.(category, event.currentTarget)}>Add entry</button></div>
+                ? <div className="category-entry-empty"><p>No entries in this category.</p></div>
                 : <EntryList category={category} />}
             </div>
           </>
@@ -146,33 +137,10 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
 
   return (
     <div className="event-category-area">
-      {categories.length === 0 && !adding && <p>No categories available.</p>}
+      {categories.length === 0 && <p>No categories available.</p>}
       <div className="event-category-grid" aria-label="Event categories">
         {categories.map((category) => categoryCard(category, editingId === category.id))}
-        {adding && (
-          <section className="section-card event-category-card event-category-card-new">
-            <FormSurface className="category-edit-form" onSubmit={(event) => saveCategory(event)} noValidate>
-              <FormField label="Category title" htmlFor="new-category-title" error={state.titleError}>
-                <input id="new-category-title" name="title" autoFocus />
-              </FormField>
-              <p>No entries in this category.</p>
-              {state.error && !state.titleError && <p role="alert">{state.error.message}</p>}
-              <div className="category-edit-actions">
-                <button className="secondary-action" type="button" onClick={cancelEdit}>Cancel</button>
-                <button className="primary-action" type="submit" disabled={state.saving}>
-                  {state.saving ? 'Saving…' : 'Save'}
-                </button>
-              </div>
-            </FormSurface>
-          </section>
-        )}
       </div>
-      {editable && !adding && editingId === null && (
-        <button className="primary-action add-category-action" type="button"
-          onClick={() => { setAdding(true); setState({ saving: false, error: null, titleError: null, entryErrors: {} }) }}>
-          Add category
-        </button>
-      )}
       {removal && <RemoveCategoryDialog category={removal.category}
         entryCount={(removal.category.entries ?? []).length} pending={removal.pending} error={removal.error}
         onCancel={() => { const trigger = removal.trigger; setRemoval(null); requestAnimationFrame(() => trigger?.focus()) }}

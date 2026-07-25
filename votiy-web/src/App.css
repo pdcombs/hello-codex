@@ -214,7 +214,8 @@ main:focus {
   margin-top: 12px;
 }
 
-.add-entry-dialog {
+.add-entry-dialog,
+.unified-add-dialog {
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -232,7 +233,8 @@ main:focus {
   backdrop-filter: blur(10px);
 }
 
-.add-entry-dialog-card {
+.add-entry-dialog-card,
+.unified-add-sheet {
   width: min(720px, 100%);
   max-height: min(85vh, 760px);
   padding: 24px 24px 44px;
@@ -251,7 +253,8 @@ main:focus {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .add-entry-dialog-card { animation: none; }
+  .add-entry-dialog-card,
+  .unified-add-sheet { animation: none; }
 }
 
 .event-workspace-summary {
@@ -319,6 +322,50 @@ main:focus {
   color: #fff;
   text-decoration: none;
   font-size: 1.35rem;
+}
+
+.event-workspace-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.unified-add-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.unified-add-choices p {
+  flex-basis: 100%;
+  margin: 0 0 6px;
+  color: var(--color-text-muted);
+}
+
+.unified-add-form {
+  width: 100%;
+  margin-top: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.unified-add-owner {
+  padding-top: 18px;
+}
+
+.unified-add-recovery {
+  padding: 16px;
+  border: 1px solid rgba(255, 105, 111, 0.45);
+  border-radius: 16px;
+  background: rgba(255, 105, 111, 0.08);
+}
+
+.unified-add-recovery p {
+  margin: 0;
 }
 
 .event-workspace-summary h1 { margin: 4px 0 0; }
@@ -397,6 +444,8 @@ main:focus {
   .event-analytics dd { font-size: 1rem; }
   .event-workspace-tabs { gap: 5px; }
   .event-workspace-tabs a { padding: 10px 5px; font-size: 0.72rem; }
+  .event-workspace-actions { flex-direction: column-reverse; gap: 6px; }
+  .event-workspace-actions .primary-action { min-height: 36px; padding: 7px 14px; }
 }
 
 .modal-heading-row {
@@ -1702,8 +1751,10 @@ footer {
 }
 
 @media (max-width: 560px) {
-  .add-entry-dialog { padding: 8px 8px 0; }
-  .add-entry-dialog-card { max-height: calc(100vh - 8px); padding: 18px 18px 34px;
+  .add-entry-dialog,
+  .unified-add-dialog { padding: 8px 8px 0; }
+  .add-entry-dialog-card,
+  .unified-add-sheet { max-height: calc(100vh - 8px); padding: 18px 18px max(34px, env(safe-area-inset-bottom));
     border-bottom: 0; border-radius: 20px 20px 0 0; }
   .modal-heading-row { gap: 10px; }
   .modal-heading-actions { gap: 6px; }
@@ -1715,6 +1766,9 @@ footer {
   .add-entry-dialog *,
   .add-entry-dialog *::before,
   .add-entry-dialog *::after,
+  .unified-add-dialog *,
+  .unified-add-dialog *::before,
+  .unified-add-dialog *::after,
   .remove-category-dialog *,
   .remove-category-dialog *::before,
   .remove-category-dialog *::after { transition: none !important; animation: none !important; }

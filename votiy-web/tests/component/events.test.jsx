@@ -147,10 +147,6 @@ describe('event UI', () => {
       participants: [{ accountId: 'acct-2', displayName: 'Guest', email: 'guest@example.com',
         entries: [{ id: 'entry-1', title: 'Guest entry' }], entryCount: 1 }],
     })
-    const addParticipant = vi.fn().mockResolvedValue({
-      affectedParticipant: { accountId: 'acct-3', displayName: 'New Participant', email: 'new@example.com',
-        entries: [{ id: 'entry-2', title: 'Entry 1' }], entryCount: 1 },
-    })
     const removeParticipant = vi.fn().mockResolvedValue({ archivedEntryIds: ['entry-1'], affectedParticipant: null })
 
     render(
@@ -163,14 +159,13 @@ describe('event UI', () => {
                 viewer={{ id: 'acct-1' }}
                 loader={loader}
                 participantsLoader={participantsLoader}
-                addParticipant={addParticipant}
                 removeParticipant={removeParticipant}
               />
             }
           />
           <Route path="/events/:publicId/participants" element={
             <OwnerEventParticipantsPage loader={loader} participantsLoader={participantsLoader}
-              addParticipant={addParticipant} removeParticipant={removeParticipant} />
+              removeParticipant={removeParticipant} />
           } />
         </Routes>
       </MemoryRouter>,
@@ -184,12 +179,8 @@ describe('event UI', () => {
     await user.click(screen.getByRole('tab', { name: 'Participants' }))
     expect(await screen.findByRole('tab', { name: 'Entries' })).toBeVisible()
 
-    await user.click(screen.getByText('Add a participant'))
-    await user.type(screen.getByLabelText('Display name'), 'New Participant')
-    await user.type(screen.getByLabelText('Email'), 'new@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(await screen.findByText(/new@example\.com/)).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'New Participant' })).toBeVisible()
+    expect(screen.queryByText('Add a participant')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add' })).toBeVisible()
 
     await user.click(screen.getAllByRole('button', { name: 'Remove participant' })[0])
     expect(removeParticipant).toHaveBeenCalledWith({ eventId: 'evt-1', accountId: 'acct-2',
@@ -261,41 +252,20 @@ describe('event UI', () => {
         <EventParticipantsPanel
           eventId="evt-1"
           loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={vi.fn()}
           removeParticipant={vi.fn()}
         />
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
+    expect(await screen.findByText(/Use Add, then choose Entry/)).toBeVisible()
   })
 
-  it('keeps legacy participant submission compatible during rolling upgrades', async () => {
-    const addParticipant = vi.fn().mockResolvedValue({
-      registration: { id: 'reg-legacy', email: 'legacy@example.com', accountCompleted: false },
-    })
-    render(
-      <MemoryRouter>
-        <EventParticipantsPanel eventId="evt-1" legacy loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={addParticipant} removeParticipant={vi.fn()} />
-      </MemoryRouter>,
-    )
-    const user = userEvent.setup()
-    await user.type(await screen.findByLabelText('Email'), 'legacy@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(addParticipant).toHaveBeenCalledWith({
-      eventId: 'evt-1', email: 'legacy@example.com', phone: null, idempotencyKey: expect.any(String),
-    })
-    expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument()
-  })
-
-  it('surfaces participant add and remove failures', async () => {
+  it('surfaces participant remove failures', async () => {
     render(
       <MemoryRouter>
         <EventParticipantsPanel
           eventId="evt-1"
           loader={() => Promise.resolve({ registrations: [{ id: 'reg-1', accountId: 'acct-1', email: 'guest@example.com', phone: null, accountCompleted: false }] })}
-          addParticipant={() => Promise.reject(new GraphqlClientError('Could not add participant.'))}
           removeParticipant={() => Promise.reject(new GraphqlClientError('Could not remove participant.'))}
         />
       </MemoryRouter>,
@@ -303,135 +273,7 @@ describe('event UI', () => {
 
     const user = userEvent.setup()
     expect(await screen.findByText(/guest@example.com/)).toBeVisible()
-    await user.type(screen.getByLabelText('Display name'), 'New Participant')
-    await user.type(screen.getByLabelText('Email'), 'new@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not add participant.')
     await user.click(screen.getByRole('button', { name: 'Remove participant' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not remove participant.')
-  })
-
-  it('replaces existing participant row when add returns same registration id', async () => {
-    render(
-      <MemoryRouter>
-        <EventParticipantsPanel
-          eventId="evt-1"
-          loader={() => Promise.resolve({ participants: [{ accountId: 'acct-1', displayName: 'Guest',
-            email: 'guest@example.com', entries: [{ id: 'entry-1', title: 'First' }], entryCount: 1 }] })}
-          addParticipant={() => Promise.resolve({ affectedParticipant: { accountId: 'acct-1', displayName: 'Guest',
-            email: 'guest@example.com', entries: [{ id: 'entry-1', title: 'First' },
-              { id: 'entry-2', title: 'Second' }], entryCount: 2 } })}
-          removeParticipant={vi.fn()}
-        />
-      </MemoryRouter>,
-    )
-
-    const user = userEvent.setup()
-    expect(await screen.findByText(/guest@example.com/)).toBeVisible()
-    await user.type(screen.getByLabelText('Display name'), 'Guest')
-    await user.type(screen.getByLabelText('Email'), 'guest@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(await screen.findByLabelText('2 entries')).toHaveTextContent('2')
-  })
-
-  it('highlights participant fields and identifies validation failures', async () => {
-    const addParticipant = vi.fn()
-    render(
-      <MemoryRouter>
-        <EventParticipantsPanel
-          eventId="evt-1"
-          loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={addParticipant}
-          removeParticipant={vi.fn()}
-        />
-      </MemoryRouter>,
-    )
-
-    const user = userEvent.setup()
-    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
-    await user.click(screen.getByText('Add a participant'))
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByLabelText('Phone')).not.toHaveAttribute('aria-invalid')
-    expect(screen.getByRole('alert')).toHaveTextContent('Email: Enter an email address.')
-    expect(screen.getByText('Optional')).toBeVisible()
-    expect(addParticipant).not.toHaveBeenCalled()
-  })
-
-  it('shows API field errors and accepts email without phone', async () => {
-    const addParticipant = vi
-      .fn()
-      .mockRejectedValueOnce(
-        new GraphqlClientError('Check the highlighted fields and try again.', {
-          code: 'VALIDATION_FAILED',
-          fieldErrors: [{ field: 'email', code: 'invalid_format', message: 'Enter a valid email address' }],
-        }),
-      )
-      .mockResolvedValueOnce({
-        registration: { id: 'reg-2', accountId: 'acct-2', email: 'email-only@example.com', phone: null, accountCompleted: false },
-      })
-
-    render(
-      <MemoryRouter>
-        <EventParticipantsPanel
-          eventId="evt-1"
-          loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={addParticipant}
-          removeParticipant={vi.fn()}
-        />
-      </MemoryRouter>,
-    )
-
-    const user = userEvent.setup()
-    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
-    await user.type(screen.getByLabelText('Display name'), 'Valid Person')
-    await user.type(screen.getByLabelText('Email'), 'valid@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(screen.getByLabelText('Email')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByRole('alert')).toHaveTextContent('Email: Enter a valid email address')
-
-    await user.clear(screen.getByLabelText('Email'))
-    await user.type(screen.getByLabelText('Email'), 'email-only@example.com')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-    expect(addParticipant).toHaveBeenCalledWith(expect.objectContaining({ email: 'email-only@example.com', phone: null }))
-    expect(await screen.findByText('email-only@example.com')).toBeVisible()
-  })
-
-  it('submits both email and phone for one participant', async () => {
-    const addParticipant = vi.fn().mockResolvedValue({
-      registration: {
-        id: 'reg-both',
-        accountId: 'acct-both',
-        email: 'both@example.com',
-        phone: '+15551234567',
-        accountCompleted: false,
-      },
-    })
-    render(
-      <MemoryRouter>
-        <EventParticipantsPanel
-          eventId="evt-1"
-          loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={addParticipant}
-          removeParticipant={vi.fn()}
-        />
-      </MemoryRouter>,
-    )
-
-    const user = userEvent.setup()
-    expect(await screen.findByText('No participants registered yet.')).toBeVisible()
-    await user.type(screen.getByLabelText('Display name'), 'Both Person')
-    await user.type(screen.getByLabelText('Email'), 'both@example.com')
-    await user.type(screen.getByLabelText('Phone'), '(555) 123-4567')
-    await user.click(screen.getByRole('button', { name: 'Add participant' }))
-
-    expect(addParticipant).toHaveBeenCalledWith(expect.objectContaining({
-      email: 'both@example.com',
-      phone: '+15551234567',
-    }))
-    expect(await screen.findByText('both@example.com')).toBeVisible()
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByLabelText('Email')).toHaveValue('')
-    expect(screen.getByLabelText('Phone')).toHaveValue('')
   })
 })

@@ -3,22 +3,17 @@ import { useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventPage from './EventPage.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
-import AddEntryModal from './AddEntryModal.jsx'
 import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
 import EventWorkspaceLayout from './EventWorkspaceLayout.jsx'
 
 export default function OwnerEventPage({
   viewer,
   loader = loadEventByPublicId,
-  addCategory,
   updateCategory,
   archiveEntry = archiveEventEntry,
-  entryCreator,
-  choicesLoader,
 }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null })
-  const [entryModal, setEntryModal] = useState(null)
 
   async function reloadEvent() {
     const result = await loader(publicId)
@@ -33,12 +28,6 @@ export default function OwnerEventPage({
     } catch (error) {
       setState((current) => ({ ...current, error }))
     }
-  }
-
-  function closeEntryModal() {
-    const trigger = entryModal?.trigger
-    setEntryModal(null)
-    requestAnimationFrame(() => trigger?.focus?.())
   }
 
   useEffect(() => {
@@ -85,13 +74,10 @@ export default function OwnerEventPage({
         {Array.isArray(state.event.categories) &&
           <EventCategoryList categories={state.event.categories} eventId={state.event.id}
           eventUpdatedAt={state.event.updatedAt} editable
-          addCategory={addCategory} updateCategory={updateCategory} onRemoveEntry={onRemoveEntry}
+          updateCategory={updateCategory} onRemoveEntry={onRemoveEntry}
           onEventChange={(event) => setState({ status: 'success', error: null, event })}
-          onRefresh={reloadEvent}
-          onAddEntry={(category, trigger) => setEntryModal({ category, trigger })} />}
+          onRefresh={reloadEvent} />}
       </EventWorkspaceLayout>
-      {entryModal && <AddEntryModal eventId={state.event.id} category={entryModal.category}
-        creator={entryCreator} choicesLoader={choicesLoader} onSaved={reloadEvent} onClose={closeEntryModal} />}
     </main>
   )
 }

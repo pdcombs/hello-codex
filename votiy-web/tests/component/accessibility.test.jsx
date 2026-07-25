@@ -33,22 +33,20 @@ describe('accessibility and responsive shells', () => {
     expect(screen.getAllByRole('link', { name: 'Create event' }).length).toBeGreaterThan(0)
   })
 
-  it('labels participant controls and renders empty state text', async () => {
+  it('renders derived participant guidance without direct creation controls', async () => {
     render(
       <MemoryRouter>
         <EventParticipantsPanel
           eventId="evt-1"
           loader={() => Promise.resolve({ registrations: [] })}
-          addParticipant={vi.fn()}
           removeParticipant={vi.fn()}
         />
       </MemoryRouter>,
     )
 
     expect(await screen.findByRole('heading', { name: 'No participants yet' })).toBeVisible()
-    await userEvent.setup().click(screen.getByText('Add a participant'))
-    expect(screen.getByLabelText('Email')).toBeVisible()
-    expect(screen.getByLabelText('Phone')).toBeVisible()
+    expect(screen.getByText(/Use Add, then choose Entry/)).toBeVisible()
+    expect(screen.queryByText('Add a participant')).not.toBeInTheDocument()
   })
 
   it('renders owner event page with accessible heading', async () => {
@@ -82,8 +80,6 @@ describe('accessibility and responsive shells', () => {
       id: 'category-1', title: 'Desserts', updatedAt: at,
       entries: [{ id: 'entry-1', title: 'Pie', ownerDisplayName: 'Peyton', updatedAt: at }],
     }]} />)
-    await user.tab()
-    expect(screen.getByRole('button', { name: 'Add entry' })).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus()
     await user.keyboard('{Enter}')

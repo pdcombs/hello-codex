@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import AddEntryModal from '../../src/features/events/AddEntryModal.jsx'
-import EventCategoryList from '../../src/features/events/EventCategoryList.jsx'
 
 const category = { id: 'cat-1', title: 'Entrants', entries: [] }
 const choice = { accountId: 'acct-1', displayName: 'Peyton Person', email: 'peyton@example.test',
@@ -10,12 +9,7 @@ const choice = { accountId: 'acct-1', displayName: 'Peyton Person', email: 'peyt
 
 describe('add entry modal', () => {
   it('prompts empty category and saves one existing-owner entry', async () => {
-    const onAddEntry = vi.fn()
     const user = userEvent.setup()
-    render(<EventCategoryList categories={[category]} editable onAddEntry={onAddEntry} />)
-    await user.click(screen.getByRole('button', { name: 'Add entry' }))
-    expect(onAddEntry).toHaveBeenCalledWith(category, expect.any(HTMLElement))
-
     const creator = vi.fn().mockResolvedValue({ createdEntries: [] })
     const onSaved = vi.fn().mockResolvedValue(undefined)
     const { unmount } = render(<AddEntryModal eventId="event-1" category={category}
