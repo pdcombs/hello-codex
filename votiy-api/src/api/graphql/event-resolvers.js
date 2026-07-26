@@ -12,6 +12,7 @@ const successVotingCapability = (capability) => ({ __typename: 'EventVotingCapab
 const successBallot = (result) => ({ __typename: 'BallotSubmissionSuccess', ...result })
 const successCodeGeneration = (codes) => ({ __typename: 'VotingCodeGenerationSuccess', codes })
 const successCodeList = (codes) => ({ __typename: 'VotingCodeListSuccess', codes })
+const successSearch = (events) => ({ __typename: 'PublicEventSearchSuccess', events })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -21,8 +22,29 @@ const legacyRegistration = (participant, source) => ({
 const failure = (error, correlationId) => ({ __typename: 'OperationError', ...toClientError(error, correlationId) })
 
 export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null,
-  eventCategoryService, eventVotingRulesService = null, eventVotingService = null, auditRepository }) {
+  eventCategoryService, eventVotingRulesService = null, eventVotingService = null, eventSearchService = null,
+  eventVisibilityService = null, auditRepository }) {
   return Object.freeze({
+    async searchPublicEvents(args, context) {
+      try {
+        const result = await eventSearchService.search(args, { correlationId: context.correlationId })
+        return successSearch(result.events)
+      } catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventDetailView({ publicId }, context) {
+      try { return await eventVisibilityService.detail(publicId, context.viewer) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async setEventVisibility({ input }, context) {
+      try { return successEvent(await eventVisibilityService.setVisibility(input, context.viewer,
+        { correlationId: context.correlationId })) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async archiveEvent({ input }, context) {
+      try { return successEvent(await eventVisibilityService.archive(input, context.viewer,
+        { correlationId: context.correlationId })) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
     async updateEventVotingRules({ input }, context) {
       try {
         const result = await eventVotingRulesService.updateRules(input, context.viewer,

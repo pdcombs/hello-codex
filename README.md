@@ -138,6 +138,31 @@ Participants are derived from active entry ownership. Participant cards and remo
 there is no separate Add Participant form. Existing direct participant API operations remain temporarily
 for backward compatibility and are not exposed by the current web UI.
 
+## Find Events and visibility
+
+The shared header exposes **Find events** for signed-in and signed-out visitors. Search matches
+case-insensitive middle-of-word terms across event title, description, and location. Active public and
+private events appear; unlisted and archived events do not. Results load 20 at a time and continue through
+infinite scroll or the keyboard-accessible **Load more events** button.
+
+Hosts control visibility from Event Settings:
+
+- **Public**: searchable with normal public details.
+- **Private**: searchable, but non-hosts receive only title, description, analytics counts, navigation
+  labels, and the private-event notice.
+- **Unlisted**: excluded from search but available by direct link.
+- **Archived**: irreversible, excluded from search, host-only, and read-only.
+
+The API evaluates viewer ownership on every `/events/:publicId` request. A host always receives the full
+host view, including when arriving from search. Start local MongoDB first, then validate Feature 010 with:
+
+```bash
+pnpm --dir votiy-api test
+pnpm --dir votiy-web test
+pnpm --dir votiy-web build
+pnpm test:e2e tests/e2e/find-events-search.spec.js
+```
+
 ## Production smoke
 
 Post-deploy smoke workflow hits:

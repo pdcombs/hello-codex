@@ -7,6 +7,7 @@ const directory = dirname(fileURLToPath(import.meta.url))
 const contractPath = join(directory, '..', '..', '..', '..', 'specs', '003-entry-derived-participants', 'contracts', 'schema.graphql')
 const votingContractPath = join(directory, '..', '..', '..', '..', 'specs', '007-event-voting-rules', 'contracts', 'schema-extension.graphql')
 const workspaceContractPath = join(directory, '..', '..', '..', '..', 'specs', '008-event-details-navigation', 'contracts', 'schema-extension.graphql')
+const searchContractPath = join(directory, '..', '..', '..', '..', 'specs', '010-find-events-search', 'contracts', 'schema-extension.graphql')
 
 function configureDateTimeScalar(schema) {
   const scalar = schema.getType('DateTime')
@@ -24,12 +25,13 @@ function configureDateTimeScalar(schema) {
 }
 
 export async function createGraphqlSchema() {
-  const [source, votingSource, workspaceSource] = await Promise.all([
+  const [source, votingSource, workspaceSource, searchSource] = await Promise.all([
     readFile(contractPath, 'utf8'),
     readFile(votingContractPath, 'utf8'),
     readFile(workspaceContractPath, 'utf8'),
+    readFile(searchContractPath, 'utf8'),
   ])
-  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}`)
+  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}\n${searchSource}`)
   configureDateTimeScalar(schema)
   return schema
 }

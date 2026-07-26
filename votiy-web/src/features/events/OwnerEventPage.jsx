@@ -3,12 +3,12 @@ import { useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventPage from './EventPage.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
-import { archiveEventEntry, loadEventByPublicId } from './events.graphql.js'
+import { archiveEventEntry, loadEventDetailView } from './events.graphql.js'
 import EventWorkspaceLayout from './EventWorkspaceLayout.jsx'
 
 export default function OwnerEventPage({
   viewer,
-  loader = loadEventByPublicId,
+  loader = loadEventDetailView,
   updateCategory,
   archiveEntry = archiveEventEntry,
 }) {
@@ -73,7 +73,7 @@ export default function OwnerEventPage({
         {state.error && <p role="alert">{state.error.message}</p>}
         {Array.isArray(state.event.categories) &&
           <EventCategoryList categories={state.event.categories} eventId={state.event.id}
-          eventUpdatedAt={state.event.updatedAt} editable
+          eventUpdatedAt={state.event.updatedAt} editable={state.event.lifecycleStatus !== 'ARCHIVED'}
           updateCategory={updateCategory} onRemoveEntry={onRemoveEntry}
           onEventChange={(event) => setState({ status: 'success', error: null, event })}
           onRefresh={reloadEvent} />}

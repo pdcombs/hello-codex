@@ -1,0 +1,80 @@
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum EventLifecycleStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum EventDetailAccess {
+  FULL
+  PRIVATE_SUMMARY
+  ARCHIVED_READ_ONLY
+}
+
+extend type Event {
+  visibility: EventVisibility!
+  lifecycleStatus: EventLifecycleStatus!
+  detailAccess: EventDetailAccess!
+  archivedAt: DateTime
+}
+
+type PublicEventSearchItem {
+  publicId: String!
+  title: String!
+  description: String
+  location: String
+  visibility: EventVisibility!
+}
+
+type PublicEventSearchConnection {
+  nodes: [PublicEventSearchItem!]!
+  nextCursor: String
+}
+
+type PublicEventSearchSuccess {
+  events: PublicEventSearchConnection!
+}
+
+union PublicEventSearchResult = PublicEventSearchSuccess | OperationError
+
+# Read-time projection over the existing Event record. No duplicate event persistence.
+type PrivateEventSummary {
+  publicId: String!
+  title: String!
+  description: String
+  visibility: EventVisibility!
+  lifecycleStatus: EventLifecycleStatus!
+  detailAccess: EventDetailAccess!
+  categoryCount: Int!
+  participantCount: Int!
+  entryCount: Int!
+}
+
+# Viewer-aware detail response. Hosts receive Event regardless of navigation source.
+union EventDetailViewResult = Event | PrivateEventSummary | OperationError
+
+extend type Query {
+  searchPublicEvents(query: String!, first: Int = 20, after: String): PublicEventSearchResult!
+  eventDetailView(publicId: String!): EventDetailViewResult!
+}
+
+input SetEventVisibilityInput {
+  eventId: ID!
+  visibility: EventVisibility!
+  expectedUpdatedAt: DateTime!
+}
+
+input ArchiveEventInput {
+  eventId: ID!
+  expectedUpdatedAt: DateTime!
+  confirmation: Boolean!
+}
+
+extend type Mutation {
+  setEventVisibility(input: SetEventVisibilityInput!): EventResult!
+  archiveEvent(input: ArchiveEventInput!): EventResult!
+}

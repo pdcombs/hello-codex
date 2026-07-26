@@ -73,6 +73,12 @@ jobs:
         run: |
           pnpm --dir votiy-web exec vitest run tests/component/unified-add-session.test.js tests/component/unified-add-flow.test.jsx tests/component/event-participants-derived-only.test.jsx
           pnpm --dir votiy-api exec vitest run tests/contract/add-entries.contract.test.js tests/contract/event-setup.contract.test.js
+      - name: Verify Feature 010 search, visibility, migration, and privacy
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/unit/event-search.test.js tests/unit/event-visibility.test.js
+          pnpm --dir votiy-api exec vitest run tests/contract/event-search.contract.test.js tests/contract/event-visibility.contract.test.js
+          pnpm --dir votiy-api exec vitest run tests/integration/event-search-migration.test.js tests/integration/event-search.test.js tests/integration/event-search-pagination.test.js tests/integration/event-visibility.test.js tests/integration/event-search-observability.test.js tests/integration/event-search-performance.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/event-search-state.test.js tests/component/event-search-dialog.test.jsx tests/component/event-search-results.test.jsx tests/component/event-search-routing.test.jsx tests/component/event-search-placeholder.test.jsx tests/component/event-visibility.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js
@@ -81,3 +87,4 @@ jobs:
       - run: pnpm test:e2e --project=mobile-chromium --grep "responsive|public shell"
       - run: pnpm test:e2e tests/e2e/event-voting-rules.spec.js tests/e2e/responsive-accessibility.spec.js
       - run: pnpm test:e2e tests/e2e/event-details-navigation.spec.js
+      - run: pnpm test:e2e tests/e2e/find-events-search.spec.js tests/e2e/event-visibility.spec.js

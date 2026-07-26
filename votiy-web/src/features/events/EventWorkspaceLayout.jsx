@@ -19,9 +19,10 @@ export default function EventWorkspaceLayout({ event, onChanged, children }) {
 
   return <>
     <EventWorkspaceSummary event={event} onChanged={onChanged}
-      onAdd={(clickEvent) => openAdd(clickEvent.currentTarget)} />
+      onAdd={event.lifecycleStatus === 'ARCHIVED' ? null : (clickEvent) => openAdd(clickEvent.currentTarget)} />
     <EventWorkspaceTabs publicId={event.publicId} />
     <section className="event-workspace-content" aria-live="polite">{children}</section>
-    {event.isOwner && adding && <UnifiedAddSheet event={event} onChanged={onChanged} onClose={closeAdd} />}
+    {event.isOwner && event.lifecycleStatus !== 'ARCHIVED' && adding &&
+      <UnifiedAddSheet event={event} onChanged={onChanged} onClose={closeAdd} />}
   </>
 }

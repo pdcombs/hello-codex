@@ -52,6 +52,7 @@ export function createEventRegistrationService({
     const event = await eventRepository.findById(eventId, options)
     if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
     if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+    if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
     return event
   }
 
@@ -69,6 +70,7 @@ export function createEventRegistrationService({
       if (!parsed.success) throw validationError(parsed.error)
       const event = await eventRepository.findById(parsed.data.eventId)
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
+      if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
       if (event.registrationPolicy !== 'open') throw new ApplicationError(ErrorCode.FORBIDDEN)
       const requestDigest = digestRequest(parsed.data)
       const identity = { scope: String(viewer.account._id), operation: 'registerForEvent', key: parsed.data.idempotencyKey }

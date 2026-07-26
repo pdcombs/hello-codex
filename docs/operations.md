@@ -60,6 +60,9 @@ volume reset.
   unexpected failures over 15 minutes; exclude intentional authorization and not-found responses.
 - Event photo: `event.photo_upload` processing p95/error rate and `GET /event-media/:publicId/photo`
   request p95/404 rate. Never query or log image bytes, filenames, metadata, or checksums.
+- Event search: `event.search.completed` availability, first-page p95, result count, and failure rate.
+- Visibility lifecycle: `event.visibility_changed`, `event.archived`, and
+  `event.visibility_change_denied` audit cardinality and denial rate.
 
 ## Render / Atlas query ideas
 
@@ -105,6 +108,19 @@ volume reset.
 - any `004-category-archival` migration failure or event with zero active categories
 - event workspace availability below 99%, or p95 above 2 seconds, for 15 minutes
 - event photo upload failures above 5%, or processing p95 above 3 seconds, for 15 minutes
+- event search first-page p95 above 1 second or error rate above 2% for 10 minutes
+- any visibility/archive attempt without exactly one corresponding audit event
+
+## Find Events diagnostics and rollback
+
+1. Query `event:"event.search.completed"` grouped by `outcome`; graph `durationMs` p95 and `resultCount`.
+2. Never log raw or normalized query text, titles, descriptions, locations, visitor IDs, email, or phone.
+3. Confirm `/ready` succeeds after migration 006 and Atlas uses `event_search_eligibility_grams`.
+4. Private results may include title/description but never location; private detail responses must be
+   `PrivateEventSummary`, never a partially nulled `Event`.
+5. Correlate visibility/archive mutations with exactly one immutable audit event.
+6. On failure, roll back the application commit but retain schema-version-4 fields, migration data, search
+   index, archive metadata, and audit history. Older code ignores additive fields.
 
 ## Event workspace saved queries
 

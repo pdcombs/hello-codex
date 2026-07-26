@@ -13,7 +13,7 @@ describe('GraphQL schema contract', () => {
     const schema = await createGraphqlSchema()
     expect(Object.keys(schema.getQueryType().getFields())).toEqual([
       'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'entryOwnerChoices', 'eventRegistrations',
-      'eventVotingCapability', 'eventVotingCodes',
+      'eventVotingCapability', 'eventVotingCodes', 'searchPublicEvents', 'eventDetailView',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')
@@ -22,6 +22,8 @@ describe('GraphQL schema contract', () => {
     expect(Object.keys(schema.getMutationType().getFields())).toContain('updateEventVotingRules')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('generateVotingCodes')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('submitEventBallot')
+    expect(Object.keys(schema.getMutationType().getFields())).toContain('setEventVisibility')
+    expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEvent')
     expect(Object.keys(schema.getTypeMap()).filter((name) => !name.startsWith('__')).sort()).toMatchSnapshot()
   })
 

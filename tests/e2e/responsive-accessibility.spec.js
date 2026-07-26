@@ -26,6 +26,16 @@ test('auth pages stay usable on desktop and mobile', async ({ page }) => {
   await expect(page.getByLabel('Password')).toBeVisible()
 })
 
+test('Find Events remains keyboard and narrow-viewport safe', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Find events' }).click()
+  await expect(page.getByRole('dialog', { name: 'Find events' })).toBeVisible()
+  await expect(page.getByRole('searchbox')).toBeFocused()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+})
+
 test('responsive add-entry dialog supports keyboard focus, errors, and mobile layout', async ({ page }) => {
   test.skip(!process.env.E2E_HOST_EMAIL || !process.env.E2E_HOST_PASSWORD || !process.env.E2E_OPEN_EVENT_PUBLIC_ID,
     'Synthetic host and event required')

@@ -9,6 +9,7 @@ export function createEventVotingRulesService({ eventRepository, auditRepository
       const event = await eventRepository.findById(input.eventId)
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
       if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+      if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
       if (new Date(event.updatedAt).getTime() !== new Date(input.expectedEventUpdatedAt).getTime()) {
         throw new ApplicationError(ErrorCode.CONFLICT)
       }

@@ -19,6 +19,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       const event = await eventRepository.findById(input.eventId)
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
       if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+      if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
       if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1_000) {
         throw new ApplicationError(ErrorCode.VALIDATION_FAILED)
       }
@@ -90,6 +91,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         const options = session ? { session } : {}
         const event = await eventRepository.findById(input.eventId, options)
         if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
+        if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
         const status = votingWindowStatus(event.votingRules, timestamp)
         if (status === 'NOT_CONFIGURED') throw new ApplicationError(ErrorCode.VOTING_NOT_CONFIGURED)
         if (status === 'UPCOMING') throw new ApplicationError(ErrorCode.VOTING_NOT_OPEN)

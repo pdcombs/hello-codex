@@ -26,6 +26,7 @@ export function createEventPhotoService({
     if (String(event.ownerAccountId) !== String(viewer.account._id)) {
       throw new ApplicationError(ErrorCode.FORBIDDEN)
     }
+    if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
     return event
   }
 

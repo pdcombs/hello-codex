@@ -57,9 +57,10 @@ export async function createHostedEvent(page, title) {
 }
 
 export async function addCategory(page, title) {
-  await page.getByRole('button', { name: 'Add category' }).click()
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await page.getByRole('button', { name: 'Category', exact: true }).click()
   await page.getByLabel('Category title').fill(title)
-  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: 'Save category', exact: true }).click()
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
 }
 

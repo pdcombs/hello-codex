@@ -24,6 +24,7 @@ import { runEventSetupMigration } from './migrations/002-event-categories-entrie
 import { runEntryDerivedParticipantMigration } from './migrations/003-entry-derived-participants.js'
 import { runCategoryArchivalMigration } from './migrations/004-category-archival.js'
 import { runEventVotingRulesMigration } from './migrations/005-event-voting-rules.js'
+import { runEventSearchMigration } from './migrations/006-event-search.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
@@ -47,6 +48,8 @@ import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
 import { createEventVotingRulesService } from './services/event-voting-rules-service.js'
 import { createEventVotingService } from './services/event-voting-service.js'
+import { createEventSearchService } from './services/event-search-service.js'
+import { createEventVisibilityService } from './services/event-visibility-service.js'
 import { createBallotSubmissionRepository } from './repositories/ballot-submission-repository.js'
 import { createEventVoterAccessRepository } from './repositories/event-voter-access-repository.js'
 import { createVotingAccessCodeRepository } from './repositories/voting-access-code-repository.js'
@@ -63,6 +66,7 @@ await ensureCollectionsAndIndexes(mongo.database)
 await runEventSetupMigration({ database: mongo.database, logger })
 await runCategoryArchivalMigration({ database: mongo.database, logger })
 await runEventVotingRulesMigration({ database: mongo.database, logger })
+await runEventSearchMigration({ database: mongo.database, logger })
 await enforceEventSetupValidators(mongo.database)
 await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 
@@ -147,6 +151,17 @@ const eventService = createEventService({
   idempotencyRepository,
   logger,
 })
+const eventSearchService = createEventSearchService({
+  eventRepository,
+  cursorSecret: environment.tokenPepper,
+  logger,
+})
+const eventVisibilityService = createEventVisibilityService({
+  eventRepository,
+  eventEntryRepository,
+  auditRepository,
+  eventService,
+})
 const eventRegistrationService = createEventRegistrationService({
   eventRepository,
   eventRegistrationRepository,
@@ -204,7 +219,7 @@ const rootValue = {
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),
   ...createEventResolvers({ eventService, eventRegistrationService, eventEntryService, eventCategoryService,
-    eventVotingRulesService, eventVotingService, auditRepository }),
+    eventVotingRulesService, eventVotingService, eventSearchService, eventVisibilityService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,

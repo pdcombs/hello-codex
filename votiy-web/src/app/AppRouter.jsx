@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../features/auth/AuthProvider.jsx'
 import RegisterPage from '../features/auth/RegisterPage.jsx'
@@ -13,8 +13,13 @@ import OwnerEventParticipantsPage from '../features/events/OwnerEventParticipant
 import OwnerEventResultsPage from '../features/events/OwnerEventResultsPage.jsx'
 import EventSettingsPage from '../features/events/EventSettingsPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
+import EventSearchButton from '../features/search/EventSearchButton.jsx'
+import EventSearchDialog from '../features/search/EventSearchDialog.jsx'
+import useEventSearch from '../features/search/useEventSearch.js'
 
 function SiteHeader({ viewer }) {
+  const search = useEventSearch()
+  const searchButtonRef = useRef(null)
   return (
     <>
       <a className="skip-link" href="#main-content">Skip to content</a>
@@ -24,6 +29,7 @@ function SiteHeader({ viewer }) {
           <span>VOTIY</span>
         </Link>
         <nav aria-label="Primary navigation">
+          <EventSearchButton buttonRef={searchButtonRef} onClick={search.open} />
           <Link to="/">{viewer ? 'My events' : 'Home'}</Link>
           {viewer && <Link to="/events/new">Create event</Link>}
           {!viewer && <Link to="/sign-in">Sign in</Link>}
@@ -31,6 +37,7 @@ function SiteHeader({ viewer }) {
         </nav>
         <span className="system-status">Voting, together</span>
       </header>
+      <EventSearchDialog controller={search} triggerRef={searchButtonRef} />
     </>
   )
 }

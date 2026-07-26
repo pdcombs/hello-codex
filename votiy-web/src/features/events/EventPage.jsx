@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
-import { registerForEvent, loadEventByPublicId } from './events.graphql.js'
+import { registerForEvent, loadEventDetailView } from './events.graphql.js'
 import { FormSurface } from '../../components/Form.jsx'
 import ParticipantEntryFields from './ParticipantEntryFields.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
@@ -10,8 +10,9 @@ import { readEntries } from './participant-entry-form.js'
 import EventBallot from '../voting/EventBallot.jsx'
 import { loadEventVotingCapability } from '../voting/voting.graphql.js'
 import EventWorkspaceSummary from './EventWorkspaceSummary.jsx'
+import PrivateEventNotice from '../search/PrivateEventNotice.jsx'
 
-export default function EventPage({ viewer = null, loader = loadEventByPublicId, register = registerForEvent,
+export default function EventPage({ viewer = null, loader = loadEventDetailView, register = registerForEvent,
   capabilityLoader = loadEventVotingCapability }) {
   const { publicId } = useParams()
   const [state, setState] = useState({ status: 'loading', error: null, event: null, registrationState: 'idle' })
@@ -82,9 +83,20 @@ export default function EventPage({ viewer = null, loader = loadEventByPublicId,
     <main id="main-content" className="page-shell" tabIndex="-1">
       <EventWorkspaceSummary event={state.event} />
 
-      {Array.isArray(state.event.categories) && <EventCategoryList categories={state.event.categories} />}
+      {state.event.detailAccess === 'PRIVATE_SUMMARY' && (
+        <>
+          <nav className="event-workspace-tabs" aria-label="Event sections">
+            <span>Entries</span><span>Participants</span><span>Results (coming soon)</span>
+          </nav>
+          <PrivateEventNotice />
+        </>
+      )}
 
-      {!state.event.isOwner && state.event.voting && <EventBallot event={state.event} />}
+      {state.event.detailAccess !== 'PRIVATE_SUMMARY' && Array.isArray(state.event.categories) &&
+        <EventCategoryList categories={state.event.categories} />}
+
+      {state.event.detailAccess !== 'PRIVATE_SUMMARY' && !state.event.isOwner && state.event.voting &&
+        <EventBallot event={state.event} />}
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
         <SectionCard title="Join this event">

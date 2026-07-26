@@ -35,6 +35,17 @@ export const EVENT_BY_PUBLIC_ID = `query EventByPublicId($publicId: String!) {
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
+export const EVENT_DETAIL_VIEW = `query EventDetailView($publicId: String!) {
+  eventDetailView(publicId: $publicId) {
+    __typename
+    ... on Event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt }
+    ... on PrivateEventSummary {
+      publicId title description visibility lifecycleStatus detailAccess
+      categoryCount participantCount entryCount
+    }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
 const LEGACY_EVENT_BY_PUBLIC_ID = `query EventByPublicId($publicId: String!) {
   eventByPublicId(publicId: $publicId) { __typename ... on EventSuccess { event { ${LEGACY_EVENT_FIELDS} } } ... on OperationError { ${ERROR_FIELDS} } }
 }`
@@ -160,6 +171,49 @@ export async function loadEventByPublicId(publicId) {
     const data = await graphqlRequest({ query: LEGACY_EVENT_BY_PUBLIC_ID, variables: { publicId }, operationName: 'EventByPublicId' })
     return unwrapGraphqlResult(data.eventByPublicId)
   }
+}
+
+export async function loadEventDetailView(publicId) {
+  try {
+    const data = await graphqlRequest({ query: EVENT_DETAIL_VIEW, variables: { publicId }, operationName: 'EventDetailView' })
+    const result = unwrapGraphqlResult(data.eventDetailView)
+    if (result.__typename === 'PrivateEventSummary') return { event: {
+      ...result, id: null, location: null, photo: null, registrationPolicy: null, isOwner: false,
+      categories: [], voting: null, archivedAt: null,
+      analytics: { categoryCount: result.categoryCount, participantCount: result.participantCount,
+        entryCount: result.entryCount },
+    } }
+    return normalizeEventSetup({ event: result })
+  } catch (error) {
+    if (!isSchemaMismatch(error)) throw error
+    return loadEventByPublicId(publicId)
+  }
+}
+
+export const SET_EVENT_VISIBILITY = `mutation SetEventVisibility($input: SetEventVisibilityInput!) {
+  setEventVisibility(input: $input) {
+    __typename
+    ... on EventSuccess { event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const ARCHIVE_EVENT = `mutation ArchiveEvent($input: ArchiveEventInput!) {
+  archiveEvent(input: $input) {
+    __typename
+    ... on EventSuccess { event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
+export async function setEventVisibility(input) {
+  const data = await graphqlRequest({ query: SET_EVENT_VISIBILITY, variables: { input },
+    operationName: 'SetEventVisibility' })
+  return unwrapGraphqlResult(data.setEventVisibility)
+}
+
+export async function archiveEvent(input) {
+  const data = await graphqlRequest({ query: ARCHIVE_EVENT, variables: { input }, operationName: 'ArchiveEvent' })
+  return unwrapGraphqlResult(data.archiveEvent)
 }
 
 export function normalizeEventSetup(result) {

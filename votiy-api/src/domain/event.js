@@ -3,6 +3,7 @@ import { createCategory } from './event-category.js'
 import { toCategoryView } from './event-category.js'
 import { isActiveCategory } from './event-category.js'
 import { createDraftVotingRules } from './event-voting-rules.js'
+import { createEventSearchProjection } from './event-search.js'
 
 const REGISTRATION_POLICIES = new Set(['admin_managed', 'open'])
 
@@ -48,6 +49,17 @@ export function withEventVersion3(event, options = {}) {
     schemaVersion: 3 })
 }
 
+export function withEventVersion4(event) {
+  return Object.freeze({
+    ...event,
+    visibility: event.visibility ?? 'public',
+    lifecycleStatus: event.lifecycleStatus ?? 'active',
+    archivedAt: event.archivedAt ?? null,
+    ...createEventSearchProjection(event),
+    schemaVersion: 4,
+  })
+}
+
 export function toEventView(event, viewerAccountId = null) {
   const ownerId = String(event.ownerAccountId)
   const rules = event.votingRules ?? null
@@ -68,6 +80,7 @@ export function toEventView(event, viewerAccountId = null) {
     updatedAt: rules.updatedAt,
   } : null
   return Object.freeze({
+    __typename: 'Event',
     id: String(event._id),
     publicId: event.publicId,
     title: event.title,
@@ -78,6 +91,10 @@ export function toEventView(event, viewerAccountId = null) {
     categories: (event.categories ?? []).filter(isActiveCategory).map((category) => toCategoryView(category)),
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
+    visibility: (event.visibility ?? 'public').toUpperCase(),
+    lifecycleStatus: (event.lifecycleStatus ?? 'active').toUpperCase(),
+    detailAccess: event.lifecycleStatus === 'archived' ? 'ARCHIVED_READ_ONLY' : 'FULL',
+    archivedAt: event.archivedAt ?? null,
     voting: ruleView ? { votingStatus, canVote: votingStatus === 'OPEN', reasonCode: votingStatus === 'OPEN' ? null : votingStatus,
       remainingBallots: null, hasEventAccess: rules.accessPolicy === 'unrestricted', rules: ruleView } : null,
   })

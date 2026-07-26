@@ -92,6 +92,8 @@ export const collectionDefinitions = Object.freeze({
     indexes: [
       { key: { publicId: 1 }, name: 'event_public_id_unique', unique: true },
       { key: { ownerAccountId: 1, createdAt: -1 }, name: 'event_owner_recent' },
+      { key: { lifecycleStatus: 1, visibility: 1, searchGrams: 1 },
+        name: 'event_search_eligibility_grams' },
     ],
   },
   eventRegistrations: {
@@ -318,6 +320,27 @@ const eventSchemas = collectionDefinitions.events.validator.$jsonSchema.oneOf
 const eventV2 = eventSchemas[1]
 eventSchemas.push({ ...eventV2, required: [...eventV2.required, 'votingRules'],
   properties: { ...eventV2.properties, votingRules: votingRulesSchema, schemaVersion: { enum: [3] } } })
+const eventV3 = eventSchemas[2]
+eventSchemas.push({
+  ...eventV3,
+  required: [...eventV3.required, 'visibility', 'lifecycleStatus', 'archivedAt',
+    'searchTitleNormalized', 'searchDescriptionNormalized', 'searchLocationNormalized',
+    'searchTitleGrams', 'searchDescriptionGrams', 'searchLocationGrams', 'searchGrams'],
+  properties: {
+    ...eventV3.properties,
+    visibility: { enum: ['public', 'private', 'unlisted'] },
+    lifecycleStatus: { enum: ['active', 'archived'] },
+    archivedAt: dateOrNull,
+    searchTitleNormalized: { bsonType: 'string', maxLength: 120 },
+    searchDescriptionNormalized: { bsonType: 'string', maxLength: 2000 },
+    searchLocationNormalized: { bsonType: 'string', maxLength: 300 },
+    searchTitleGrams: { bsonType: 'array', maxItems: 256, items: { bsonType: 'string' } },
+    searchDescriptionGrams: { bsonType: 'array', maxItems: 4096, items: { bsonType: 'string' } },
+    searchLocationGrams: { bsonType: 'array', maxItems: 640, items: { bsonType: 'string' } },
+    searchGrams: { bsonType: 'array', maxItems: 4992, items: { bsonType: 'string' } },
+    schemaVersion: { enum: [4] },
+  },
+})
 
 export async function ensureCollectionsAndIndexes(database) {
   const existing = new Set((await database.listCollections({}, { nameOnly: true }).toArray()).map(({ name }) => name))

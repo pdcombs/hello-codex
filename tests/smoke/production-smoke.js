@@ -51,6 +51,20 @@ async function main() {
   requireStatus(home.response.ok, `Home failed: ${home.response.status}`)
   requireStatus(home.body.includes('<div id="root"></div>'), 'Home shell missing application root')
 
+  const search = await graphql(`query SmokeFindEvents($query: String!) {
+    searchPublicEvents(query: $query, first: 20) {
+      __typename
+      ... on PublicEventSearchSuccess {
+        events { nodes { publicId title description location visibility } nextCursor }
+      }
+      ... on OperationError { code message }
+    }
+  }`, { query: `smoke-no-match-${Date.now().toString(36)}` }, { operationName: 'SmokeFindEvents' })
+  requireStatus(search.data.searchPublicEvents?.__typename === 'PublicEventSearchSuccess',
+    `Anonymous event search failed: ${JSON.stringify(search.data)}`)
+  requireStatus(search.data.searchPublicEvents.events.nodes.length === 0,
+    'Synthetic no-match search unexpectedly returned events')
+
   if (publicEventPath) {
     const eventPage = await fetchText(publicEventPath)
     requireStatus(eventPage.response.ok, `Public event failed: ${eventPage.response.status}`)
