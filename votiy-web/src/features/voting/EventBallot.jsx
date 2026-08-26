@@ -3,10 +3,6 @@ import { FormSurface } from '../../components/Form.jsx'
 import SectionCard from '../../components/SectionCard.jsx'
 import { submitEventBallot } from './voting.graphql.js'
 
-function categoryRule(rules, categoryId) {
-  return rules.categoryRules.find((rule) => rule.categoryId === categoryId) ?? rules.defaultCategoryRule
-}
-
 export default function EventBallot({ event, submitter = submitEventBallot }) {
   const capability = event.voting
   const categories = useMemo(() => (event.categories ?? []).filter(({ entries }) => entries.length > 0), [event.categories])
@@ -57,7 +53,7 @@ export default function EventBallot({ event, submitter = submitEventBallot }) {
         <p className="form-help">Limited to one ballot in this browser. Clearing browser data may reset this limit.</p>}
       {capability.remainingBallots != null && <p className="form-help">{capability.remainingBallots} ballots remaining.</p>}
       {categories.map((category) => {
-        const rule = categoryRule(capability.rules, category.id)
+        const rule = capability.rules.defaultCategoryRule
         return <fieldset className="form-group ballot-category" key={category.id}>
           <legend>{category.title}</legend>
           {rule.method === 'RANKING' ? category.entries.map((_, rank) => <label key={rank}>

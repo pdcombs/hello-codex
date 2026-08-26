@@ -1,0 +1,22 @@
+input UpdateEventDetailsInput {
+  eventId: ID!
+  title: String!
+  description: String
+  location: String
+  expectedUpdatedAt: DateTime!
+}
+
+extend type Mutation {
+  updateEventDetails(input: UpdateEventDetailsInput!): EventResult!
+}
+
+# Compatibility amendment to the Feature 007 contract:
+#
+# - EventVotingRules.defaultCategoryRule is the sole active event-wide rule.
+# - EventVotingRules.categoryRules remains present during the compatibility period
+#   but resolves to an empty list and exposes no dormant values.
+# - UpdateEventVotingRulesInput.categoryRules remains accepted from legacy clients.
+#   The server ignores submitted values and preserves stored categoryOverrides.
+# - Current clients SHOULD send an empty categoryRules list and MUST use
+#   defaultCategoryRule for rendering and ballot behavior.
+# - PrivateEventSummary is not extended with voting fields.

@@ -28,11 +28,13 @@ describe('event voting rules', () => {
       .toThrow('opening must be before closing')
   })
 
-  it('validates multiple bounds and resolves category overrides', () => {
-    const draft = createDraftVotingRules(base)
+  it('preserves category overrides but resolves event default', () => {
+    const draft = { ...createDraftVotingRules(base),
+      categoryOverrides: [{ categoryId, method: 'multiple', multipleMin: 1, multipleMax: 2 }] }
     const configured = configureVotingRules(draft, { ...input, categoryRules: [{ categoryId: String(categoryId),
       method: 'MULTIPLE', minimumSelections: 1, maximumSelections: 2 }] }, { ...base, categoryIds: [categoryId] })
-    expect(effectiveCategoryRule(configured, categoryId)).toMatchObject({ method: 'multiple', multipleMin: 1, multipleMax: 2 })
+    expect(effectiveCategoryRule(configured, categoryId)).toMatchObject({ method: 'single', multipleMin: null, multipleMax: null })
+    expect(configured.categoryOverrides).toEqual(draft.categoryOverrides)
   })
 
   it('rejects invalid policies, methods, bounds, and category overrides', () => {
@@ -46,10 +48,8 @@ describe('event voting rules', () => {
       .toThrow('minimumSelections')
     expect(() => configure({ defaultCategoryRule: { method: 'MULTIPLE', minimumSelections: 2, maximumSelections: 1 } }))
       .toThrow('maximumSelections')
-    expect(() => configure({ categoryRules: [{ categoryId: String(new ObjectId()), method: 'SINGLE' }] }))
-      .toThrow('Category rule is invalid')
-    expect(() => configure({ categoryRules: [{ categoryId: String(categoryId), method: 'SINGLE' },
-      { categoryId: String(categoryId), method: 'SINGLE' }] })).toThrow('Category rule is invalid')
+    expect(configure({ categoryRules: [{ categoryId: String(new ObjectId()), method: 'SINGLE' }] }).categoryOverrides)
+      .toEqual([])
   })
 
   it('normalizes account and code policy limits', () => {

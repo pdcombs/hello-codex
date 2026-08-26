@@ -45,6 +45,25 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
         { correlationId: context.correlationId })) }
       catch (error) { return failure(error, context.correlationId) }
     },
+    async updateEventDetails({ input }, context) {
+      try {
+        const result = await eventService.updateDetails(input, context.viewer,
+          { correlationId: context.correlationId })
+        await auditRepository?.append({ name: 'event.details_updated',
+          actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event',
+          subjectId: result.event.id, outcome: 'success', correlationId: context.correlationId,
+          metadata: { changedFields: result.changedFields } })
+        return successEvent(result.event)
+      } catch (error) {
+        if ([ErrorCode.AUTHENTICATION_REQUIRED, ErrorCode.FORBIDDEN].includes(error.code)) {
+          await auditRepository?.append({ name: 'event.details_change_denied',
+            actorAccountId: context.viewer?.account?._id ?? null, subjectType: 'event',
+            subjectId: input.eventId, outcome: 'denied', correlationId: context.correlationId,
+            metadata: { reasonCode: error.code } })
+        }
+        return failure(error, context.correlationId)
+      }
+    },
     async updateEventVotingRules({ input }, context) {
       try {
         const result = await eventVotingRulesService.updateRules(input, context.viewer,

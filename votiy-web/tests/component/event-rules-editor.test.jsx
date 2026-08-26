@@ -10,12 +10,14 @@ const event = { id: 'event-1', updatedAt: '2030-01-01T10:00:00Z', categories: [{
       maximumSelections: null }, categoryRules: [] } } }
 
 describe('EventRulesEditor', () => {
-  it('renders category controls and saves one complete payload', async () => {
+  it('renders one event method and saves compatibility payload', async () => {
     const saver = vi.fn().mockResolvedValue({ event })
     render(<EventRulesEditor event={event} saver={saver} onSaved={vi.fn()} />)
-    expect(screen.getByRole('group', { name: 'Finalists' })).toBeInTheDocument()
+    expect(screen.getAllByLabelText('Voting method')).toHaveLength(1)
+    expect(screen.queryByRole('group', { name: 'Finalists' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Save voting rules' }))
-    expect(saver).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'event-1', expectedRulesVersion: 1 }))
+    expect(saver).toHaveBeenCalledWith(expect.objectContaining({ eventId: 'event-1', expectedRulesVersion: 1,
+      categoryRules: [] }))
   })
 
   it('reveals multiple bounds and code policy fields', async () => {
@@ -26,7 +28,10 @@ describe('EventRulesEditor', () => {
     await userEvent.clear(screen.getByLabelText('Minimum selections')); await userEvent.type(screen.getByLabelText('Minimum selections'), '2')
     await userEvent.clear(screen.getByLabelText('Maximum selections')); await userEvent.type(screen.getByLabelText('Maximum selections'), '3')
     await userEvent.selectOptions(screen.getByLabelText('Who can vote'), 'CODE')
-    await userEvent.click(screen.getByLabelText('Require completed account'))
+    const accountSwitch = screen.getByRole('switch', { name: 'Require completed account' })
+    expect(accountSwitch).toBeChecked()
+    await userEvent.click(accountSwitch)
+    expect(screen.getByText('Off')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: 'Save voting rules' }))
     expect(saver).toHaveBeenCalledWith(expect.objectContaining({ accessPolicy: 'CODE',
       codeRequiresCompletedAccount: false, maximumBallotsPerAccount: null,

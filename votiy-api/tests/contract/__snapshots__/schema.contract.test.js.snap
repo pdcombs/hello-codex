@@ -95,6 +95,7 @@ exports[`GraphQL schema contract > loads the checked-in account, event, and regi
   "SubmitEventBallotInput",
   "UnrestrictedRepeatPolicy",
   "UpdateEventCategoryInput",
+  "UpdateEventDetailsInput",
   "UpdateEventVotingRulesInput",
   "VerifyEmailInput",
   "VotingAccessCode",

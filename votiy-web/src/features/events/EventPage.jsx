@@ -25,7 +25,9 @@ export default function EventPage({ viewer = null, loader = loadEventDetailView,
     loader(publicId)
       .then(async (result) => {
         if (!active) return
-        const capability = result.event.voting ? await capabilityLoader(result.event.id) : null
+        const capability = result.event.detailAccess !== 'PRIVATE_SUMMARY' && result.event.voting
+          ? await capabilityLoader(result.event.id)
+          : null
         if (!active) return
         setState({ status: 'success', error: null, event: capability ? { ...result.event, voting: capability } : result.event,
           registrationState: 'idle' })

@@ -30,4 +30,23 @@ describe('event workspace summary', () => {
     expect(screen.queryByRole('link', { name: 'Event settings' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Summer Showcase has no photo')).toBeVisible()
   })
+
+  it('places semantic voting information after the location with audience wording', () => {
+    render(<MemoryRouter><EventWorkspaceSummary event={{ ...event, voting: { rules: {
+      opensAt: '2030-01-01T12:00:00Z', closesAt: '2030-01-01T14:00:00Z', accessPolicy: 'CODE',
+      defaultCategoryRule: { method: 'SINGLE' },
+    } } }} /></MemoryRouter>)
+    const summary = screen.getByLabelText('Voting information')
+    expect(summary.previousElementSibling).toHaveTextContent('Bentonville')
+    expect(summary).toHaveTextContent('Voters need a code to vote.')
+    expect(summary).toHaveTextContent('Voters choose one entry in each category.')
+    expect(summary.querySelectorAll('time')).toHaveLength(2)
+    expect(summary.querySelector('time')).toHaveAttribute('datetime', '2030-01-01T12:00:00.000Z')
+  })
+
+  it('omits voting information for private summaries', () => {
+    render(<MemoryRouter><EventWorkspaceSummary event={{ ...event, detailAccess: 'PRIVATE_SUMMARY',
+      voting: { rules: { accessPolicy: 'CODE', defaultCategoryRule: { method: 'SINGLE' } } } }} /></MemoryRouter>)
+    expect(screen.queryByLabelText('Voting information')).not.toBeInTheDocument()
+  })
 })

@@ -180,7 +180,8 @@ const eventEntryService = createEventEntryService({
 })
 const eventCategoryService = createEventCategoryService({ eventRepository, eventEntryRepository, accountRepository,
   idempotencyRepository, auditRepository, withTransaction: mongo.withTransaction, logger })
-const eventVotingRulesService = createEventVotingRulesService({ eventRepository, auditRepository, logger })
+const eventVotingRulesService = createEventVotingRulesService({ eventRepository, eventEntryRepository,
+  auditRepository, logger })
 const eventVotingService = createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
   idempotencyRepository, auditRepository, accountRepository, voterAccessRepository, accessCodeRepository,
   digestCode: (eventId, code) => digestVotingCode({ eventId, code, key: environment.votingCodeEncryptionKey }),

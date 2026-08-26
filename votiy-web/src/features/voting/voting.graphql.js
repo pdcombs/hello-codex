@@ -16,7 +16,6 @@ export const EVENT_VOTING_CAPABILITY_QUERY = `
             status version opensAt closesAt accessPolicy unrestrictedRepeatPolicy
             maximumBallotsPerAccount codeRequiresCompletedAccount updatedAt
             defaultCategoryRule { categoryId method minimumSelections maximumSelections }
-            categoryRules { categoryId method minimumSelections maximumSelections }
           }
         }
       }
@@ -33,7 +32,6 @@ export const UPDATE_EVENT_VOTING_RULES = `
       ... on EventSuccess { event { id updatedAt voting { votingStatus canVote reasonCode rules {
         status version opensAt closesAt accessPolicy unrestrictedRepeatPolicy maximumBallotsPerAccount
         codeRequiresCompletedAccount updatedAt defaultCategoryRule { method minimumSelections maximumSelections }
-        categoryRules { categoryId method minimumSelections maximumSelections }
       } } } }
       ... on OperationError { ${ERROR_FIELDS} }
     }

@@ -103,6 +103,14 @@ export const renameEventCategoryInputSchema = z.object({
 
 const validTimestamp = z.coerce.date().refine((value) => !Number.isNaN(value.getTime()), 'Enter a valid timestamp')
 
+export const updateEventDetailsInputSchema = z.object({
+  eventId: z.string().min(1),
+  title: trimmedRequiredText(120, 'Title'),
+  description: optionalText(2_000, 'Description'),
+  location: optionalText(300, 'Location'),
+  expectedUpdatedAt: validTimestamp,
+}).strict()
+
 export const updateEventCategoryInputSchema = z.object({
   eventId: z.string().min(1),
   categoryId: z.string().min(1),

@@ -4,7 +4,6 @@ const ENTRY_FIELDS = 'id title categoryId ownerAccountId ownerDisplayName status
 const VOTING_FIELDS = `voting { votingStatus canVote reasonCode remainingBallots hasEventAccess rules {
   status version opensAt closesAt accessPolicy unrestrictedRepeatPolicy maximumBallotsPerAccount
   codeRequiresCompletedAccount updatedAt defaultCategoryRule { method minimumSelections maximumSelections }
-  categoryRules { categoryId method minimumSelections maximumSelections }
 } }`
 const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt
   photo { url revision width height updatedAt }
@@ -72,6 +71,14 @@ export const CREATE_EVENT = `mutation CreateEvent($input: CreateEventInput!) {
   createEvent(input: $input) {
     __typename
     ... on EventSuccess { event { ${EVENT_FIELDS} } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
+export const UPDATE_EVENT_DETAILS = `mutation UpdateEventDetails($input: UpdateEventDetailsInput!) {
+  updateEventDetails(input: $input) {
+    __typename
+    ... on EventSuccess { event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
@@ -242,6 +249,12 @@ export async function loadEventParticipants(eventId) {
 export async function createEvent(input) {
   const data = await graphqlRequest({ query: CREATE_EVENT, variables: { input }, operationName: 'CreateEvent' })
   return unwrapGraphqlResult(data.createEvent)
+}
+
+export async function updateEventDetails(input) {
+  const data = await graphqlRequest({ query: UPDATE_EVENT_DETAILS, variables: { input },
+    operationName: 'UpdateEventDetails' })
+  return unwrapGraphqlResult(data.updateEventDetails)
 }
 
 export async function setEventRegistrationPolicy(input) {

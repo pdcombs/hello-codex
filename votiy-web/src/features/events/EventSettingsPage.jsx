@@ -3,8 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventRulesEditor from '../voting/EventRulesEditor.jsx'
 import VotingCodeManager from '../voting/VotingCodeManager.jsx'
+import EventDetailsEditor from './EventDetailsEditor.jsx'
 import { updateEventVotingRules } from '../voting/voting.graphql.js'
-import { archiveEvent, loadEventDetailView, setEventVisibility } from './events.graphql.js'
+import { archiveEvent, loadEventDetailView, setEventVisibility, updateEventDetails } from './events.graphql.js'
 
 export default function EventSettingsPage({ loader = loadEventDetailView, visibilitySaver = setEventVisibility,
   archiver = archiveEvent }) {
@@ -23,6 +24,7 @@ export default function EventSettingsPage({ loader = loadEventDetailView, visibi
   return <main id="main-content" className="page-shell event-settings-page">
     <Link className="secondary-action" to={`/events/${publicId}`} aria-label="Back to event entries">← Back</Link>
     <h1 data-page-title="true" tabIndex="-1">Event settings</h1>
+    <EventDetailsEditor event={state.event} saver={updateEventDetails} onSaved={reload} />
     <section className="section-card">
       <h2>Event visibility</h2>
       {state.event.lifecycleStatus === 'ARCHIVED' ? <p>This event is archived and read-only.</p> : (

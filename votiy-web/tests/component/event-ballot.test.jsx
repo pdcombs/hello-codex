@@ -17,16 +17,15 @@ function eventFixture(overrides = {}) {
 }
 
 describe('EventBallot', () => {
-  it('renders server-selected single, multiple, and ranking controls and submits selections', async () => {
+  it('uses event-wide method for every category and ignores category overrides', async () => {
     const submitter = vi.fn().mockResolvedValue({ receipt: { id: 'ballot-1' } })
     render(<EventBallot event={eventFixture()} submitter={submitter} />)
-    expect(screen.getAllByRole('radio')).toHaveLength(2)
-    expect(screen.getAllByRole('checkbox')).toHaveLength(2)
-    expect(screen.getAllByRole('combobox')).toHaveLength(2)
+    expect(screen.getAllByRole('radio')).toHaveLength(6)
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0)
     await userEvent.click(screen.getByLabelText('One'))
     await userEvent.click(screen.getByLabelText('Three'))
-    await userEvent.selectOptions(screen.getByLabelText('Ranking rank 1'), 'r1')
-    await userEvent.selectOptions(screen.getByLabelText('Ranking rank 2'), 'r2')
+    await userEvent.click(screen.getByLabelText('Five'))
     await userEvent.click(screen.getByRole('button', { name: 'Submit ballot' }))
     expect(submitter).toHaveBeenCalledWith(expect.objectContaining({ expectedRulesVersion: 2 }))
     expect(await screen.findByText('Your ballot was submitted.')).toBeVisible()

@@ -110,9 +110,17 @@ test('voting rules and code inventory are keyboard and short-viewport safe', asy
     'Synthetic host and code event required')
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 520 })
-  await signInHost(page); await page.goto(`/events/${process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID}`)
+  await signInHost(page); await page.goto(`/events/${process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID}/settings`)
   await expect(page.getByRole('heading', { name: 'Voting rules' })).toBeVisible()
   await page.getByLabel('Voting opens').focus(); await expect(page.getByLabel('Voting opens')).toBeFocused()
+  const accountSwitch = page.getByRole('switch', { name: 'Require completed account' })
+  await accountSwitch.focus(); await expect(accountSwitch).toBeFocused()
+  const before = await accountSwitch.isChecked(); await page.keyboard.press('Space')
+  expect(await accountSwitch.isChecked()).toBe(!before)
+  expect(await accountSwitch.evaluate((element) => {
+    const rectangle = element.closest('.switch-control').getBoundingClientRect()
+    return rectangle.width >= 44 && rectangle.height >= 44
+  })).toBe(true)
   await page.getByLabel('Number of codes').focus(); await expect(page.getByLabel('Number of codes')).toBeFocused()
   await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Generate codes' })).toBeFocused()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)

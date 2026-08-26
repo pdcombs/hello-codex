@@ -3,7 +3,7 @@ import crypto from 'node:crypto'
 const STOP_WORDS = new Set(['a', 'an', 'and', 'at', 'for', 'in', 'of', 'on', 'the', 'to'])
 
 export function normalizeSearchText(value = '') {
-  return String(value).normalize('NFKD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  return String(value ?? '').normalize('NFKD').replace(/\p{Diacritic}/gu, '').toLowerCase()
     .replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim().replace(/\s+/g, ' ')
 }
 

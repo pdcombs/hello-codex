@@ -118,7 +118,7 @@ async function main() {
     const accountId = created.data.createEventEntry.result.affectedParticipant.accountId
     const projection = await graphql(`query SmokeEntryProjection($eventId: ID!) {
       ownedEvents(first: 20) { __typename
-        ... on EventListSuccess { events { nodes { id updatedAt voting { rules { version } }
+        ... on EventListSuccess { events { nodes { id title description location updatedAt voting { rules { version } }
           categories { id title updatedAt entries { id title updatedAt } } } } }
         ... on OperationError { code message }
       }
@@ -138,20 +138,36 @@ async function main() {
     requireStatus(Boolean(category), 'Synthetic category missing from projection')
     const originalEntry = category.entries.find((entry) => entry.id === entryId)
 
+    const details = await graphql(`mutation SmokeUpdateEventDetails($input: UpdateEventDetailsInput!) {
+      updateEventDetails(input: $input) { __typename
+        ... on EventSuccess { event { id publicId title description location updatedAt } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, title: projectedEvent.title,
+      description: projectedEvent.description, location: projectedEvent.location,
+      expectedUpdatedAt: projectedEvent.updatedAt } }, { cookie, operationName: 'SmokeUpdateEventDetails' })
+    requireStatus(details.data.updateEventDetails?.__typename === 'EventSuccess',
+      `Synthetic detail update failed: ${JSON.stringify(details.data)}`)
+
     const opensAt = new Date(Date.now() - 60_000).toISOString()
     const closesAt = new Date(Date.now() + 600_000).toISOString()
     const configured = await graphql(`mutation SmokeConfigureVoting($input: UpdateEventVotingRulesInput!) {
       updateEventVotingRules(input: $input) { __typename
-        ... on EventSuccess { event { id updatedAt voting { rules { version } } } }
+        ... on EventSuccess { event { id updatedAt voting { rules { version accessPolicy
+          defaultCategoryRule { method minimumSelections maximumSelections }
+          categoryRules { categoryId method } } } } }
         ... on OperationError { code message }
       }
-    }`, { input: { eventId: syntheticEventId, expectedEventUpdatedAt: projectedEvent.updatedAt,
+    }`, { input: { eventId: syntheticEventId, expectedEventUpdatedAt: details.data.updateEventDetails.event.updatedAt,
       expectedRulesVersion: projectedEvent.voting.rules.version, opensAt, closesAt, accessPolicy: 'CODE',
       unrestrictedRepeatPolicy: null, maximumBallotsPerAccount: null, codeRequiresCompletedAccount: false,
       defaultCategoryRule: { categoryId: null, method: 'SINGLE', minimumSelections: null, maximumSelections: null },
       categoryRules: [], idempotencyKey: crypto.randomUUID() } }, { cookie, operationName: 'SmokeConfigureVoting' })
     requireStatus(configured.data.updateEventVotingRules?.__typename === 'EventSuccess',
       `Synthetic voting configuration failed: ${JSON.stringify(configured.data)}`)
+    requireStatus(configured.data.updateEventVotingRules.event.voting.rules.defaultCategoryRule.method === 'SINGLE'
+      && configured.data.updateEventVotingRules.event.voting.rules.categoryRules.length === 0,
+    'Synthetic event-wide voting projection was not authoritative')
     const rulesVersion = configured.data.updateEventVotingRules.event.voting.rules.version
     const generatedCodes = await graphql(`mutation SmokeGenerateCode($input: GenerateVotingCodesInput!) {
       generateVotingCodes(input: $input) { __typename

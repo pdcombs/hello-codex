@@ -201,6 +201,16 @@ history. Confirm every event retains exactly one active default category after a
 
 ## Rollback
 
+### Feature 011 signals and rollback
+
+- Track `event.details_updated` and `event.details_change_denied` by safe reason and correlation ID;
+  alert when update errors exceed 5% or p95 duration exceeds two seconds.
+- Audit/log payloads may contain changed field names, never event text, normalized search content,
+  voting rules, codes, or ballots.
+- Roll back application code without rewriting event documents. Preserve dormant `categoryOverrides`,
+  current detail/search fields, accepted ballots, voting codes, voter access, and audits. The prior
+  schema-version-4 reader ignores the additive mutation and continues reading these documents.
+
 1. Open Render deploy history.
 2. Roll back to last known-good deploy.
 3. Re-run `/health`, `/ready`, home page, and synthetic public event smoke.

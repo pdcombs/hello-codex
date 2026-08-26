@@ -165,6 +165,17 @@ pnpm test:e2e tests/e2e/find-events-search.spec.js
 
 ## Production smoke
 
+## Event details and voting summary
+
+Hosts can edit an active event's title, description, and location from Event Settings. Saves use the
+event `updatedAt` value as a compare-and-set token, and atomically rebuild the search projection. Main
+event pages show a local-time voting window plus audience-specific access and event-wide method wording.
+Private summaries expose none of the voting source fields and do not request voting capability.
+
+Voting method and multiple-choice bounds are configured once per event. Legacy category overrides stay
+stored for rollback compatibility, but current reads, ballots, and settings ignore them. Code voting's
+completed-account option is an accessible switch; its saved API value is unchanged.
+
 Post-deploy smoke workflow hits:
 
 - `/health`

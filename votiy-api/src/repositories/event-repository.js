@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { createEventDocument, withEventVersion2, withEventVersion3, withEventVersion4 } from '../domain/event.js'
-import { eventMatchesTerms, eventSearchScore } from '../domain/event-search.js'
+import { createEventSearchProjection, eventMatchesTerms, eventSearchScore } from '../domain/event-search.js'
 import { normalizeCategoryTitle } from '../domain/event-category.js'
 
 const id = (value) => (value instanceof ObjectId ? value : new ObjectId(value))
@@ -54,6 +54,15 @@ export function createEventRepository(database) {
         { _id: id(eventId), ownerAccountId: id(ownerAccountId), lifecycleStatus: 'active',
           updatedAt: expectedUpdatedAt },
         { $set: { lifecycleStatus: 'archived', archivedAt: now, updatedAt: now } },
+        { returnDocument: 'after', ...options },
+      )
+    },
+    updateDetails(eventId, ownerAccountId, expectedUpdatedAt, details, now, options = {}) {
+      const projection = createEventSearchProjection(details)
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), lifecycleStatus: 'active',
+          updatedAt: expectedUpdatedAt },
+        { $set: { ...details, ...projection, updatedAt: now } },
         { returnDocument: 'after', ...options },
       )
     },

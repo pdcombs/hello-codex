@@ -2,7 +2,8 @@ import { ApplicationError, ErrorCode } from '../domain/errors.js'
 import { configureVotingRules } from '../domain/event-voting-rules.js'
 import { toEventView } from '../domain/event.js'
 
-export function createEventVotingRulesService({ eventRepository, auditRepository = null, now = () => new Date(), logger = null }) {
+export function createEventVotingRulesService({ eventRepository, eventEntryRepository = null,
+  auditRepository = null, now = () => new Date(), logger = null }) {
   return Object.freeze({
     async updateRules(input, viewer, { correlationId = 'voting-rules-update' } = {}) {
       if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
@@ -20,6 +21,14 @@ export function createEventVotingRulesService({ eventRepository, auditRepository
           categoryIds: event.categories.filter(({ status }) => status !== 'archived').map(({ _id }) => _id),
           now: now(),
         })
+        if (votingRules.defaultCategoryMethod === 'multiple' && eventEntryRepository) {
+          const entries = await eventEntryRepository.listActiveByEvent(event._id)
+          const counts = new Map(event.categories.filter(({ status }) => status !== 'archived')
+            .map(({ _id }) => [String(_id), 0]))
+          for (const entry of entries) counts.set(String(entry.categoryId), (counts.get(String(entry.categoryId)) ?? 0) + 1)
+          const blocked = [...counts.entries()].filter(([, count]) => count < votingRules.defaultMultipleMax)
+          if (blocked.length) throw new TypeError('Every active category needs enough entries for the maximum selections')
+        }
       } catch (error) {
         if (error.message === 'RULES_CHANGED') throw new ApplicationError(ErrorCode.RULES_CHANGED)
         throw new ApplicationError(ErrorCode.VALIDATION_FAILED, { cause: error,

@@ -24,6 +24,9 @@ export function validateCategoryBallots({ event, entries, categoryBallots }) {
       throw new TypeError('Ballot contains invalid entries')
     }
     const rule = effectiveCategoryRule(event.votingRules, category._id)
+    if (rule.method === 'multiple' && available.length < rule.multipleMax) {
+      throw new TypeError('Category cannot satisfy maximum selections')
+    }
     if (rule.method === 'single' && ids.length !== 1) throw new TypeError('Select exactly one entry')
     if (rule.method === 'multiple' && (ids.length < rule.multipleMin || ids.length > rule.multipleMax)) {
       throw new TypeError('Selection count is outside allowed range')

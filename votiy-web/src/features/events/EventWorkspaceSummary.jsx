@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import EventAnalytics from './EventAnalytics.jsx'
 import EventPhoto from './EventPhoto.jsx'
+import EventVotingSummary from './EventVotingSummary.jsx'
 
 export default function EventWorkspaceSummary({ event, onChanged, onAdd }) {
   return <section className="event-workspace-summary" aria-labelledby="event-workspace-title">
@@ -16,5 +17,6 @@ export default function EventWorkspaceSummary({ event, onChanged, onAdd }) {
     <h1 id="event-workspace-title" data-page-title="true" tabIndex="-1">{event.title}</h1>
     {event.description && <p className="event-description">{event.description}</p>}
     {event.location && <p className="event-location">{event.location}</p>}
+    <EventVotingSummary event={event} />
   </section>
 }

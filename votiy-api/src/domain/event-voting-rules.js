@@ -36,13 +36,7 @@ export function configureVotingRules(current, input, { ownerAccountId, categoryI
   if (!POLICIES.has(accessPolicy)) throw new TypeError('Access policy is invalid')
   const defaultRule = input.defaultCategoryRule
   validateMethod(defaultRule)
-  const known = new Set(categoryIds.map(String)); const seen = new Set()
-  const categoryOverrides = input.categoryRules.map((rule) => {
-    if (!known.has(String(rule.categoryId)) || seen.has(String(rule.categoryId))) throw new TypeError('Category rule is invalid')
-    seen.add(String(rule.categoryId)); validateMethod(rule, 'categoryRules')
-    return { categoryId: new ObjectId(rule.categoryId), method: rule.method.toLowerCase(),
-      multipleMin: rule.minimumSelections ?? null, multipleMax: rule.maximumSelections ?? null }
-  })
+  void categoryIds
   return Object.freeze({
     status: 'configured', version: current.version + 1, opensAt, closesAt, accessPolicy,
     unrestrictedRepeatPolicy: accessPolicy === 'unrestricted' ? input.unrestrictedRepeatPolicy.toLowerCase() : null,
@@ -52,12 +46,12 @@ export function configureVotingRules(current, input, { ownerAccountId, categoryI
     defaultCategoryMethod: defaultRule.method.toLowerCase(),
     defaultMultipleMin: defaultRule.minimumSelections ?? null,
     defaultMultipleMax: defaultRule.maximumSelections ?? null,
-    categoryOverrides, updatedByAccountId: new ObjectId(ownerAccountId), createdAt: current.createdAt, updatedAt: now,
+    categoryOverrides: current.categoryOverrides ?? [], updatedByAccountId: new ObjectId(ownerAccountId),
+    createdAt: current.createdAt, updatedAt: now,
   })
 }
 
 export function effectiveCategoryRule(rules, categoryId) {
-  const override = rules.categoryOverrides.find((rule) => String(rule.categoryId) === String(categoryId))
-  return override ?? { categoryId, method: rules.defaultCategoryMethod,
+  return { categoryId, method: rules.defaultCategoryMethod,
     multipleMin: rules.defaultMultipleMin, multipleMax: rules.defaultMultipleMax }
 }

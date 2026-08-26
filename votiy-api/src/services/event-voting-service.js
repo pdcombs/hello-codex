@@ -68,6 +68,15 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
       const result = capability(event)
       if (result.votingStatus !== 'OPEN') return result
+      if (event.votingRules.defaultCategoryMethod === 'multiple') {
+        const entries = await eventEntryRepository.listActiveByEvent(event._id)
+        const counts = new Map(event.categories.filter(({ status }) => status !== 'archived')
+          .map(({ _id }) => [String(_id), 0]))
+        for (const entry of entries) counts.set(String(entry.categoryId), (counts.get(String(entry.categoryId)) ?? 0) + 1)
+        if ([...counts.values()].some((count) => count < event.votingRules.defaultMultipleMax)) {
+          return { ...result, canVote: false, reasonCode: ErrorCode.INVALID_BALLOT }
+        }
+      }
       if (event.votingRules.accessPolicy === 'account' && !viewer?.account?._id) {
         return { ...result, canVote: false, reasonCode: ErrorCode.AUTHENTICATION_REQUIRED, hasEventAccess: false }
       }

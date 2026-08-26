@@ -2,7 +2,7 @@ import { ApplicationError, ErrorCode } from '../domain/errors.js'
 import { toEventView } from '../domain/event.js'
 import { toEntryView } from '../domain/event-entry.js'
 import { digestIdempotencyRequest, generateOpaqueToken } from '../domain/security.js'
-import { eventInputSchema, setEventRegistrationPolicyInputSchema } from '../domain/validation.js'
+import { eventInputSchema, setEventRegistrationPolicyInputSchema, updateEventDetailsInputSchema } from '../domain/validation.js'
 import { logGroupedView } from '../observability/logger.js'
 import { deriveEventAnalytics } from '../domain/event-analytics.js'
 
@@ -100,6 +100,30 @@ export function createEventService({
       })
       logger?.info({ operation: 'event.create', outcome: 'success' }, 'Event created')
       return { event: toEventView(event, ownerAccountId) }
+    },
+
+    async updateDetails(rawInput, viewer, { correlationId = 'event-details-update' } = {}) {
+      const startedAt = process.hrtime.bigint()
+      if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
+      const parsed = updateEventDetailsInputSchema.safeParse(rawInput)
+      if (!parsed.success) throw validationError(parsed.error)
+      const input = parsed.data
+      const event = await eventRepository.findById(input.eventId)
+      if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
+      if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+      if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
+      if (new Date(event.updatedAt).getTime() !== input.expectedUpdatedAt.getTime()) {
+        throw new ApplicationError(ErrorCode.CONFLICT)
+      }
+      const details = { title: input.title, description: input.description, location: input.location }
+      const changedFields = Object.keys(details).filter((field) => event[field] !== details[field])
+      const saved = await eventRepository.updateDetails(event._id, viewer.account._id, event.updatedAt,
+        details, now())
+      if (!saved) throw new ApplicationError(ErrorCode.CONFLICT)
+      logger?.info({ operation: 'event.details_update', outcome: 'success', correlationId,
+        changedFieldCount: changedFields.length,
+        durationMs: Number(process.hrtime.bigint() - startedAt) / 1_000_000 }, 'Event details updated')
+      return { event: toEventView(saved, viewer.account._id), changedFields }
     },
 
     async ownedEvents({ viewer, first = 20, after = null }) {

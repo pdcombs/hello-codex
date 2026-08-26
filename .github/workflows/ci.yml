@@ -79,6 +79,11 @@ jobs:
           pnpm --dir votiy-api exec vitest run tests/contract/event-search.contract.test.js tests/contract/event-visibility.contract.test.js
           pnpm --dir votiy-api exec vitest run tests/integration/event-search-migration.test.js tests/integration/event-search.test.js tests/integration/event-search-pagination.test.js tests/integration/event-visibility.test.js tests/integration/event-search-observability.test.js tests/integration/event-search-performance.test.js
           pnpm --dir votiy-web exec vitest run tests/component/event-search-state.test.js tests/component/event-search-dialog.test.jsx tests/component/event-search-results.test.jsx tests/component/event-search-routing.test.jsx tests/component/event-search-placeholder.test.jsx tests/component/event-visibility.test.jsx
+      - name: Verify Feature 011 event details and event-wide voting
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/unit/event-details-service.test.js tests/unit/event-voting-rules.test.js tests/unit/ballot-submission.test.js
+          pnpm --dir votiy-api exec vitest run tests/contract/event-details-update.contract.test.js tests/contract/event-voting-summary-privacy.contract.test.js tests/contract/event-wide-voting-method.contract.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/event-details-editor.test.jsx tests/component/event-voting-summary-state.test.js tests/component/event-workspace-summary.test.jsx tests/component/event-rules-editor.test.jsx tests/component/event-ballot.test.jsx tests/component/event-visibility.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js
@@ -88,3 +93,5 @@ jobs:
       - run: pnpm test:e2e tests/e2e/event-voting-rules.spec.js tests/e2e/responsive-accessibility.spec.js
       - run: pnpm test:e2e tests/e2e/event-details-navigation.spec.js
       - run: pnpm test:e2e tests/e2e/find-events-search.spec.js tests/e2e/event-visibility.spec.js
+      - run: pnpm test:e2e tests/e2e/event-details-voting-summary.spec.js --project=chromium
+      - run: pnpm test:e2e tests/e2e/responsive-accessibility.spec.js --project=mobile-chromium --grep "event details|voting summary|switch|responsive"

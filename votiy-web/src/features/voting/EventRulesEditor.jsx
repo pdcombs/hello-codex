@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import CategoryVotingRuleFields from './CategoryVotingRuleFields.jsx'
 
-const localValue = (value) => value ? new Date(value).toISOString().slice(0, 16) : ''
+const localValue = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
 
 export default function EventRulesEditor({ event, saver, onSaved }) {
   const rules = event.voting?.rules
@@ -13,11 +17,6 @@ export default function EventRulesEditor({ event, saver, onSaved }) {
     maximumBallotsPerAccount: rules?.maximumBallotsPerAccount ?? 1,
     codeRequiresCompletedAccount: rules?.codeRequiresCompletedAccount ?? true,
     defaultCategoryRule: rules?.defaultCategoryRule ?? { method: 'SINGLE', minimumSelections: null, maximumSelections: null },
-    categoryRules: Object.fromEntries((event.categories ?? []).map((category) => [category.id,
-      rules?.categoryRules?.find((rule) => rule.categoryId === category.id)
-        ?? { categoryId: category.id, method: rules?.defaultCategoryRule?.method ?? 'SINGLE',
-          minimumSelections: rules?.defaultCategoryRule?.minimumSelections ?? null,
-          maximumSelections: rules?.defaultCategoryRule?.maximumSelections ?? null }])),
   }))
   const [status, setStatus] = useState({ saving: false, error: null })
   async function submit(eventObject) {
@@ -31,7 +30,7 @@ export default function EventRulesEditor({ event, saver, onSaved }) {
           ? Number(form.maximumBallotsPerAccount) : null,
         codeRequiresCompletedAccount: form.accessPolicy === 'CODE' ? form.codeRequiresCompletedAccount : null,
         defaultCategoryRule: { categoryId: null, ...form.defaultCategoryRule },
-        categoryRules: Object.values(form.categoryRules),
+        categoryRules: [],
         idempotencyKey: crypto.randomUUID() })
       onSaved(result.event); setStatus({ saving: false, error: null })
     } catch (error) { setStatus({ saving: false, error }) }
@@ -52,10 +51,19 @@ export default function EventRulesEditor({ event, saver, onSaved }) {
           onChange={(e) => setForm({ ...form, unrestrictedRepeatPolicy: e.target.value })}>
           <option value="UNLIMITED">Unlimited ballots</option><option value="BROWSER_LIMITED">One per browser</option>
         </select></FormField>}
-      {form.accessPolicy === 'CODE' && <FormField label="Require completed account" htmlFor="voting-code-account">
-        <input id="voting-code-account" type="checkbox" checked={form.codeRequiresCompletedAccount}
-          onChange={(e) => setForm({ ...form, codeRequiresCompletedAccount: e.target.checked })} />
-      </FormField>}
+      {form.accessPolicy === 'CODE' && <div className="switch-field">
+        <div><label htmlFor="voting-code-account">Require completed account</label>
+          <p id="voting-code-account-help" className="form-help">Voters need a completed account plus a voting code.</p></div>
+        <label className="switch-control">
+          <input id="voting-code-account" type="checkbox" role="switch"
+            aria-describedby="voting-code-account-help" checked={form.codeRequiresCompletedAccount}
+            onChange={(e) => setForm({ ...form, codeRequiresCompletedAccount: e.target.checked })} />
+          <span className="switch-track" aria-hidden="true"><span /></span>
+          <span className="switch-state" aria-hidden="true">
+            {form.codeRequiresCompletedAccount ? 'On' : 'Off'}
+          </span>
+        </label>
+      </div>}
       {(form.accessPolicy === 'ACCOUNT' || (form.accessPolicy === 'CODE' && form.codeRequiresCompletedAccount)) &&
         <FormField label="Ballots allowed per account" htmlFor="voting-account-limit">
           <input id="voting-account-limit" type="number" min="1" max="100" value={form.maximumBallotsPerAccount}
@@ -63,12 +71,6 @@ export default function EventRulesEditor({ event, saver, onSaved }) {
         </FormField>}
       <CategoryVotingRuleFields prefix="default-rule" value={form.defaultCategoryRule}
         onChange={(defaultCategoryRule) => setForm({ ...form, defaultCategoryRule })} />
-      {(event.categories ?? []).map((category) => <fieldset className="form-group" key={category.id}>
-        <legend>{category.title}</legend>
-        <CategoryVotingRuleFields prefix={`category-${category.id}`} value={form.categoryRules[category.id]}
-          onChange={(rule) => setForm({ ...form, categoryRules: { ...form.categoryRules,
-            [category.id]: { ...rule, categoryId: category.id } } })} />
-      </fieldset>)}
       {status.error && <p role="alert">{status.error.message}</p>}
       <button className="primary-action" disabled={status.saving}>{status.saving ? 'Saving…' : 'Save voting rules'}</button>
     </FormSurface>

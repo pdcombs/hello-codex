@@ -75,8 +75,7 @@ export function toEventView(event, viewerAccountId = null) {
     codeRequiresCompletedAccount: rules.codeRequiresCompletedAccount,
     defaultCategoryRule: { categoryId: null, method: rules.defaultCategoryMethod.toUpperCase(),
       minimumSelections: rules.defaultMultipleMin, maximumSelections: rules.defaultMultipleMax },
-    categoryRules: rules.categoryOverrides.map((rule) => ({ categoryId: String(rule.categoryId),
-      method: rule.method.toUpperCase(), minimumSelections: rule.multipleMin, maximumSelections: rule.multipleMax })),
+    categoryRules: [],
     updatedAt: rules.updatedAt,
   } : null
   return Object.freeze({
