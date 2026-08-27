@@ -1,5 +1,6 @@
-export function verificationEmail({ email, token, appOrigin, from }) {
-  const link = `${appOrigin}/verify-email?token=${encodeURIComponent(token)}`
+export function verificationEmail({ email, token, returnTo = null, appOrigin, from }) {
+  const suffix = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''
+  const link = `${appOrigin}/verify-email?token=${encodeURIComponent(token)}${suffix}`
   return Object.freeze({
     from,
     to: email,
@@ -23,8 +24,8 @@ export function passwordResetEmail({ email, token, appOrigin, from }) {
 export function createEmailSender({ transport, appOrigin, from }) {
   if (!transport?.send) throw new TypeError('Email transport is required')
   return Object.freeze({
-    async send({ email, token }) {
-      return transport.send(verificationEmail({ email, token, appOrigin, from }))
+    async send({ email, token, returnTo = null }) {
+      return transport.send(verificationEmail({ email, token, returnTo, appOrigin, from }))
     },
     async sendPasswordReset({ email, token }) {
       return transport.send(passwordResetEmail({ email, token, appOrigin, from }))

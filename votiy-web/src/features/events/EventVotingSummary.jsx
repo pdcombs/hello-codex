@@ -7,6 +7,7 @@ export default function EventVotingSummary({ event }) {
   const access = votingAccessText(rules.accessPolicy, event.isOwner)
   const method = votingMethodText(rules.defaultCategoryRule, event.isOwner)
   return <aside className="event-voting-summary" aria-label="Voting information">
+    {event.votingState?.status !== 'OPEN' && <p className="voting-closed-message">Voting is closed at this time.</p>}
     {window && <p className="event-voting-window">
       Voting opens <time dateTime={window.opensAt}>{window.opensText}</time> and closes{' '}
       <time dateTime={window.closesAt}>{window.closesText}</time>.

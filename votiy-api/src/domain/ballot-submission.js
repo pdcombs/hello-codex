@@ -1,10 +1,11 @@
 import { ObjectId } from 'mongodb'
 import { effectiveCategoryRule } from './event-voting-rules.js'
 
-export function votingWindowStatus(rules, now = new Date()) {
+export function votingWindowStatus(rules, _now = new Date(), votingState = null) {
   if (!rules || rules.status !== 'configured') return 'NOT_CONFIGURED'
-  if (now < rules.opensAt) return 'UPCOMING'
-  if (now >= rules.closesAt) return 'CLOSED'
+  if (votingState) return votingState.status === 'open' ? 'OPEN' : 'CLOSED'
+  if (_now < rules.opensAt) return 'UPCOMING'
+  if (_now >= rules.closesAt) return 'CLOSED'
   return 'OPEN'
 }
 

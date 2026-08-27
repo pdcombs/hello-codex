@@ -4,6 +4,7 @@ import { toCategoryView } from './event-category.js'
 import { isActiveCategory } from './event-category.js'
 import { createDraftVotingRules } from './event-voting-rules.js'
 import { createEventSearchProjection } from './event-search.js'
+import { createClosedVotingState, toVotingStateView } from './event-voting-state.js'
 
 const REGISTRATION_POLICIES = new Set(['admin_managed', 'open'])
 
@@ -60,13 +61,18 @@ export function withEventVersion4(event) {
   })
 }
 
+export function withEventVersion5(event, options = {}) {
+  const version4 = event.schemaVersion === 4 ? event : withEventVersion4(event)
+  return Object.freeze({ ...version4,
+    votingState: event.votingState ?? createClosedVotingState({ ownerAccountId: event.ownerAccountId,
+      now: options.now ?? event.updatedAt ?? event.createdAt }), schemaVersion: 5 })
+}
+
 export function toEventView(event, viewerAccountId = null) {
   const ownerId = String(event.ownerAccountId)
   const rules = event.votingRules ?? null
-  const currentTime = Date.now()
   const votingStatus = !rules || rules.status === 'draft' ? 'NOT_CONFIGURED'
-    : currentTime < rules.opensAt.getTime() ? 'UPCOMING'
-      : currentTime >= rules.closesAt.getTime() ? 'CLOSED' : 'OPEN'
+    : event.votingState?.status === 'open' ? 'OPEN' : 'CLOSED'
   const ruleView = rules ? {
     status: rules.status.toUpperCase(), version: rules.version, opensAt: rules.opensAt, closesAt: rules.closesAt,
     accessPolicy: rules.accessPolicy.toUpperCase(),
@@ -78,6 +84,10 @@ export function toEventView(event, viewerAccountId = null) {
     categoryRules: [],
     updatedAt: rules.updatedAt,
   } : null
+  const votingStateView = event.votingState ? toVotingStateView(event.votingState) : {
+    status: 'CLOSED', version: 1, openedAt: null, closedAt: event.updatedAt ?? event.createdAt,
+    updatedAt: event.updatedAt ?? event.createdAt,
+  }
   return Object.freeze({
     __typename: 'Event',
     id: String(event._id),
@@ -94,6 +104,7 @@ export function toEventView(event, viewerAccountId = null) {
     lifecycleStatus: (event.lifecycleStatus ?? 'active').toUpperCase(),
     detailAccess: event.lifecycleStatus === 'archived' ? 'ARCHIVED_READ_ONLY' : 'FULL',
     archivedAt: event.archivedAt ?? null,
+    votingState: votingStateView,
     voting: ruleView ? { votingStatus, canVote: votingStatus === 'OPEN', reasonCode: votingStatus === 'OPEN' ? null : votingStatus,
       remainingBallots: null, hasEventAccess: rules.accessPolicy === 'unrestricted', rules: ruleView } : null,
   })

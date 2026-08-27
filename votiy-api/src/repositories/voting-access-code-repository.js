@@ -17,12 +17,16 @@ export function createVotingAccessCodeRepository(database) {
     findUnused(eventId, codeDigest, options = {}) {
       return collection.findOne({ eventId: id(eventId), codeDigest, status: 'unused' }, options)
     },
-    consume({ codeId, accountId, ballotId, now }, options = {}) {
+    consume({ codeId, accountId = null, ballotId = null, now }, options = {}) {
       return collection.findOneAndUpdate(
         { _id: id(codeId), status: 'unused' },
-        { $set: { status: 'used', claimedByAccountId: id(accountId), usedByBallotId: id(ballotId), usedAt: now, updatedAt: now } },
+        { $set: { status: 'used', claimedByAccountId: accountId ? id(accountId) : null,
+          usedByBallotId: ballotId ? id(ballotId) : null, usedAt: now, updatedAt: now } },
         { returnDocument: 'after', ...options },
       )
+    },
+    countUnusedByEvent(eventId, options = {}) {
+      return collection.countDocuments({ eventId: id(eventId), status: 'unused' }, options)
     },
     listByEvent(eventId, { after = null, limit = 50, ...options } = {}) {
       const filter = { eventId: id(eventId), ...(after ? { _id: { $gt: id(after) } } : {}) }

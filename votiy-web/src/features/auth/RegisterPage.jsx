@@ -2,8 +2,11 @@ import { useRef, useState } from 'react'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import { registerAccount } from './account.graphql.js'
 import { features } from '../../config/features.js'
+import { Link, useSearchParams } from 'react-router-dom'
+import { safeReturnPath } from './return-path.js'
 
 export default function RegisterPage({ register = registerAccount }) {
+  const [parameters] = useSearchParams(); const returnTo = safeReturnPath(parameters.get('returnTo'), '/')
   const [state, setState] = useState({
     status: 'idle',
     error: null,
@@ -40,6 +43,7 @@ export default function RegisterPage({ register = registerAccount }) {
       email: form.get('email'),
       password: form.get('password'),
       idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-0000-4000-8000-000000000000`,
+      ...(returnTo === '/' ? {} : { returnTo }),
     })
   }
 
@@ -60,6 +64,10 @@ export default function RegisterPage({ register = registerAccount }) {
             <p>Use this token on the verify-email screen to complete the normal verification flow.</p>
           </FormSurface>
         )}
+        {state.verificationToken && <Link className="primary-action"
+          to={`/verify-email?token=${encodeURIComponent(state.verificationToken)}&returnTo=${encodeURIComponent(returnTo)}`}>
+          Verify account
+        </Link>}
       </main>
     )
 

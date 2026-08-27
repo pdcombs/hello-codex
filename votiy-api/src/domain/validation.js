@@ -23,6 +23,8 @@ export const registerInputSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   idempotencyKey: idempotencyKeySchema,
+  returnTo: z.string().max(500).nullish().transform((value) => value || null)
+    .refine((value) => value === null || (value.startsWith('/') && !value.startsWith('//')), 'Return path is invalid'),
 }).strict()
 
 export const signInInputSchema = z.object({
@@ -56,6 +58,15 @@ export const participantIdentifierSchema = z.object({
 export const setEventRegistrationPolicyInputSchema = z.object({
   eventId: z.string().min(1),
   registrationPolicy: z.enum(['ADMIN_MANAGED', 'OPEN']),
+}).strict()
+
+export const setEventVotingStatusInputSchema = z.object({
+  eventId: z.string().min(1), status: z.enum(['OPEN', 'CLOSED']), expectedVersion: z.number().int().min(1),
+}).strict()
+
+export const requestVotingAccessInputSchema = z.object({
+  eventId: z.string().min(1), accessCode: z.string().trim().min(1).max(128).nullish()
+    .transform((value) => value || null),
 }).strict()
 
 export const addEventParticipantInputSchema = z.object({

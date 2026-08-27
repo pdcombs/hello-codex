@@ -82,7 +82,7 @@ export function createEventService({
       }
       const timestamp = now()
       const event = await eventRepository.create({
-        schemaVersion: 4,
+        schemaVersion: 5,
         ownerAccountId,
         publicId: generatePublicId(),
         title: input.title,

@@ -18,6 +18,7 @@ import AppErrorBoundary from './AppErrorBoundary.jsx'
 import EventSearchButton from '../features/search/EventSearchButton.jsx'
 import EventSearchDialog from '../features/search/EventSearchDialog.jsx'
 import useEventSearch from '../features/search/useEventSearch.js'
+import VotingComingSoonPage from '../features/voting/VotingComingSoonPage.jsx'
 
 function SiteHeader({ viewer }) {
   const search = useEventSearch()
@@ -88,6 +89,7 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
       <Routes>
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
         <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
+        <Route path="/events/:publicId/vote" element={<VotingComingSoonPage />} />
         <Route path="/events/:publicId/participants" element={
           <Protected viewer={viewer} loading={authLoading}><OwnerEventParticipantsPage /></Protected>
         } />

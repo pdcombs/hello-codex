@@ -32,7 +32,8 @@ export function createRegistrationService({
       if (!parsed.success) throw validationError(parsed.error)
       const input = parsed.data
       const emailNormalized = normalizeEmail(input.email)
-      const requestDigest = digestRequest({ displayName: input.displayName, emailNormalized, password: input.password })
+      const requestDigest = digestRequest({ displayName: input.displayName, emailNormalized, password: input.password,
+        returnTo: input.returnTo })
       const identity = { scope: emailNormalized, operation: 'register', key: input.idempotencyKey }
       const prior = await idempotencyRepository.find(identity)
       if (prior) {
@@ -91,7 +92,7 @@ export function createRegistrationService({
         }, 'Verification delivery bypassed for allowlisted account')
       } else {
         await verificationRepository.create(verificationRecord)
-        await emailSender.send({ email: emailNormalized, token })
+        await emailSender.send({ email: emailNormalized, token, ...(input.returnTo ? { returnTo: input.returnTo } : {}) })
         logger?.info({ operation: 'email.verification.send', outcome: 'success' }, 'Verification email sent')
       }
       logger?.info({ operation: 'account.register', outcome: 'success' }, 'Account registration completed')

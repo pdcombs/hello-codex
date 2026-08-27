@@ -61,6 +61,23 @@ export const EVENT_VOTING_CODES = `query EventVotingCodes($eventId: ID!, $first:
   }
 }`
 
+export const SET_EVENT_VOTING_STATUS = `mutation SetEventVotingStatus($input: SetEventVotingStatusInput!) {
+  setEventVotingStatus(input: $input) { __typename
+    ... on VotingStatusChangeSuccess { hasUnusedCodes event { id publicId updatedAt
+      votingState { status version openedAt closedAt updatedAt }
+      voting { votingStatus rules { status version accessPolicy } } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
+export const REQUEST_VOTING_ACCESS = `mutation RequestVotingAccess($input: RequestVotingAccessInput!) {
+  requestVotingAccess(input: $input) { __typename
+    ... on VotingAccessDecisionSuccess { access { decision allowed rulesVersion votingStateVersion
+      requirements { signInRequired completedAccountRequired codeRequired mayRetryCode settingsPath } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
 import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
 
 export async function updateEventVotingRules(input) {
@@ -90,4 +107,16 @@ export async function loadVotingCodes(eventId, first = 50, after = null) {
   const data = await graphqlRequest({ query: EVENT_VOTING_CODES, variables: { eventId, first, after },
     operationName: 'EventVotingCodes' })
   return unwrapGraphqlResult(data.eventVotingCodes).codes
+}
+
+export async function setEventVotingStatus(input) {
+  const data = await graphqlRequest({ query: SET_EVENT_VOTING_STATUS, variables: { input },
+    operationName: 'SetEventVotingStatus' })
+  return unwrapGraphqlResult(data.setEventVotingStatus)
+}
+
+export async function requestVotingAccess(input) {
+  const data = await graphqlRequest({ query: REQUEST_VOTING_ACCESS, variables: { input },
+    operationName: 'RequestVotingAccess' })
+  return unwrapGraphqlResult(data.requestVotingAccess).access
 }

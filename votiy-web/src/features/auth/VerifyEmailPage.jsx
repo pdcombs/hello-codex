@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { safeReturnPath } from './return-path.js'
 import { resendAccountVerification, verifyAccountEmail } from './account.graphql.js'
 
 const noop = () => {}
@@ -12,6 +13,7 @@ export default function VerifyEmailPage({
 }) {
   const [parameters] = useSearchParams()
   const token = suppliedToken ?? parameters.get('token') ?? ''
+  const returnTo = safeReturnPath(parameters.get('returnTo'), '/')
   const [state, setState] = useState({ status: 'loading', error: null })
   const [resendStatus, setResendStatus] = useState('idle')
   const automaticallyVerifiedToken = useRef(null)
@@ -54,8 +56,8 @@ export default function VerifyEmailPage({
       <main className="page-shell">
         <h1>Email verified</h1>
         <p>Your account is ready.</p>
-        <Link className="primary-action" to="/">
-          View your events
+        <Link className="primary-action" to={returnTo}>
+          {returnTo === '/' ? 'View your events' : 'Continue'}
         </Link>
       </main>
     )

@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { createEventDocument, withEventVersion2, withEventVersion3, withEventVersion4 } from '../domain/event.js'
+import { createEventDocument, withEventVersion2, withEventVersion3, withEventVersion4, withEventVersion5 } from '../domain/event.js'
 import { createEventSearchProjection, eventMatchesTerms, eventSearchScore } from '../domain/event-search.js'
 import { normalizeCategoryTitle } from '../domain/event-category.js'
 
@@ -11,7 +11,8 @@ export function createEventRepository(database) {
   return Object.freeze({
     async create(input, options = {}) {
       const base = createEventDocument(input)
-      const event = input.schemaVersion === 4 ? withEventVersion4(withEventVersion3(base, { now: input.now }))
+      const event = input.schemaVersion === 5 ? withEventVersion5(withEventVersion4(withEventVersion3(base, { now: input.now })), { now: input.now })
+        : input.schemaVersion === 4 ? withEventVersion4(withEventVersion3(base, { now: input.now }))
         : input.schemaVersion === 3 ? withEventVersion3(base, { now: input.now })
         : input.schemaVersion === 2 ? withEventVersion2(base, { now: input.now }) : base
       await collection.insertOne(event, options)
@@ -157,6 +158,14 @@ export function createEventRepository(database) {
           updatedAt: expectedUpdatedAt,
           'votingRules.version': expectedRulesVersion },
         { $set: { votingRules, updatedAt: votingRules.updatedAt } },
+        { returnDocument: 'after', ...options },
+      )
+    },
+    transitionVotingState(eventId, ownerAccountId, expectedVersion, currentStatus, votingState, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), lifecycleStatus: 'active',
+          'votingState.version': expectedVersion, 'votingState.status': currentStatus },
+        { $set: { votingState, updatedAt: votingState.updatedAt } },
         { returnDocument: 'after', ...options },
       )
     },

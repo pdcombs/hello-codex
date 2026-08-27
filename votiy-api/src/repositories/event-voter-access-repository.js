@@ -7,11 +7,18 @@ export function createEventVoterAccessRepository(database) {
     find(eventId, accountId, options = {}) {
       return collection.findOne({ eventId: id(eventId), accountId: id(accountId) }, options)
     },
-    async grant({ eventId, accountId, source, codeId = null, now }, options = {}) {
+    findByBrowser(eventId, browserMarkerDigest, options = {}) {
+      return collection.findOne({ eventId: id(eventId), browserMarkerDigest, status: 'active' }, options)
+    },
+    async grant({ eventId, accountId = null, browserMarkerDigest = null, source, codeId = null,
+      rulesVersion = 1, now }, options = {}) {
+      const identity = accountId ? { accountId: id(accountId) } : { browserMarkerDigest }
       return collection.findOneAndUpdate(
-        { eventId: id(eventId), accountId: id(accountId) },
+        { eventId: id(eventId), ...identity },
         { $setOnInsert: { _id: new ObjectId(), createdAt: now, schemaVersion: 1 },
-          $set: { source, codeId: codeId ? id(codeId) : null, status: 'active', grantedAt: now, revokedAt: null, updatedAt: now } },
+          $set: { accountId: accountId ? id(accountId) : null, browserMarkerDigest, source,
+            codeId: codeId ? id(codeId) : null, status: 'active', rulesVersion,
+            grantedAt: now, revokedAt: null, updatedAt: now } },
         { upsert: true, returnDocument: 'after', ...options },
       )
     },

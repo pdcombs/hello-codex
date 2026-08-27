@@ -8,6 +8,9 @@ export function createBallotSubmissionRepository(database) {
     countByAccount(eventId, accountId, options = {}) {
       return collection.countDocuments({ eventId: id(eventId), accountId: id(accountId) }, options)
     },
+    countByBrowserMarker(eventId, browserMarkerDigest, options = {}) {
+      return collection.countDocuments({ eventId: id(eventId), browserMarkerDigest }, options)
+    },
     findById(ballotId, options = {}) { return collection.findOne({ _id: id(ballotId) }, options) },
   })
 }

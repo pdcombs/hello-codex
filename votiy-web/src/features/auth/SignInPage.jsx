@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import { useAuth } from './AuthProvider.jsx'
 import { signInAccount } from './session.graphql.js'
+import { safeReturnPath } from './return-path.js'
 
 export default function SignInPage({ signIn = signInAccount }) {
   const [state, setState] = useState({ loading: false, error: null })
@@ -16,7 +17,8 @@ export default function SignInPage({ signIn = signInAccount }) {
     try {
       const result = await signIn({ email: form.get('email'), password: form.get('password') })
       setViewer(result.session.account)
-      const target = location.state?.from?.pathname?.startsWith('/') ? location.state.from.pathname : '/'
+      const target = safeReturnPath(new URLSearchParams(location.search).get('returnTo'),
+        location.state?.from?.pathname?.startsWith('/') ? location.state.from.pathname : '/')
       navigate(target, { replace: true })
     } catch (error) {
       setState({ loading: false, error })
@@ -35,6 +37,7 @@ export default function SignInPage({ signIn = signInAccount }) {
         <button disabled={state.loading}>{state.loading ? 'Signing in…' : 'Sign in'}</button>
       </FormSurface>
       <Link className="forgot-password-link" to="/forgot-password">Forgot password?</Link>
+      <Link className="forgot-password-link" to={`/register${location.search}`}>Create account</Link>
       {location.state?.passwordReset && <p role="status">Password reset. Sign in with your new password.</p>}
       {state.loading && (
         <p className="form-status" role="status">

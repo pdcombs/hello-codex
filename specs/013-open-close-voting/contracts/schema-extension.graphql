@@ -1,0 +1,47 @@
+enum ManualVotingStatus { CLOSED OPEN }
+enum VotingAccessDecisionCode {
+  ALLOWED
+  CLOSED
+  SIGN_IN_REQUIRED
+  ACCOUNT_COMPLETION_REQUIRED
+  CODE_REQUIRED
+  REPEAT_LIMIT_REACHED
+  EVENT_UNAVAILABLE
+}
+
+type EventVotingState {
+  status: ManualVotingStatus!
+  version: Int!
+  openedAt: DateTime
+  closedAt: DateTime
+  updatedAt: DateTime!
+}
+
+input SetEventVotingStatusInput { eventId: ID! status: ManualVotingStatus! expectedVersion: Int! }
+type VotingStatusChangeSuccess { event: Event! hasUnusedCodes: Boolean }
+union VotingStatusChangeResult = VotingStatusChangeSuccess | OperationError
+
+input RequestVotingAccessInput { eventId: ID! accessCode: String }
+type VotingAccessRequirements {
+  signInRequired: Boolean!
+  completedAccountRequired: Boolean!
+  codeRequired: Boolean!
+  mayRetryCode: Boolean!
+  settingsPath: String
+}
+type VotingAccessDecision {
+  decision: VotingAccessDecisionCode!
+  allowed: Boolean!
+  requirements: VotingAccessRequirements!
+  rulesVersion: Int
+  votingStateVersion: Int
+}
+type VotingAccessDecisionSuccess { access: VotingAccessDecision! }
+union VotingAccessDecisionResult = VotingAccessDecisionSuccess | OperationError
+
+extend type Event { votingState: EventVotingState! }
+extend input RegisterInput { returnTo: String }
+extend type Mutation {
+  setEventVotingStatus(input: SetEventVotingStatusInput!): VotingStatusChangeResult!
+  requestVotingAccess(input: RequestVotingAccessInput!): VotingAccessDecisionResult!
+}

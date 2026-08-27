@@ -341,6 +341,48 @@ main:focus {
   margin-bottom: 22px;
 }
 
+.voting-open-banner {
+  width: 100%;
+  padding: 18px 22px;
+  border: 1px solid rgba(98, 198, 242, 0.58);
+  border-radius: 18px;
+  color: #eaf9ff;
+  background: linear-gradient(135deg, rgba(20, 127, 189, 0.92), rgba(64, 96, 180, 0.88));
+  box-shadow: 0 16px 42px rgba(20, 127, 189, 0.22);
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  font-weight: 750;
+  text-align: center;
+}
+
+.voting-access-action { display: grid; justify-items: end; gap: 6px; }
+.voting-access-action p { max-width: 300px; margin: 0; color: #ffb4b4; font-size: 0.82rem; }
+.voting-closed-message { font-weight: 700; color: var(--color-text); }
+
+.voting-status-control {
+  margin-top: 18px;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  text-align: right;
+}
+
+.voting-status-control p { margin: 0; color: var(--color-text-muted); }
+.voting-status-control a { color: var(--color-text); }
+
+.voting-code-dialog {
+  width: min(100%, 480px);
+  padding: 26px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.voting-code-dialog h2 { margin-top: 0; }
+.voting-code-dialog > p { color: var(--color-text-muted); }
+.voting-code-dialog .app-form { width: 100%; margin-top: 12px; padding: 0; border: 0; background: none; box-shadow: none; }
+
 .event-workspace-topline {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr) auto;

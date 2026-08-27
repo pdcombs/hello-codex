@@ -4,6 +4,8 @@ import { validateCategoryBallots, votingWindowStatus } from '../domain/ballot-su
 import { toEventView } from '../domain/event.js'
 import { assertAccountEligibility, browserMarkerRequired, codeAccountRequired, provisionalContact } from '../domain/voter-eligibility.js'
 import { decryptVotingCode, generateUniqueVotingCodes } from '../domain/voting-access-code.js'
+import { accountIsVotingComplete } from '../domain/voter-eligibility.js'
+import { requestVotingAccessInputSchema } from '../domain/validation.js'
 
 export function createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
   idempotencyRepository, auditRepository, accountRepository = null, voterAccessRepository = null,
@@ -13,6 +15,11 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
     const view = toEventView(event)
     return view.voting
   }
+  const requirements = (overrides = {}) => ({ signInRequired: false, completedAccountRequired: false,
+    codeRequired: false, mayRetryCode: false, settingsPath: null, ...overrides })
+  const decision = (event, code, extra = {}) => ({ decision: code, allowed: code === 'ALLOWED',
+    requirements: requirements(extra), rulesVersion: event?.votingRules?.version ?? null,
+    votingStateVersion: event?.votingState?.version ?? null })
   return Object.freeze({
     async generateCodes(input, viewer, { correlationId = 'code-generate' } = {}) {
       if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
@@ -94,6 +101,74 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         remainingBallots: event.votingRules.maxBallotsPerAccount == null ? null
         : Math.max(0, event.votingRules.maxBallotsPerAccount - ballotCount), hasEventAccess: Boolean(access) }
     },
+    async requestAccess(rawInput, viewer = null, { browserMarker = null, correlationId = 'voting-access' } = {}) {
+      const hadBrowserMarker = Boolean(browserMarker)
+      const parsed = requestVotingAccessInputSchema.safeParse(rawInput)
+      if (!parsed.success) throw new ApplicationError(ErrorCode.VALIDATION_FAILED)
+      const input = parsed.data; const event = await eventRepository.findById(input.eventId)
+      if (!event || event.lifecycleStatus === 'archived') return { access: decision(event, 'EVENT_UNAVAILABLE'), browserMarker: null }
+      if (event.votingRules?.status !== 'configured' || event.votingState?.status !== 'open') {
+        return { access: decision(event, 'CLOSED'), browserMarker: null }
+      }
+      const rules = event.votingRules; const account = viewer?.account ?? null
+      if (rules.accessPolicy === 'account') {
+        if (!account) return { access: decision(event, 'SIGN_IN_REQUIRED', { signInRequired: true }), browserMarker: null }
+        if (!accountIsVotingComplete(account)) return { access: decision(event, 'ACCOUNT_COMPLETION_REQUIRED',
+          { completedAccountRequired: true }), browserMarker: null }
+        const count = await ballotRepository.countByAccount(event._id, account._id)
+        return { access: decision(event, count >= rules.maxBallotsPerAccount ? 'REPEAT_LIMIT_REACHED' : 'ALLOWED'),
+          browserMarker: null }
+      }
+      if (rules.accessPolicy === 'unrestricted') {
+        if (!browserMarkerRequired(rules)) return { access: decision(event, 'ALLOWED'), browserMarker: null }
+        const marker = browserMarker ?? generateBrowserMarker?.(); const markerDigest = digestBrowserMarker?.(marker)
+        if (!marker || !markerDigest) throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
+        const count = await ballotRepository.countByBrowserMarker(event._id, markerDigest)
+        return { access: decision(event, count > 0 ? 'REPEAT_LIMIT_REACHED' : 'ALLOWED'),
+          browserMarker: browserMarker ? null : marker }
+      }
+      if (codeAccountRequired(rules)) {
+        if (!account) return { access: decision(event, 'SIGN_IN_REQUIRED', { signInRequired: true }), browserMarker: null }
+        if (!accountIsVotingComplete(account)) return { access: decision(event, 'ACCOUNT_COMPLETION_REQUIRED',
+          { completedAccountRequired: true }), browserMarker: null }
+        const count = await ballotRepository.countByAccount(event._id, account._id)
+        if (count >= rules.maxBallotsPerAccount) return { access: decision(event, 'REPEAT_LIMIT_REACHED'), browserMarker: null }
+        const existing = await voterAccessRepository.find(event._id, account._id)
+        if (existing?.status === 'active') return { access: decision(event, 'ALLOWED'), browserMarker: null }
+      } else {
+        const marker = browserMarker ?? generateBrowserMarker?.(); const markerDigest = digestBrowserMarker?.(marker)
+        if (!marker || !markerDigest) throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
+        const existing = await voterAccessRepository.findByBrowser(event._id, markerDigest)
+        if (existing) return { access: decision(event, 'ALLOWED'), browserMarker: browserMarker ? null : marker }
+        browserMarker = marker
+      }
+      if (!input.accessCode) return { access: decision(event, 'CODE_REQUIRED',
+        { codeRequired: true, mayRetryCode: true }), browserMarker: hadBrowserMarker ? null : browserMarker }
+      const timestamp = now(); const result = await withTransaction(async (session) => {
+        const options = session ? { session } : {}
+        const current = await eventRepository.findById(event._id, options)
+        if (!current || current.lifecycleStatus === 'archived' || current.votingState?.status !== 'open') {
+          return decision(current, 'CLOSED')
+        }
+        const code = await accessCodeRepository.findUnused(current._id, digestCode(current._id, input.accessCode), options)
+        if (!code) return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
+        const markerDigest = account ? null : digestBrowserMarker(browserMarker)
+        const consumed = await accessCodeRepository.consume({ codeId: code._id, accountId: account?._id ?? null,
+          now: timestamp }, options)
+        if (!consumed) return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
+        await voterAccessRepository.grant({ eventId: current._id, accountId: account?._id ?? null,
+          browserMarkerDigest: markerDigest, source: 'code', codeId: code._id,
+          rulesVersion: current.votingRules.version, now: timestamp }, options)
+        await auditRepository?.append({ name: 'voting.code_claimed', actorAccountId: account?._id ?? null,
+          subjectType: 'votingAccessCode', subjectId: code._id, outcome: 'success', correlationId,
+          metadata: { rulesVersion: current.votingRules.version,
+            votingStateVersion: current.votingState.version, accessPolicy: 'code' } }, options)
+        return decision(current, 'ALLOWED')
+      })
+      logger?.info({ operation: 'voting.access_request', outcome: result.allowed ? 'success' : 'denied',
+        reasonCode: result.decision, correlationId }, 'Voting access evaluated')
+      return { access: result, browserMarker: account || hadBrowserMarker ? null : browserMarker }
+    },
     async submit(input, viewer, { correlationId = 'ballot-submit' } = {}) {
       const timestamp = now()
       return withTransaction(async (session) => {
@@ -101,7 +176,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         const event = await eventRepository.findById(input.eventId, options)
         if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
         if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
-        const status = votingWindowStatus(event.votingRules, timestamp)
+        const status = votingWindowStatus(event.votingRules, timestamp, event.votingState)
         if (status === 'NOT_CONFIGURED') throw new ApplicationError(ErrorCode.VOTING_NOT_CONFIGURED)
         if (status === 'UPCOMING') throw new ApplicationError(ErrorCode.VOTING_NOT_OPEN)
         if (status === 'CLOSED') throw new ApplicationError(ErrorCode.VOTING_CLOSED)
@@ -169,7 +244,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         }
         if (event.votingRules.accessPolicy === 'code' && account && voterAccessRepository) {
           await voterAccessRepository.grant({ eventId: event._id, accountId: account._id, source: 'code',
-            codeId: accessCode?._id ?? null, now: timestamp }, options)
+            codeId: accessCode?._id ?? null, rulesVersion: event.votingRules.version, now: timestamp }, options)
           await auditRepository?.append({ name: 'event.voter_access_granted', actorAccountId: account._id,
             subjectType: 'eventVoterAccess', subjectId: `${event._id}:${account._id}`, outcome: 'success',
             correlationId, metadata: { accessPolicy: 'code' } }, options)

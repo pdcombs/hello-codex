@@ -20,8 +20,9 @@ describe('event voting persistence contract', () => {
 
   it('supports legacy event versions during migration and strict version four after it', () => {
     const schemas = collectionDefinitions.events.validator.$jsonSchema.oneOf
-    expect(schemas.map((schema) => schema.properties.schemaVersion.enum[0])).toEqual([1, 2, 3, 4])
+    expect(schemas.map((schema) => schema.properties.schemaVersion.enum[0])).toEqual([1, 2, 3, 4, 5])
     expect(schemas[2].required).toContain('votingRules')
     expect(schemas[3].required).toContain('searchGrams')
+    expect(schemas[4].required).toContain('votingState')
   })
 })

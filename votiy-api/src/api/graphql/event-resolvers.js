@@ -13,6 +13,8 @@ const successBallot = (result) => ({ __typename: 'BallotSubmissionSuccess', ...r
 const successCodeGeneration = (codes) => ({ __typename: 'VotingCodeGenerationSuccess', codes })
 const successCodeList = (codes) => ({ __typename: 'VotingCodeListSuccess', codes })
 const successSearch = (events) => ({ __typename: 'PublicEventSearchSuccess', events })
+const successVotingStatus = (result) => ({ __typename: 'VotingStatusChangeSuccess', ...result })
+const successVotingAccess = (access) => ({ __typename: 'VotingAccessDecisionSuccess', access })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -22,7 +24,8 @@ const legacyRegistration = (participant, source) => ({
 const failure = (error, correlationId) => ({ __typename: 'OperationError', ...toClientError(error, correlationId) })
 
 export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null,
-  eventCategoryService, eventVotingRulesService = null, eventVotingService = null, eventSearchService = null,
+  eventCategoryService, eventVotingRulesService = null, eventVotingStateService = null,
+  eventVotingService = null, eventSearchService = null,
   eventVisibilityService = null, auditRepository }) {
   return Object.freeze({
     async searchPublicEvents(args, context) {
@@ -76,6 +79,19 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     async eventVotingCapability({ eventId }, context) {
       try { return successVotingCapability(await eventVotingService.capability({ eventId }, context.viewer)) }
       catch (error) { return failure(error, context.correlationId) }
+    },
+    async setEventVotingStatus({ input }, context) {
+      try { return successVotingStatus(await eventVotingStateService.setStatus(input, context.viewer,
+        { correlationId: context.correlationId })) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async requestVotingAccess({ input }, context) {
+      try {
+        const result = await eventVotingService.requestAccess(input, context.viewer,
+          { browserMarker: context.votingBrowserMarker, correlationId: context.correlationId })
+        if (result.browserMarker) context.setVotingBrowserMarker(result.browserMarker)
+        return successVotingAccess(result.access)
+      } catch (error) { return failure(error, context.correlationId) }
     },
     async submitEventBallot({ input }, context) {
       try {

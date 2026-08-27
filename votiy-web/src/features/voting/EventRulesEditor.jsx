@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import CategoryVotingRuleFields from './CategoryVotingRuleFields.jsx'
+import VotingStatusControl from './VotingStatusControl.jsx'
 
 const localValue = (value) => {
   if (!value) return ''
@@ -74,5 +75,6 @@ export default function EventRulesEditor({ event, saver, onSaved }) {
       {status.error && <p role="alert">{status.error.message}</p>}
       <button className="primary-action" disabled={status.saving}>{status.saving ? 'Saving…' : 'Save voting rules'}</button>
     </FormSurface>
+    <VotingStatusControl event={event} onSaved={onSaved} />
   </section>
 }

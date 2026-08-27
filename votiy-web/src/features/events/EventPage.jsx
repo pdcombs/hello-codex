@@ -7,7 +7,6 @@ import { FormSurface } from '../../components/Form.jsx'
 import ParticipantEntryFields from './ParticipantEntryFields.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
 import { readEntries } from './participant-entry-form.js'
-import EventBallot from '../voting/EventBallot.jsx'
 import { loadEventVotingCapability } from '../voting/voting.graphql.js'
 import EventWorkspaceSummary from './EventWorkspaceSummary.jsx'
 import PrivateEventNotice from '../search/PrivateEventNotice.jsx'
@@ -96,9 +95,6 @@ export default function EventPage({ viewer = null, loader = loadEventDetailView,
 
       {state.event.detailAccess !== 'PRIVATE_SUMMARY' && Array.isArray(state.event.categories) &&
         <EventCategoryList categories={state.event.categories} />}
-
-      {state.event.detailAccess !== 'PRIVATE_SUMMARY' && !state.event.isOwner && state.event.voting &&
-        <EventBallot event={state.event} />}
 
       {state.event.registrationPolicy === 'OPEN' && !state.event.isOwner && (
         <SectionCard title="Join this event">

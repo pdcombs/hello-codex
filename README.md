@@ -99,6 +99,12 @@ ballots. Local startup runs migrations automatically. Set `VOTING_CODE_ENCRYPTIO
 characters (32 bytes); changing or losing it makes existing code inventory unreadable. Generated batches
 accept 1–1,000 codes, with at most 100,000 codes per event.
 
+Migration 007 adds manual voting state. Hosts open and close voting from Voting rules; configured dates
+remain informational and never change availability automatically. Opening requires configured rules and
+an active entry. Code events can open without unused codes, but the host is warned and linked to settings.
+Closing blocks new access decisions and ballots; reopening preserves ballots, grants, codes, limits, rules,
+and audit history.
+
 For test-only accounts, you can bypass email delivery while still exercising the verification flow by
 setting `VERIFICATION_BYPASS_EMAILS` or `VERIFICATION_BYPASS_DOMAINS` in `votiy-api/.env.local`. When a
 registration matches that allowlist, the register screen shows the verification token instead of sending

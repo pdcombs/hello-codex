@@ -206,12 +206,20 @@ export const collectionDefinitions = Object.freeze({
   },
   eventVoterAccess: {
     validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
-      required: ['eventId', 'accountId', 'source', 'codeId', 'status', 'grantedAt', 'revokedAt', 'createdAt', 'updatedAt', 'schemaVersion'],
-      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: { bsonType: 'objectId' },
+      required: ['eventId', 'accountId', 'browserMarkerDigest', 'source', 'codeId', 'status', 'rulesVersion',
+        'grantedAt', 'revokedAt', 'createdAt', 'updatedAt', 'schemaVersion'],
+      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: objectIdOrNull,
+        browserMarkerDigest: stringOrNull,
         source: { enum: ['account_policy', 'code'] }, codeId: objectIdOrNull, status: { enum: ['active', 'revoked'] },
+        rulesVersion: { bsonType: 'int', minimum: 1 },
         grantedAt: { bsonType: 'date' }, revokedAt: dateOrNull, createdAt: { bsonType: 'date' },
         updatedAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } } },
-    indexes: [{ key: { eventId: 1, accountId: 1 }, name: 'voter_access_event_account_unique', unique: true }],
+    indexes: [
+      { key: { eventId: 1, accountId: 1 }, name: 'voter_access_event_account_unique', unique: true,
+        partialFilterExpression: { accountId: { $type: 'objectId' } } },
+      { key: { eventId: 1, browserMarkerDigest: 1 }, name: 'voter_access_event_browser_unique', unique: true,
+        partialFilterExpression: { browserMarkerDigest: { $type: 'string' } } },
+    ],
   },
   ballotSubmissions: {
     validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
@@ -358,6 +366,15 @@ eventSchemas.push({
     schemaVersion: { enum: [4] },
   },
 })
+
+const votingStateSchema = { bsonType: 'object', additionalProperties: false,
+  required: ['status', 'version', 'openedAt', 'closedAt', 'updatedAt', 'updatedByAccountId'],
+  properties: { status: { enum: ['closed', 'open'] }, version: { bsonType: 'int', minimum: 1 },
+    openedAt: dateOrNull, closedAt: dateOrNull, updatedAt: { bsonType: 'date' },
+    updatedByAccountId: { bsonType: 'objectId' } } }
+const eventV4 = eventSchemas.at(-1)
+eventSchemas.push({ ...eventV4, required: [...eventV4.required, 'votingState'],
+  properties: { ...eventV4.properties, votingState: votingStateSchema, schemaVersion: { enum: [5] } } })
 
 export async function ensureCollectionsAndIndexes(database) {
   const existing = new Set((await database.listCollections({}, { nameOnly: true }).toArray()).map(({ name }) => name))

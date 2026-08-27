@@ -63,6 +63,13 @@ volume reset.
 - Event search: `event.search.completed` availability, first-page p95, result count, and failure rate.
 - Visibility lifecycle: `event.visibility_changed`, `event.archived`, and
   `event.visibility_change_denied` audit cardinality and denial rate.
+- Manual voting: `voting.state_change` and `voting.access_request` latency, failures, denials, and conflicts.
+- Code access: `voting.code_claimed` success/conflict rate. Raw codes and browser markers must never be logged.
+
+Manual `events.votingState.status` is authoritative; configured dates are display-only. Alert when unexpected
+errors exceed 5%, p95 exceeds two seconds, state transitions fail repeatedly, or code-claim conflicts spike.
+For rollback, deploy prior code only. Preserve schema-version-5 state, access grants, codes, ballots, and audits;
+never restore consumed codes or reset limits/history.
 
 ## Render / Atlas query ideas
 
