@@ -22,7 +22,12 @@ describe('open close voting UI', () => {
   it('shows banner and Vote to host while open', () => {
     render(<MemoryRouter><EventWorkspaceSummary event={{ ...event, votingState: { status: 'OPEN', version: 2 } }} /></MemoryRouter>)
     expect(screen.getByText('Voting is now open')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Close Voting' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Vote' })).toBeVisible()
+  })
+  it('shows Open Voting on host event details while closed', () => {
+    render(<MemoryRouter><EventWorkspaceSummary event={event} /></MemoryRouter>)
+    expect(screen.getByRole('button', { name: 'Open Voting' })).toBeVisible()
   })
   it('states closed in voting summary', () => {
     render(<EventVotingSummary event={event} />)

@@ -20,6 +20,6 @@ export default function EventWorkspaceSummary({ event, onChanged, onAdd }) {
     <h1 id="event-workspace-title" data-page-title="true" tabIndex="-1">{event.title}</h1>
     {event.description && <p className="event-description">{event.description}</p>}
     {event.location && <p className="event-location">{event.location}</p>}
-    <EventVotingSummary event={event} />
+    <EventVotingSummary event={event} onChanged={onChanged} />
   </section>
 }

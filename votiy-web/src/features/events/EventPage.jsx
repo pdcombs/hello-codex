@@ -82,7 +82,8 @@ export default function EventPage({ viewer = null, loader = loadEventDetailView,
 
   return (
     <main id="main-content" className="page-shell" tabIndex="-1">
-      <EventWorkspaceSummary event={state.event} />
+      <EventWorkspaceSummary event={state.event}
+        onChanged={(event) => setState((current) => ({ ...current, event }))} />
 
       {state.event.detailAccess === 'PRIVATE_SUMMARY' && (
         <>

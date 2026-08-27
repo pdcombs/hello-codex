@@ -368,6 +368,7 @@ main:focus {
 
 .voting-status-control p { margin: 0; color: var(--color-text-muted); }
 .voting-status-control a { color: var(--color-text); }
+.event-workspace-actions .voting-status-control { margin-top: 0; }
 
 .voting-code-dialog {
   width: min(100%, 480px);
@@ -493,6 +494,8 @@ main:focus {
 
 .event-voting-summary {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 5px;
   margin-top: 8px;
   padding: 14px 16px;
@@ -502,6 +505,8 @@ main:focus {
   overflow-wrap: anywhere;
 }
 
+.event-voting-summary-copy { display: grid; gap: 5px; min-width: 0; }
+.event-voting-summary .voting-status-control { margin-top: 0; align-self: center; }
 .event-voting-summary .event-voting-window { color: #fff; font-weight: 600; }
 .event-details-settings textarea { width: 100%; resize: vertical; }
 

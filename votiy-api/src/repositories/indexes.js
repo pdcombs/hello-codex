@@ -385,6 +385,12 @@ export async function ensureCollectionsAndIndexes(database) {
     } else {
       await database.createCollection(name, { validator: definition.validator, validationLevel: 'strict', validationAction: 'error' })
     }
+    if (name === 'eventVoterAccess') {
+      const indexes = await database.collection(name).listIndexes().toArray()
+      const legacyAccountIndex = indexes.find((index) => index.name === 'voter_access_event_account_unique'
+        && !index.partialFilterExpression)
+      if (legacyAccountIndex) await database.collection(name).dropIndex(legacyAccountIndex.name)
+    }
     await database.collection(name).createIndexes(definition.indexes)
   }
 }
