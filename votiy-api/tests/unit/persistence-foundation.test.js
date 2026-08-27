@@ -21,7 +21,7 @@ function responseRecorder() {
 describe('persistence definitions', () => {
   it('defines validators and every required index', () => {
     expect(Object.keys(collectionDefinitions)).toEqual([
-      'accounts', 'emailVerifications', 'sessions', 'events', 'eventRegistrations',
+      'accounts', 'emailVerifications', 'passwordResetRequests', 'sessions', 'events', 'eventRegistrations',
       'eventEntries', 'eventPhotos', 'votingAccessCodes', 'eventVoterAccess', 'ballotSubmissions',
       'idempotencyRecords', 'auditEvents',
     ])

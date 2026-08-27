@@ -54,6 +54,23 @@ export const collectionDefinitions = Object.freeze({
       { key: { accountId: 1, createdAt: -1 }, name: 'verification_account_recent' },
     ],
   },
+  passwordResetRequests: {
+    validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
+      required: ['accountId', 'tokenDigest', 'deliveryPath', 'status', 'expiresAt', 'consumedAt',
+        'supersededAt', 'deliveryFailedAt', 'createdAt', 'updatedAt', 'schemaVersion'],
+      properties: { _id: { bsonType: 'objectId' }, accountId: { bsonType: 'objectId' },
+        tokenDigest: { bsonType: 'string' }, deliveryPath: { enum: ['email', 'bypass'] },
+        status: { enum: ['active', 'consumed', 'superseded', 'delivery_failed'] },
+        expiresAt: { bsonType: 'date' }, consumedAt: dateOrNull, supersededAt: dateOrNull,
+        deliveryFailedAt: dateOrNull, createdAt: { bsonType: 'date' }, updatedAt: { bsonType: 'date' },
+        schemaVersion: { enum: [1] } } } },
+    indexes: [
+      { key: { tokenDigest: 1 }, name: 'password_reset_token_unique', unique: true },
+      { key: { accountId: 1 }, name: 'password_reset_account_active_unique', unique: true,
+        partialFilterExpression: { status: 'active' } },
+      { key: { accountId: 1, status: 1, createdAt: -1 }, name: 'password_reset_account_status_recent' },
+    ],
+  },
   sessions: {
     validator: {
       $jsonSchema: {

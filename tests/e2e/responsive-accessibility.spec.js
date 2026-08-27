@@ -24,6 +24,12 @@ test('auth pages stay usable on desktop and mobile', async ({ page }) => {
   await page.goto('/sign-in')
   await expect(page.getByLabel('Email')).toBeVisible()
   await expect(page.getByLabel('Password')).toBeVisible()
+
+  await page.goto('/forgot-password')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })
 
 test('Find Events remains keyboard and narrow-viewport safe', async ({ page }) => {

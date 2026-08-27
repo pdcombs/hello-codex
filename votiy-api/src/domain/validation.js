@@ -30,6 +30,15 @@ export const signInInputSchema = z.object({
   password: z.string().min(1).max(128),
 }).strict()
 
+export const requestPasswordResetInputSchema = z.object({ email: emailSchema }).strict()
+export const inspectPasswordResetInputSchema = z.object({ token: z.string().min(16).max(512) }).strict()
+export const resetPasswordInputSchema = z.object({
+  token: z.string().min(16).max(512), password: passwordSchema, passwordConfirmation: passwordSchema,
+}).strict().superRefine((value, context) => {
+  if (value.password !== value.passwordConfirmation) context.addIssue({ code: 'custom',
+    path: ['passwordConfirmation'], message: 'Passwords must match' })
+})
+
 export const eventInputSchema = z.object({
   title: trimmedRequiredText(120, 'Title'),
   description: optionalText(2_000, 'Description'),

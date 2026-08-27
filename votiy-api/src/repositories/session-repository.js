@@ -14,8 +14,8 @@ export function createSessionRepository(database) {
     findActiveByDigest(secretDigest, now) {
       return collection.findOne({ secretDigest, revokedAt: null, expiresAt: { $gt: now } })
     },
-    revokeActiveForAccount(accountId, now) {
-      return collection.updateMany({ accountId: id(accountId), revokedAt: null }, { $set: { revokedAt: now } })
+    revokeActiveForAccount(accountId, now, options = {}) {
+      return collection.updateMany({ accountId: id(accountId), revokedAt: null }, { $set: { revokedAt: now } }, options)
     },
     revokeByDigest(secretDigest, now) {
       return collection.updateOne({ secretDigest, revokedAt: null }, { $set: { revokedAt: now } })

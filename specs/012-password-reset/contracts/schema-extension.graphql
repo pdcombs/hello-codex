@@ -1,0 +1,17 @@
+input RequestPasswordResetInput { email: String! }
+input InspectPasswordResetInput { token: String! }
+input ResetPasswordInput { token: String!, password: String!, passwordConfirmation: String! }
+
+type PasswordResetRequestSuccess { accepted: Boolean!, bypassToken: String }
+type PasswordResetInspectionSuccess { email: String!, expiresAt: DateTime! }
+type PasswordResetSuccess { reset: Boolean! }
+
+union PasswordResetRequestResult = PasswordResetRequestSuccess | OperationError
+union PasswordResetInspectionResult = PasswordResetInspectionSuccess | OperationError
+union PasswordResetResult = PasswordResetSuccess | OperationError
+
+extend type Query { inspectPasswordReset(input: InspectPasswordResetInput!): PasswordResetInspectionResult! }
+extend type Mutation {
+  requestPasswordReset(input: RequestPasswordResetInput!): PasswordResetRequestResult!
+  resetPassword(input: ResetPasswordInput!): PasswordResetResult!
+}

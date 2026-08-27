@@ -7,6 +7,7 @@ export function createFakeEmailSender() {
       deliveries.push(delivery)
       return delivery
     },
+    latestPasswordReset() { return deliveries.findLast((delivery) => delivery.kind === 'password_reset') ?? null },
     clear() { deliveries.splice(0) },
   })
 }

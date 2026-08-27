@@ -65,6 +65,18 @@ async function main() {
   requireStatus(search.data.searchPublicEvents.events.nodes.length === 0,
     'Synthetic no-match search unexpectedly returned events')
 
+  const resetRequest = await graphql(`mutation SmokePasswordResetRequest($input: RequestPasswordResetInput!) {
+    requestPasswordReset(input: $input) { __typename
+      ... on PasswordResetRequestSuccess { accepted bypassToken }
+      ... on OperationError { code message }
+    }
+  }`, { input: { email: `smoke-password-reset-${Date.now().toString(36)}@example.invalid` } },
+  { operationName: 'SmokePasswordResetRequest' })
+  requireStatus(resetRequest.data.requestPasswordReset?.__typename === 'PasswordResetRequestSuccess'
+    && resetRequest.data.requestPasswordReset.accepted === true
+    && resetRequest.data.requestPasswordReset.bypassToken === null,
+  `Neutral password-reset smoke failed: ${JSON.stringify(resetRequest.data)}`)
+
   if (publicEventPath) {
     const eventPage = await fetchText(publicEventPath)
     requireStatus(eventPage.response.ok, `Public event failed: ${eventPage.response.status}`)

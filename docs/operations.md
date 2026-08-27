@@ -191,6 +191,15 @@ history. Confirm every event retains exactly one active default category after a
 - Privacy audit: periodically search logs for `@`, E.164-like phone values, and known synthetic titles
   or display names. Any match outside explicitly redacted fields is an incident.
 
+## Password-reset operations
+
+- Track `password_reset.request`, `password_reset.email`, and `password_reset.complete` by outcome,
+  correlation ID, safe reason, and duration. Never log email, token, password, or digest.
+- Alert when errors exceed 5%, p95 exceeds two seconds, email delivery fails, or invalid-token denials spike.
+- `passwordResetRequests` has no TTL: expiry blocks authorization but records remain for audit.
+- Diagnose provider, `APP_ORIGIN`, exact bypass allowlist, and Mongo readiness using correlation ID.
+- Roll back code only. Retain reset records, credential versions, password hashes, and revoked sessions.
+
 ## Correlation ID diagnostics
 
 1. Copy `X-Correlation-ID` from failing browser response or smoke output.

@@ -5,6 +5,8 @@ import RegisterPage from '../features/auth/RegisterPage.jsx'
 import SignInPage from '../features/auth/SignInPage.jsx'
 import SignOutButton from '../features/auth/SignOutButton.jsx'
 import VerifyEmailPage from '../features/auth/VerifyEmailPage.jsx'
+import ForgotPasswordPage from '../features/auth/ForgotPasswordPage.jsx'
+import ResetPasswordPage from '../features/auth/ResetPasswordPage.jsx'
 import CreateEventPage from '../features/events/CreateEventPage.jsx'
 import EventDashboardPage from '../features/events/EventDashboardPage.jsx'
 import EventPage from '../features/events/EventPage.jsx'
@@ -105,6 +107,8 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
         />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage onVerified={onVerified} />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/sign-in" element={viewer ? <Navigate to="/" replace /> : <SignInPage />} />
         <Route path="*" element={<PlaceholderPage title="Page not found" />} />
       </Routes>

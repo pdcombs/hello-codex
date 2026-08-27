@@ -15,6 +15,8 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
   'event.photo_uploaded', 'event.photo_replaced', 'event.photo_deleted',
   'event.visibility_changed', 'event.archived', 'event.visibility_change_denied',
   'event.details_updated', 'event.details_change_denied',
+  'password_reset.requested', 'password_reset.bypassed', 'password_reset.email_sent',
+  'password_reset.email_failed', 'password_reset.denied', 'password_reset.completed',
 ])
 
 const outcomes = new Set(['success', 'denied', 'failure'])
@@ -35,6 +37,7 @@ metadataKeys.add('priorLifecycleStatus')
 metadataKeys.add('requestedLifecycleStatus')
 metadataKeys.add('reasonCode')
 metadataKeys.add('changedFields')
+metadataKeys.add('deliveryPath')
 
 function sanitizeMetadata(metadata = {}) {
   const entries = Object.entries(metadata)

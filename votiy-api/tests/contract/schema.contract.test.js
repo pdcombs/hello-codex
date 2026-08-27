@@ -13,7 +13,7 @@ describe('GraphQL schema contract', () => {
     const schema = await createGraphqlSchema()
     expect(Object.keys(schema.getQueryType().getFields())).toEqual([
       'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'entryOwnerChoices', 'eventRegistrations',
-      'eventVotingCapability', 'eventVotingCodes', 'searchPublicEvents', 'eventDetailView',
+      'eventVotingCapability', 'eventVotingCodes', 'searchPublicEvents', 'eventDetailView', 'inspectPasswordReset',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')

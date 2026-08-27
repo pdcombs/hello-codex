@@ -36,6 +36,7 @@ import { enforceEventSetupValidators, ensureCollectionsAndIndexes } from './repo
 import { createMongoConnection } from './repositories/mongo.js'
 import { createSessionRepository } from './repositories/session-repository.js'
 import { createVerificationRepository } from './repositories/verification-repository.js'
+import { createPasswordResetRepository } from './repositories/password-reset-repository.js'
 import { createRegistrationService } from './services/registration-service.js'
 import { createAuthenticationService } from './services/authentication-service.js'
 import { createEventRegistrationService } from './services/event-registration-service.js'
@@ -46,6 +47,7 @@ import { createEventEntryService } from './services/event-entry-service.js'
 import { createEventAccessService } from './services/event-access-service.js'
 import { createSessionService } from './services/session-service.js'
 import { createVerificationService } from './services/verification-service.js'
+import { createPasswordResetService } from './services/password-reset-service.js'
 import { createEventVotingRulesService } from './services/event-voting-rules-service.js'
 import { createEventVotingService } from './services/event-voting-service.js'
 import { createEventSearchService } from './services/event-search-service.js'
@@ -72,6 +74,7 @@ await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 
 const accountRepository = createAccountRepository(mongo.database)
 const verificationRepository = createVerificationRepository(mongo.database)
+const passwordResetRepository = createPasswordResetRepository(mongo.database)
 const sessionRepository = createSessionRepository(mongo.database)
 const eventRepository = createEventRepository(mongo.database)
 const eventPhotoRepository = createEventPhotoRepository(mongo.database)
@@ -142,6 +145,12 @@ const authenticationService = createAuthenticationService({
   generateSessionSecret: generateOpaqueToken,
   sessionTtlSeconds: environment.sessionTtlSeconds,
   logger,
+})
+const passwordResetService = createPasswordResetService({
+  accountRepository, resetRepository: passwordResetRepository, sessionRepository, emailSender,
+  digestToken, generateToken: generateOpaqueToken,
+  passwordHasher: { hash: (password) => argon2.hash(password, { type: argon2.argon2id }) },
+  verificationBypassPolicy, withTransaction: mongo.withTransaction, logger,
 })
 const eventService = createEventService({
   eventRepository,
@@ -216,6 +225,7 @@ const rootValue = {
     registrationService,
     verificationService,
     sessionService: authenticationService,
+    passwordResetService,
     auditRepository,
   }),
   ...createSessionResolvers({ authenticationService, auditRepository }),

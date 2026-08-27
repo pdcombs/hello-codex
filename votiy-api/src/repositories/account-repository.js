@@ -32,5 +32,11 @@ export function createAccountRepository(database) {
         { returnDocument: 'after', ...options },
       )
     },
+    updatePassword(accountId, passwordHash, expectedCredentialVersion, now, options = {}) {
+      return collection.findOneAndUpdate({ _id: id(accountId), lifecycleStatus: 'completed',
+        verificationStatus: 'verified', credentialVersion: expectedCredentialVersion },
+      { $set: { passwordHash, updatedAt: now }, $inc: { credentialVersion: 1 } },
+      { returnDocument: 'after', ...options })
+    },
   })
 }

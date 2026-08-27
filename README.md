@@ -176,6 +176,14 @@ Voting method and multiple-choice bounds are configured once per event. Legacy c
 stored for rollback compatibility, but current reads, ballots, and settings ignore them. Code voting's
 completed-account option is an accessible switch; its saved API value is unchanged.
 
+## Password recovery
+
+Sign-in includes **Forgot password?**. Normal accounts receive a single-use reset link at configured
+`APP_ORIGIN`; it expires after 15 minutes. Exact `VERIFICATION_BYPASS_DOMAINS` matches skip email and
+continue in same browser for controlled local/test use. Reset records retain audit history without raw
+tokens. Successful reset revokes sessions and requires sign-in with new password. Use Mailpit locally;
+production continues through configured email provider.
+
 Post-deploy smoke workflow hits:
 
 - `/health`

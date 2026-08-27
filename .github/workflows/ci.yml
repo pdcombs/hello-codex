@@ -84,6 +84,12 @@ jobs:
           pnpm --dir votiy-api exec vitest run tests/unit/event-details-service.test.js tests/unit/event-voting-rules.test.js tests/unit/ballot-submission.test.js
           pnpm --dir votiy-api exec vitest run tests/contract/event-details-update.contract.test.js tests/contract/event-voting-summary-privacy.contract.test.js tests/contract/event-wide-voting-method.contract.test.js
           pnpm --dir votiy-web exec vitest run tests/component/event-details-editor.test.jsx tests/component/event-voting-summary-state.test.js tests/component/event-workspace-summary.test.jsx tests/component/event-rules-editor.test.jsx tests/component/event-ballot.test.jsx tests/component/event-visibility.test.jsx
+      - name: Verify Feature 012 password recovery
+        run: |
+          pnpm --dir votiy-api exec vitest run tests/unit/password-reset-request.test.js tests/unit/password-reset-completion.test.js
+          pnpm --dir votiy-api exec vitest run tests/contract/password-reset-request.contract.test.js tests/contract/password-reset-email.contract.test.js
+          pnpm --dir votiy-api exec vitest run tests/integration/password-reset-completion.test.js
+          pnpm --dir votiy-web exec vitest run tests/component/forgot-password.test.jsx tests/component/reset-password.test.jsx
       - run: pnpm --dir votiy-web build
       - run: node --check votiy-api/src/server.js
       - run: node --check tests/smoke/production-smoke.js
@@ -94,4 +100,6 @@ jobs:
       - run: pnpm test:e2e tests/e2e/event-details-navigation.spec.js
       - run: pnpm test:e2e tests/e2e/find-events-search.spec.js tests/e2e/event-visibility.spec.js
       - run: pnpm test:e2e tests/e2e/event-details-voting-summary.spec.js --project=chromium
+      - run: pnpm test:e2e tests/e2e/password-reset.spec.js --project=chromium
+      - run: pnpm test:e2e tests/e2e/password-reset.spec.js --project=mobile-chromium
       - run: pnpm test:e2e tests/e2e/responsive-accessibility.spec.js --project=mobile-chromium --grep "event details|voting summary|switch|responsive"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FormField, FormSurface } from '../../components/Form.jsx'
 import { useAuth } from './AuthProvider.jsx'
 import { signInAccount } from './session.graphql.js'
@@ -34,6 +34,8 @@ export default function SignInPage({ signIn = signInAccount }) {
         </FormField>
         <button disabled={state.loading}>{state.loading ? 'Signing in…' : 'Sign in'}</button>
       </FormSurface>
+      <Link className="forgot-password-link" to="/forgot-password">Forgot password?</Link>
+      {location.state?.passwordReset && <p role="status">Password reset. Sign in with your new password.</p>}
       {state.loading && (
         <p className="form-status" role="status">
           Signing in…

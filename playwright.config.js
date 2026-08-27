@@ -19,10 +19,10 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
   ],
-  webServer: {
-    command: './votiy-web/node_modules/.bin/vite --config votiy-web/vite.config.js',
-    url: 'http://127.0.0.1:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    { command: 'pnpm --dir votiy-api dev', url: 'http://127.0.0.1:4000/ready',
+      reuseExistingServer: !process.env.CI, timeout: 120_000 },
+    { command: 'pnpm --dir votiy-web dev', url: 'http://127.0.0.1:5173',
+      reuseExistingServer: !process.env.CI, timeout: 120_000 },
+  ],
 })
