@@ -917,6 +917,24 @@ main:focus {
   background: rgba(255, 69, 78, 0.08);
 }
 
+.category-entry-edit-list {
+  height: min(360px, 55vh);
+  padding-right: 6px;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.category-entry-edit-list .event-entry-row {
+  padding: 10px 12px;
+}
+
+.category-entry-edit-list .form-row {
+  min-height: 0;
+  padding: 6px 0;
+}
+
 .event-entry-row span {
   display: block;
   margin-top: 5px;
@@ -926,25 +944,6 @@ main:focus {
 .event-entry-content {
   min-width: 0;
   flex: 1 1 auto;
-}
-
-.event-entry-title-field {
-  display: grid;
-  gap: 8px;
-}
-
-.event-entry-title-field > label {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--color-text-muted);
-}
-
-.event-entry-title-field input {
-  width: 100%;
-}
-
-.event-entry-title-field small {
-  color: var(--color-danger, #ff696f);
 }
 
 .category-edit-error {
@@ -1060,6 +1059,23 @@ main:focus {
   padding-top: 12px;
 }
 
+.form-row-full {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+
+.form-row-full > label,
+.form-row-full > input,
+.form-row-full > textarea,
+.form-row-full > select,
+.form-row-full > .form-field-error {
+  grid-column: 1;
+}
+
+.form-row-full > .form-field-error {
+  margin-top: -2px;
+}
+
 .form-row label {
   color: rgba(244, 244, 245, 0.78);
   font-size: 0.92rem;
@@ -1091,6 +1107,7 @@ main:focus {
 }
 
 .form-row input,
+.app-text-input,
 .form-row textarea,
 .form-row select {
   width: 100%;
@@ -1107,6 +1124,7 @@ main:focus {
 }
 
 .form-row input,
+.app-text-input,
 .form-row select {
   min-height: 44px;
   padding: 0 14px;
@@ -1140,6 +1158,7 @@ main:focus {
 }
 
 .form-row input::placeholder,
+.app-text-input::placeholder,
 .form-row textarea::placeholder {
   color: rgba(244, 244, 245, 0.36);
 }
@@ -1149,6 +1168,7 @@ main:focus {
 }
 
 .form-row:focus-within input,
+.app-text-input:focus,
 .form-row:focus-within textarea,
 .form-row:focus-within select {
   background: rgba(255, 255, 255, 0.08);
@@ -1161,9 +1181,11 @@ main:focus {
 }
 
 .form-row-invalid input,
+.form-row-invalid .app-text-input,
 .form-row-invalid textarea,
 .form-row-invalid select,
 .form-row-invalid:focus-within input,
+.form-row-invalid .app-text-input:focus,
 .form-row-invalid:focus-within textarea,
 .form-row-invalid:focus-within select {
   background: rgba(99, 38, 38, 0.2);

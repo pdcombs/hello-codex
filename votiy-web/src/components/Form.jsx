@@ -9,7 +9,11 @@ export function FormSurface({ as: Component = 'form', className = '', children, 
   )
 }
 
-export function FormField({ label, htmlFor, stacked = false, optional = false, error = null, children }) {
+export function TextInput({ className = '', ...props }) {
+  return <input className={['app-text-input', className].filter(Boolean).join(' ')} {...props} />
+}
+
+export function FormField({ label, htmlFor, stacked = false, fullWidth = false, optional = false, error = null, children }) {
   const errorId = `${htmlFor}-error`
   const control = isValidElement(children)
     ? cloneElement(children, {
@@ -20,7 +24,7 @@ export function FormField({ label, htmlFor, stacked = false, optional = false, e
     : children
 
   return (
-    <div className={`form-row${stacked ? ' form-row-stacked' : ''}${error ? ' form-row-invalid' : ''}`}>
+    <div className={`form-row${stacked ? ' form-row-stacked' : ''}${fullWidth ? ' form-row-full' : ''}${error ? ' form-row-invalid' : ''}`}>
       <label htmlFor={htmlFor}>
         <span>{label}</span>
         {optional && <span className="form-optional" aria-hidden="true">Optional</span>}

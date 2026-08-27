@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FormField, FormSurface } from '../../components/Form.jsx'
+import { FormField, FormSurface, TextInput } from '../../components/Form.jsx'
 import EventEntryRow from './EventEntryRow.jsx'
 import RemoveCategoryDialog from './RemoveCategoryDialog.jsx'
 import { archiveEventCategory, updateEventCategory } from './events.graphql.js'
@@ -87,8 +87,8 @@ export default function EventCategoryList({ categories = [], eventId, eventUpdat
         aria-labelledby={isEditing ? undefined : `category-${category.id}`}>
         {isEditing ? (
           <FormSurface className="category-edit-form" onSubmit={(event) => saveCategory(event, category.id)} noValidate>
-            <FormField label="Category title" htmlFor={`category-title-${category.id}`} error={state.titleError}>
-              <input id={`category-title-${category.id}`} name="title" value={draft.title}
+            <FormField label="Category title" htmlFor={`category-title-${category.id}`} error={state.titleError} fullWidth>
+              <TextInput id={`category-title-${category.id}`} name="title" value={draft.title}
                 onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} autoFocus />
             </FormField>
             <EntryList category={category} onRemoveEntry={onRemoveEntry} editable values={draft.entryTitles}
@@ -153,7 +153,8 @@ function EntryList({ category, editable = false, onRemoveEntry, values = {}, err
   const entries = category.entries ?? []
   if (entries.length === 0) return <p>No entries in this category.</p>
   return (
-    <ul className="record-list" aria-label={`${category.title} entries`}>
+    <ul className={`record-list${editable ? ' category-entry-edit-list' : ''}`}
+      aria-label={`${category.title} entries`}>
       {entries.map((entry) => <EventEntryRow key={entry.id} entry={entry}
         onRemove={editable ? onRemoveEntry : undefined} iconOnly={editable} editable={editable}
         value={values[entry.id] ?? entry.title} error={errors[entry.id]}

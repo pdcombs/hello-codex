@@ -1,3 +1,5 @@
+import { FormField, TextInput } from '../../components/Form.jsx'
+
 export default function EventEntryRow({ entry, onRemove, iconOnly = false, editable = false,
   value = entry.title, onTitleChange, error = null }) {
   async function confirmRemoval() {
@@ -7,12 +9,11 @@ export default function EventEntryRow({ entry, onRemove, iconOnly = false, edita
   return (
     <li className="event-entry-row">
       <div className="event-entry-content">
-        {editable ? <div className="event-entry-title-field">
-          <label htmlFor={`entry-title-${entry.id}`}>Entry title for {entry.ownerDisplayName}</label>
-          <input id={`entry-title-${entry.id}`} value={value} onChange={(event) => onTitleChange?.(event.target.value)}
-            aria-invalid={Boolean(error)} aria-describedby={error ? `entry-title-error-${entry.id}` : undefined} />
-          {error && <small id={`entry-title-error-${entry.id}`} role="alert">{error}</small>}
-        </div> : <><strong>{entry.title}</strong><span>Owned by {entry.ownerDisplayName}</span></>}
+        {editable ? <FormField label={`Entry title for ${entry.ownerDisplayName}`}
+          htmlFor={`entry-title-${entry.id}`} error={error} fullWidth>
+          <TextInput id={`entry-title-${entry.id}`} value={value}
+            onChange={(event) => onTitleChange?.(event.target.value)} />
+        </FormField> : <><strong>{entry.title}</strong><span>Owned by {entry.ownerDisplayName}</span></>}
       </div>
       {onRemove && <button className={iconOnly ? 'entry-delete-action' : 'secondary-action'} type="button"
         onClick={confirmRemoval} aria-label={iconOnly ? `Delete ${entry.title}` : undefined} title="Delete entry">
