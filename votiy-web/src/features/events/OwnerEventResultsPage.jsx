@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventWorkspaceLayout from './EventWorkspaceLayout.jsx'
 import { loadEventVotingResults } from '../voting/voting.graphql.js'
 
-export default function OwnerEventResultsPage({ loader = loadEventVotingResults }) {
+export default function OwnerEventResultsPage({ loader = loadEventVotingResults, workspace = false }) {
   const { publicId } = useParams()
+  const outlet = useOutletContext()
   const [state, setState] = useState({ status: 'loading', results: null, error: null })
   const [revision, setRevision] = useState(0)
   useEffect(() => {
@@ -19,14 +20,17 @@ export default function OwnerEventResultsPage({ loader = loadEventVotingResults 
   async function reloadEvent() {
     setRevision((value) => value + 1)
   }
-  if (state.status === 'loading') return <main id="main-content" className="page-shell"><LoadingState message="Loading event…" /></main>
-  if (state.status === 'error') return <main id="main-content" className="page-shell">
+  if (state.status === 'loading') return workspace ? <LoadingState message="Loading results…" />
+    : <main id="main-content" className="page-shell"><LoadingState message="Loading event…" /></main>
+  if (state.status === 'error') {
+    const content = <>
     <ErrorState title="Results unavailable" message={state.error.message} />
     <button className="secondary-action results-retry" type="button" onClick={reloadEvent}>Try again</button>
-  </main>
+    </>
+    return workspace ? content : <main id="main-content" className="page-shell">{content}</main>
+  }
   const results = state.results
-  return <main id="main-content" className="page-shell">
-    <EventWorkspaceLayout event={results.event} onChanged={reloadEvent}>
+  const content =
       <section className="voting-results" aria-labelledby="results-title">
         <header className="voting-results-header">
           <div><p className="eyebrow">Review results</p><h2 id="results-title">Voting results</h2></div>
@@ -52,6 +56,8 @@ export default function OwnerEventResultsPage({ loader = loadEventVotingResults 
           </section>)}
         </div>
       </section>
-    </EventWorkspaceLayout>
+  if (workspace) return content
+  return <main id="main-content" className="page-shell">
+    <EventWorkspaceLayout event={results.event ?? outlet?.event} onChanged={reloadEvent}>{content}</EventWorkspaceLayout>
   </main>
 }

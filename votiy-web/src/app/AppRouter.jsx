@@ -13,6 +13,7 @@ import EventPage from '../features/events/EventPage.jsx'
 import OwnerEventPage from '../features/events/OwnerEventPage.jsx'
 import OwnerEventParticipantsPage from '../features/events/OwnerEventParticipantsPage.jsx'
 import OwnerEventResultsPage from '../features/events/OwnerEventResultsPage.jsx'
+import OwnerEventWorkspacePage from '../features/events/OwnerEventWorkspacePage.jsx'
 import EventSettingsPage from '../features/events/EventSettingsPage.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
 import EventSearchButton from '../features/search/EventSearchButton.jsx'
@@ -65,7 +66,7 @@ export function HostedEventsDashboard({ viewer }) {
 }
 
 export function EventDetailShell({ viewer }) {
-  return viewer ? <OwnerEventPage viewer={viewer} /> : <EventPage viewer={viewer} />
+  return viewer ? <OwnerEventWorkspacePage viewer={viewer} /> : <EventPage viewer={viewer} />
 }
 
 function PlaceholderPage({ title }) {
@@ -89,15 +90,19 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
       <SiteHeader viewer={viewer} />
       <Routes>
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
-        <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
+        <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />}>
+          {viewer && <Route index element={<OwnerEventPage viewer={viewer} workspace />} />}
+          {viewer && <Route path="participants" element={<OwnerEventParticipantsPage workspace />} />}
+          {viewer && <Route path="results" element={<OwnerEventResultsPage workspace />} />}
+        </Route>
+        {!viewer && <Route path="/events/:publicId/participants" element={
+          <Protected viewer={viewer} loading={authLoading}><OwnerEventParticipantsPage /></Protected>
+        } />}
+        {!viewer && <Route path="/events/:publicId/results" element={
+          <Protected viewer={viewer} loading={authLoading}><OwnerEventResultsPage /></Protected>
+        } />}
         <Route path="/events/:publicId/vote" element={<VotingPage />} />
         <Route path="/events/:publicId/votes" element={<VotingHistoryPage />} />
-        <Route path="/events/:publicId/participants" element={
-          <Protected viewer={viewer} loading={authLoading}><OwnerEventParticipantsPage /></Protected>
-        } />
-        <Route path="/events/:publicId/results" element={
-          <Protected viewer={viewer} loading={authLoading}><OwnerEventResultsPage /></Protected>
-        } />
         <Route path="/events/:publicId/settings" element={
           <Protected viewer={viewer} loading={authLoading}><EventSettingsPage /></Protected>
         } />

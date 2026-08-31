@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventPage from './EventPage.jsx'
 import EventCategoryList from './EventCategoryList.jsx'
@@ -11,8 +11,11 @@ export default function OwnerEventPage({
   loader = loadEventDetailView,
   updateCategory,
   archiveEntry = archiveEventEntry,
+  workspace = false,
 }) {
   const { publicId } = useParams()
+  const outlet = useOutletContext()
+  const workspaceEvent = workspace ? outlet?.event : null
   const [state, setState] = useState({ status: 'loading', error: null, event: null })
 
   async function reloadEvent() {
@@ -22,15 +25,17 @@ export default function OwnerEventPage({
 
   async function onRemoveEntry(entry) {
     try {
-      await archiveEntry({ eventId: state.event.id, entryId: entry.id,
+      const event = workspaceEvent ?? state.event
+      await archiveEntry({ eventId: event.id, entryId: entry.id,
         idempotencyKey: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-entry-remove` })
-      await reloadEvent()
+      await (workspace ? outlet.reloadEvent() : reloadEvent())
     } catch (error) {
       setState((current) => ({ ...current, error }))
     }
   }
 
   useEffect(() => {
+    if (workspace) return undefined
     let active = true
     setState({ status: 'loading', error: null, event: null })
     loader(publicId)
@@ -45,7 +50,16 @@ export default function OwnerEventPage({
     return () => {
       active = false
     }
-  }, [publicId, loader])
+  }, [publicId, loader, workspace])
+
+  if (workspace) {
+    return <>
+      <EventCategoryList categories={workspaceEvent.categories} eventId={workspaceEvent.id}
+        eventUpdatedAt={workspaceEvent.updatedAt} editable={workspaceEvent.lifecycleStatus !== 'ARCHIVED'}
+        updateCategory={updateCategory} onRemoveEntry={onRemoveEntry}
+        onEventChange={outlet.setEvent} onRefresh={outlet.reloadEvent} />
+    </>
+  }
 
   if (state.status === 'loading') {
     return (

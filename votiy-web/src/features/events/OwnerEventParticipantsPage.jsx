@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useOutletContext, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventParticipantsPanel from './EventParticipantsPanel.jsx'
 import { loadEventByPublicId } from './events.graphql.js'
@@ -9,11 +9,14 @@ export default function OwnerEventParticipantsPage({
   loader = loadEventByPublicId,
   participantsLoader,
   removeParticipant,
+  workspace = false,
 }) {
   const { publicId } = useParams()
+  const outlet = useOutletContext()
   const [state, setState] = useState({ status: 'loading', event: null, error: null })
 
   useEffect(() => {
+    if (workspace) return undefined
     let active = true
     loader(publicId)
       .then((result) => {
@@ -23,13 +26,17 @@ export default function OwnerEventParticipantsPage({
       })
       .catch((error) => active && setState({ status: 'error', event: null, error }))
     return () => { active = false }
-  }, [loader, publicId])
+  }, [loader, publicId, workspace])
 
   async function reloadEvent() {
+    if (workspace) return outlet.reloadEvent()
     const result = await loader(publicId)
     if (!result.event.isOwner) throw new Error('Only the event host can view this participant list.')
     setState({ status: 'success', event: result.event, error: null })
   }
+
+  if (workspace) return <EventParticipantsPanel eventId={outlet.event.id} loader={participantsLoader}
+    removeParticipant={removeParticipant} />
 
   if (state.status === 'loading') {
     return <main id="main-content" className="page-shell" tabIndex="-1"><LoadingState message="Loading participants…" /></main>
