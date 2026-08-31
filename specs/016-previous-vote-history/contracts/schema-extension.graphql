@@ -1,0 +1,21 @@
+extend type Query {
+  eventBallotHistory(publicId: String!, first: Int, after: String): EventBallotHistoryResult!
+}
+
+extend type VotingAccessDecision {
+  hasBallotHistory: Boolean!
+}
+
+type EventBallotHistoryPage {
+  event: Event!
+  nodes: [SubmittedEventBallot!]!
+  nextCursor: String
+  hasMore: Boolean!
+  mayCastAnother: Boolean!
+}
+
+type EventBallotHistorySuccess {
+  history: EventBallotHistoryPage!
+}
+
+union EventBallotHistoryResult = EventBallotHistorySuccess | OperationError

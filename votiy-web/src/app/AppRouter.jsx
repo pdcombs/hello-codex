@@ -19,6 +19,7 @@ import EventSearchButton from '../features/search/EventSearchButton.jsx'
 import EventSearchDialog from '../features/search/EventSearchDialog.jsx'
 import useEventSearch from '../features/search/useEventSearch.js'
 import VotingPage from '../features/voting/VotingPage.jsx'
+import VotingHistoryPage from '../features/voting/VotingHistoryPage.jsx'
 
 function SiteHeader({ viewer }) {
   const search = useEventSearch()
@@ -90,6 +91,7 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
         <Route path="/" element={viewer ? <HostedEventsDashboard viewer={viewer} /> : <PublicHomePage />} />
         <Route path="/events/:publicId" element={<EventDetailShell viewer={viewer} />} />
         <Route path="/events/:publicId/vote" element={<VotingPage />} />
+        <Route path="/events/:publicId/votes" element={<VotingHistoryPage />} />
         <Route path="/events/:publicId/participants" element={
           <Protected viewer={viewer} loading={authLoading}><OwnerEventParticipantsPage /></Protected>
         } />

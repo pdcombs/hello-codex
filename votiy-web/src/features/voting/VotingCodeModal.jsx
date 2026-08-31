@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import { FormField, FormSurface, TextInput } from '../../components/Form.jsx'
 
 export default function VotingCodeModal({ pending = false, error = null, title = 'Enter voting code',
-  description = 'This event requires an unused generated code.', triggerRef = null, onCancel, onSubmit }) {
+  description = 'This event requires an unused generated code.', triggerRef = null,
+  canViewPrevious = false, onViewPrevious = null, onCancel, onSubmit }) {
   const dialogRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -37,6 +38,8 @@ export default function VotingCodeModal({ pending = false, error = null, title =
         <TextInput ref={inputRef} id="voting-access-code" name="code" autoComplete="one-time-code" required />
       </FormField>
       <div className="dialog-actions">
+        {canViewPrevious && <button className="secondary-action voting-history-action" type="button"
+          disabled={pending} onClick={onViewPrevious}>View previous votes</button>}
         <button className="secondary-action" type="button" disabled={pending} onClick={cancel}>Cancel</button>
         <button className="primary-action" disabled={pending}>{pending ? 'Checking…' : 'Continue'}</button>
       </div>

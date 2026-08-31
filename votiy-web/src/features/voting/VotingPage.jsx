@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventBallot from './EventBallot.jsx'
 import VotingCodeModal from './VotingCodeModal.jsx'
@@ -7,6 +7,8 @@ import { loadEventBallotView, requestVotingAccess } from './voting.graphql.js'
 
 export default function VotingPage({ loader = loadEventBallotView, requester = requestVotingAccess }) {
   const { publicId } = useParams()
+  const location = useLocation(); const navigate = useNavigate()
+  const startFresh = useRef(location.state?.startFresh === true).current
   const [state, setState] = useState({ status: 'loading', view: null, error: null })
   const [repeat, setRepeat] = useState({ modal: false, pending: false, error: null, authorized: false, attempt: 0 })
   const repeatTriggerRef = useRef(null)
@@ -14,10 +16,16 @@ export default function VotingPage({ loader = loadEventBallotView, requester = r
     const controller = new AbortController()
     setState({ status: 'loading', view: null, error: null })
     setRepeat({ modal: false, pending: false, error: null, authorized: false, attempt: 0 })
-    loader(publicId, { signal: controller.signal }).then((view) => setState({ status: 'success', view, error: null }))
+    loader(publicId, { signal: controller.signal }).then((view) => {
+      setState({ status: 'success', view, error: null })
+      if (startFresh) {
+        setRepeat((current) => ({ ...current, authorized: true, attempt: current.attempt + 1 }))
+        navigate(location.pathname, { replace: true, state: null })
+      }
+    })
       .catch((error) => { if (error.name !== 'AbortError') setState({ status: 'error', view: null, error }) })
     return () => controller.abort()
-  }, [loader, publicId])
+  }, [loader, publicId, navigate, location.pathname, startFresh])
 
   async function authorizeAnother(accessCode) {
     setRepeat((current) => ({ ...current, pending: true, error: null }))

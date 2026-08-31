@@ -242,7 +242,11 @@ export const collectionDefinitions = Object.freeze({
     indexes: [
       { key: { eventId: 1, submittedAt: 1, _id: 1 }, name: 'ballot_event_submitted' },
       { key: { eventId: 1, accountId: 1, submittedAt: 1 }, name: 'ballot_event_account' },
+      { key: { eventId: 1, accountId: 1, submittedAt: -1, _id: -1 }, name: 'ballot_history_event_account',
+        partialFilterExpression: { accountId: { $type: 'objectId' } } },
       { key: { eventId: 1, browserMarkerDigest: 1 }, name: 'ballot_event_browser_unique',
+        partialFilterExpression: { browserMarkerDigest: { $type: 'string' } } },
+      { key: { eventId: 1, browserMarkerDigest: 1, submittedAt: -1, _id: -1 }, name: 'ballot_history_event_browser',
         partialFilterExpression: { browserMarkerDigest: { $type: 'string' } } },
       { key: { accessCodeId: 1 }, name: 'ballot_access_code_unique', unique: true,
         partialFilterExpression: { accessCodeId: { $type: 'objectId' } } },

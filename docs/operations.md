@@ -122,6 +122,8 @@ never restore consumed codes or reset limits/history.
 - any accepted ballot missing its matching privacy-safe `voting.ballot_submitted` audit
 - any generated code linked to more than one accepted ballot, or accepted code ballot without exact code linkage
 - code-reuse denial spikes above 5% for 10 minutes; first check UI retries and shared-device handoff behavior
+- ballot-history read errors above 5% or p95 above 2 seconds for 10 minutes
+- any history response containing a ballot outside resolved account-only or browser-only identity scope
 
 ## Find Events diagnostics and rollback
 
@@ -251,6 +253,31 @@ If grant rotation fails during shared-device voting, disable or roll back only a
 Do not rewrite the browser/account review identity, latest grant, used-code record, or prior ballot. Query
 for duplicate `accessCodeId` linkage and missing `usedByBallotId`; any mismatch is an integrity incident and
 must be preserved for audit before repair.
+
+## Previous-vote history
+
+1. Query `operation:"voting.ballot_history_read"` by outcome, duration, returned count, `hasMore`, and
+   correlation ID. Never log ballot IDs, category/entry labels, choices, ranks, raw cursor, code, browser
+   marker, email, phone, or other voter identity data.
+2. Signed-in reads must use only account identity. Signed-out reads may use only retained browser-marker
+   digest. If both exist, account wins; histories must never merge. Host ownership adds no read permission.
+3. Diagnose missing/duplicate pages by checking stable `{submittedAt:-1,_id:-1}` ordering and both cursor
+   values. Do not repair pagination by rewriting ballot submission times or IDs.
+4. Closed voting must still permit authorized read-only history. A missing **Cast another vote** action is
+   expected while closed; history failure is not.
+5. Production smoke creates two ballots with distinct codes on dedicated synthetic event, reads one-item
+   pages newest first, and confirms host identity receives zero voter ballots. Any foreign node is a privacy
+   incident and must fail deployment.
+6. History reads must not consume/rotate a voting code, update access grants, create idempotency records, or
+   modify ballot snapshots. Compare collection write metrics around read-only requests if mutation is suspected.
+
+### History rollback
+
+Roll back application code only. Preserve `ballotSubmissions`, immutable snapshot fields, account/browser
+history indexes, voting codes, voter-access grants, idempotency records, and audits. Additive indexes may
+remain. Verify `/ready`, synthetic paginated history, host isolation, closed-history integration, and
+one-code-per-ballot before restoring traffic. Forward-fix cursor or authorization defects; never delete,
+reorder, relabel, or reassign accepted ballots.
 
 ## Rollback
 

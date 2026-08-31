@@ -199,6 +199,13 @@ never authorizes another ballot. **Cast another vote** asks for a different unus
 ballot while preserving prior submissions. This supports shared-device voting without making a consumed
 code reusable. Invalid or consumed codes leave latest read-only review unchanged.
 
+Returning code voters can choose **View previous votes** from code entry without supplying another code.
+History is event-specific, newest first, paginated, and read-only. Signed-in accounts see only ballots tied
+to that account across devices; signed-out visitors see only ballots tied to current retained browser.
+Account identity takes precedence and never merges anonymous browser history. Event ownership alone never
+reveals individual ballots. Previous votes remain reviewable after voting closes, while another vote stays
+unavailable until voting reopens and a fresh code passes current rules.
+
 ## Password recovery
 
 Sign-in includes **Forgot password?**. Normal accounts receive a single-use reset link at configured
@@ -217,7 +224,8 @@ Post-deploy smoke workflow hits:
 
 With all `PRODUCTION_SYNTHETIC_*` variables set, smoke also validates legacy event setup plus voting-rule
 update, code generation, ballot submission, idempotent replay, private-review isolation, used-code
-inventory, same-browser second voting with a new code, latest-ballot review, and reuse denial. Alert when rules,
+inventory, same-browser second voting with a new code, paginated private history, host isolation,
+latest-ballot review, and reuse denial. Alert when rules,
 eligibility, or ballot p95 exceeds two seconds, voting errors exceed 5%, migration readiness fails, an
 event invariant fails, or code-claim conflicts spike. Correlate diagnostics by `correlationId`; never paste
 codes or voter contact into logs.
@@ -241,6 +249,11 @@ each event's stored manual state.
 Feature 015 rollback must also preserve each code-to-ballot link. Never change a used code back to unused,
 remove `usedByBallotId`, or repoint an accepted ballot to another code. Roll back application code, verify
 one accepted ballot per code, then forward-fix grant rotation or repeat-vote UI.
+
+Feature 016 history rollback is also code-only. Retain ballot snapshot data, account/browser history
+indexes, cursor-compatible timestamps, grants, and audits. Older releases ignore additive history query and
+indexes. Never mutate accepted ballots to repair ordering or visibility; fix authorization or cursor logic
+forward after restoring last known-good application build.
 # Event photos
 
 Event hosts can upload one JPEG, PNG, or WebP photo per event. The API—not the browser—validates and

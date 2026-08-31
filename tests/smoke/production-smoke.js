@@ -273,6 +273,38 @@ async function main() {
     requireStatus(latestReview.data.eventBallotView?.ballotView?.submittedBallot?.id
       === secondBallot.data.submitEventBallot.receipt.id,
     `Synthetic latest ballot review was not updated: ${JSON.stringify(latestReview.data)}`)
+    const firstHistoryPage = await graphql(`query SmokeBallotHistoryFirst($publicId: String!, $first: Int!) {
+      eventBallotHistory(publicId: $publicId, first: $first) { __typename
+        ... on EventBallotHistorySuccess { history { nodes { id submittedAt } nextCursor hasMore } }
+        ... on OperationError { code message }
+      }
+    }`, { publicId: projectedEvent.publicId, first: 1 },
+    { cookie: voterCookie, operationName: 'SmokeBallotHistoryFirst' })
+    const firstHistory = firstHistoryPage.data.eventBallotHistory?.history
+    requireStatus(firstHistory?.nodes?.length === 1
+      && firstHistory.nodes[0].id === secondBallot.data.submitEventBallot.receipt.id
+      && firstHistory.hasMore === true && Boolean(firstHistory.nextCursor),
+    `Synthetic first ballot-history page failed: ${JSON.stringify(firstHistoryPage.data)}`)
+    const secondHistoryPage = await graphql(`query SmokeBallotHistoryNext($publicId: String!, $first: Int!, $after: String) {
+      eventBallotHistory(publicId: $publicId, first: $first, after: $after) { __typename
+        ... on EventBallotHistorySuccess { history { nodes { id submittedAt } nextCursor hasMore } }
+        ... on OperationError { code message }
+      }
+    }`, { publicId: projectedEvent.publicId, first: 1, after: firstHistory.nextCursor },
+    { cookie: voterCookie, operationName: 'SmokeBallotHistoryNext' })
+    const secondHistory = secondHistoryPage.data.eventBallotHistory?.history
+    requireStatus(secondHistory?.nodes?.length === 1
+      && secondHistory.nodes[0].id === ballot.data.submitEventBallot.receipt.id
+      && secondHistory.nodes[0].id !== firstHistory.nodes[0].id,
+    `Synthetic paginated ballot history failed: ${JSON.stringify(secondHistoryPage.data)}`)
+    const hostHistory = await graphql(`query SmokeHostBallotHistory($publicId: String!) {
+      eventBallotHistory(publicId: $publicId, first: 10) { __typename
+        ... on EventBallotHistorySuccess { history { nodes { id } nextCursor hasMore } }
+        ... on OperationError { code message }
+      }
+    }`, { publicId: projectedEvent.publicId }, { cookie, operationName: 'SmokeHostBallotHistory' })
+    requireStatus(hostHistory.data.eventBallotHistory?.history?.nodes?.length === 0,
+      `Host could inspect another voter's ballot history: ${JSON.stringify(hostHistory.data)}`)
     const inventory = await graphql(`query SmokeVotingInventory($eventId: ID!) {
       eventVotingCodes(eventId: $eventId, first: 100) { __typename
         ... on VotingCodeListSuccess { codes { nodes { id status claimantAccountId } } }

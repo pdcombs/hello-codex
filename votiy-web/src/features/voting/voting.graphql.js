@@ -76,6 +76,7 @@ export const SET_EVENT_VOTING_STATUS = `mutation SetEventVotingStatus($input: Se
 export const REQUEST_VOTING_ACCESS = `mutation RequestVotingAccess($input: RequestVotingAccessInput!) {
   requestVotingAccess(input: $input) { __typename
     ... on VotingAccessDecisionSuccess { access { decision allowed rulesVersion votingStateVersion
+      hasBallotHistory
       requirements { signInRequired completedAccountRequired codeRequired mayRetryCode settingsPath } } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
@@ -91,6 +92,19 @@ export const EVENT_BALLOT_VIEW = `query EventBallotView($publicId: String!) {
         categoryId categoryTitle categoryOrder method entries { entryId entryTitle selectionOrder }
       } }
       mayCastAnother
+    } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
+export const EVENT_BALLOT_HISTORY = `query EventBallotHistory($publicId: String!, $first: Int, $after: String) {
+  eventBallotHistory(publicId: $publicId, first: $first, after: $after) { __typename
+    ... on EventBallotHistorySuccess { history {
+      event { id publicId title votingState { status version openedAt closedAt updatedAt } }
+      nodes { id eventId rulesVersion votingStateVersion submittedAt categoryBallots {
+        categoryId categoryTitle categoryOrder method entries { entryId entryTitle selectionOrder }
+      } }
+      nextCursor hasMore mayCastAnother
     } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
@@ -114,6 +128,12 @@ export async function loadEventBallotView(publicId, { signal } = {}) {
   const data = await graphqlRequest({ query: EVENT_BALLOT_VIEW, variables: { publicId },
     operationName: 'EventBallotView', signal })
   return unwrapGraphqlResult(data.eventBallotView).ballotView
+}
+
+export async function loadEventBallotHistory(publicId, { first = 20, after = null, signal } = {}) {
+  const data = await graphqlRequest({ query: EVENT_BALLOT_HISTORY, variables: { publicId, first, after },
+    operationName: 'EventBallotHistory', signal })
+  return unwrapGraphqlResult(data.eventBallotHistory).history
 }
 
 export async function loadEventVotingCapability(eventId) {

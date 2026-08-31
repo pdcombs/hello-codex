@@ -5,11 +5,14 @@ import { describe, expect, it, vi } from 'vitest'
 import VotingAccessButton from '../../src/features/voting/VotingAccessButton.jsx'
 import VotingComingSoonPage from '../../src/features/voting/VotingComingSoonPage.jsx'
 
+function HistoryPlaceholder() { return <h1>Previous votes</h1> }
+
 const event = { id: 'event-1', publicId: 'public-1' }
 function harness(requester) {
   return render(<MemoryRouter initialEntries={['/events/public-1']}><Routes>
     <Route path="/events/:publicId" element={<VotingAccessButton event={event} requester={requester} />} />
     <Route path="/events/:publicId/vote" element={<VotingComingSoonPage />} />
+    <Route path="/events/:publicId/votes" element={<HistoryPlaceholder />} />
   </Routes></MemoryRouter>)
 }
 
@@ -33,5 +36,19 @@ describe('voting access UI', () => {
     harness(vi.fn().mockResolvedValue({ allowed: false, decision: 'REPEAT_LIMIT_REACHED' }))
     await userEvent.click(screen.getByRole('button', { name: 'Vote' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('already reached')
+  })
+  it('opens previous votes without submitting a code when identity has history', async () => {
+    const requester = vi.fn().mockResolvedValue({ allowed: false, decision: 'CODE_REQUIRED', hasBallotHistory: true })
+    harness(requester); const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Vote' }))
+    await user.click(await screen.findByRole('button', { name: 'View previous votes' }))
+    expect(await screen.findByRole('heading', { name: 'Previous votes' })).toBeVisible()
+    expect(requester).toHaveBeenCalledOnce()
+  })
+  it('hides previous votes when server reports no history', async () => {
+    harness(vi.fn().mockResolvedValue({ allowed: false, decision: 'CODE_REQUIRED', hasBallotHistory: false }))
+    await userEvent.click(screen.getByRole('button', { name: 'Vote' }))
+    expect(await screen.findByRole('dialog')).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'View previous votes' })).not.toBeInTheDocument()
   })
 })

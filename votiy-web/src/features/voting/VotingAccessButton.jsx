@@ -10,7 +10,9 @@ export default function VotingAccessButton({ event, requester = requestVotingAcc
     try {
       const access = await requester({ eventId: event.id, accessCode })
       if (access.allowed) { navigate(`/events/${event.publicId}/vote`); return }
-      if (access.decision === 'CODE_REQUIRED') { setState({ pending: false, error: accessCode ? new Error('That voting code is invalid or already used.') : null, code: true }); return }
+      if (access.decision === 'CODE_REQUIRED') { setState({ pending: false,
+        error: accessCode ? new Error('That voting code is invalid or already used.') : null,
+        code: true, hasHistory: access.hasBallotHistory === true }); return }
       if (access.decision === 'SIGN_IN_REQUIRED' || access.decision === 'ACCOUNT_COMPLETION_REQUIRED') {
         navigate(`/sign-in?returnTo=${encodeURIComponent(`/events/${event.publicId}`)}`); return
       }
@@ -27,6 +29,8 @@ export default function VotingAccessButton({ event, requester = requestVotingAcc
       {state.error && !state.code && <p role="alert">{state.error.message}</p>}
     </div>
     {state.code && <VotingCodeModal pending={state.pending} error={state.error}
+      canViewPrevious={state.hasHistory}
+      onViewPrevious={() => navigate(`/events/${event.publicId}/votes`)}
       onCancel={() => setState({ pending: false, error: null, code: false })} onSubmit={request} />}
   </>
 }

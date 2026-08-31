@@ -8,6 +8,7 @@ import { decryptVotingCode, generateUniqueVotingCodes } from '../domain/voting-a
 import { accountIsVotingComplete } from '../domain/voter-eligibility.js'
 import { requestVotingAccessInputSchema, submitEventBallotInputSchema } from '../domain/validation.js'
 import { projectEventEntries } from './event-service.js'
+import { ballotHistoryPageSize, decodeBallotHistoryCursor, encodeBallotHistoryCursor } from '../domain/ballot-history.js'
 
 const ballotDigest = (input) => createHash('sha256').update(JSON.stringify({ eventId: input.eventId,
   expectedRulesVersion: input.expectedRulesVersion, expectedVotingStateVersion: input.expectedVotingStateVersion,
@@ -37,9 +38,12 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
   }
   const requirements = (overrides = {}) => ({ signInRequired: false, completedAccountRequired: false,
     codeRequired: false, mayRetryCode: false, settingsPath: null, ...overrides })
-  const decision = (event, code, extra = {}) => ({ decision: code, allowed: code === 'ALLOWED',
-    requirements: requirements(extra), rulesVersion: event?.votingRules?.version ?? null,
-    votingStateVersion: event?.votingState?.version ?? null })
+  const decision = (event, code, extra = {}) => {
+    const { hasBallotHistory = false, ...requirementOverrides } = extra
+    return { decision: code, allowed: code === 'ALLOWED', hasBallotHistory,
+      requirements: requirements(requirementOverrides), rulesVersion: event?.votingRules?.version ?? null,
+      votingStateVersion: event?.votingState?.version ?? null }
+  }
   return Object.freeze({
     async generateCodes(input, viewer, { correlationId = 'code-generate' } = {}) {
       if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
@@ -162,15 +166,18 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       }
       const currentBallot = currentAccess?.codeId
         ? await ballotRepository.findByAccessCode(currentAccess.codeId) : null
+      const latestBallot = account ? await ballotRepository.findLatestByAccount(event._id, account._id)
+        : browserMarker ? await ballotRepository.findLatestByBrowserMarker(event._id, digestBrowserMarker(browserMarker)) : null
+      const hasBallotHistory = Boolean(latestBallot)
       if (currentAccess && !currentBallot && !input.accessCode) {
-        return { access: decision(event, 'ALLOWED'), browserMarker: account || hadBrowserMarker ? null : browserMarker }
+        return { access: decision(event, 'ALLOWED', { hasBallotHistory }), browserMarker: account || hadBrowserMarker ? null : browserMarker }
       }
       if (!input.accessCode) {
         if (currentBallot) await auditRepository?.append({ name: 'voting.code_reuse_denied',
           actorAccountId: account?._id ?? null, subjectType: 'votingAccessCode', subjectId: currentAccess.codeId,
           outcome: 'denied', correlationId, metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } })
         return { access: decision(event, 'CODE_REQUIRED',
-          { codeRequired: true, mayRetryCode: true }), browserMarker: hadBrowserMarker ? null : browserMarker }
+          { codeRequired: true, mayRetryCode: true, hasBallotHistory }), browserMarker: hadBrowserMarker ? null : browserMarker }
       }
       const timestamp = now(); const result = await withTransaction(async (session) => {
         const options = session ? { session } : {}
@@ -183,7 +190,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           await auditRepository?.append({ name: 'voting.code_reuse_denied', actorAccountId: account?._id ?? null,
             subjectType: 'event', subjectId: current._id, outcome: 'denied', correlationId,
             metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } }, options)
-          return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
+          return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true, hasBallotHistory })
         }
         const markerDigest = account ? null : digestBrowserMarker(browserMarker)
         const consumed = await accessCodeRepository.consume({ codeId: code._id, accountId: account?._id ?? null,
@@ -196,7 +203,7 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           subjectType: 'votingAccessCode', subjectId: code._id, outcome: 'success', correlationId,
           metadata: { rulesVersion: current.votingRules.version,
             votingStateVersion: current.votingState.version, accessPolicy: 'code' } }, options)
-        return decision(current, 'ALLOWED')
+        return decision(current, 'ALLOWED', { hasBallotHistory })
       })
       logger?.info({ operation: 'voting.access_request', outcome: result.allowed ? 'success' : 'denied',
         reasonCode: result.decision, correlationId }, 'Voting access evaluated')
@@ -206,11 +213,9 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       const event = await eventRepository.findByPublicId(publicId)
       if (!event || event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.NOT_FOUND)
       if (event.votingRules?.status !== 'configured') throw new ApplicationError(ErrorCode.VOTING_NOT_CONFIGURED)
-      if (event.votingState?.status !== 'open') throw new ApplicationError(ErrorCode.VOTING_CLOSED)
       const account = viewer?.account ?? null
       if (event.votingRules.accessPolicy === 'account') {
         if (!account) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
-        if (!accountIsVotingComplete(account)) throw new ApplicationError(ErrorCode.ACCOUNT_REQUIREMENTS_NOT_MET)
       }
       let issuedBrowserMarker = null
       if (!account && event.votingRules.accessPolicy === 'unrestricted' && !browserMarker) {
@@ -221,14 +226,21 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       if (!account && event.votingRules.accessPolicy === 'unrestricted' && !markerDigest) {
         throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
       }
-      if (event.votingRules.accessPolicy === 'code') {
-        const access = account ? await voterAccessRepository?.find(event._id, account._id)
-          : markerDigest ? await voterAccessRepository?.findByBrowser(event._id, markerDigest) : null
-        if (!access) throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
-      }
       const ballot = account
         ? await ballotRepository.findLatestByAccount(event._id, account._id)
         : markerDigest ? await ballotRepository.findLatestByBrowserMarker(event._id, markerDigest) : null
+      if (!ballot) {
+        if (event.votingState?.status !== 'open') throw new ApplicationError(ErrorCode.VOTING_CLOSED)
+        if (event.votingRules.accessPolicy === 'account' && !accountIsVotingComplete(account)) {
+          throw new ApplicationError(ErrorCode.ACCOUNT_REQUIREMENTS_NOT_MET)
+        }
+        if (event.votingRules.accessPolicy === 'code') {
+          const access = account ? await voterAccessRepository?.find(event._id, account._id)
+            : markerDigest ? await voterAccessRepository?.findByBrowser(event._id, markerDigest) : null
+          const accessBallot = access?.codeId ? await ballotRepository.findByAccessCode(access.codeId) : null
+          if (!access || accessBallot) throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
+        }
+      }
       const activeEntries = await eventEntryRepository.listActiveByEvent(event._id)
       const selectedIds = ballot?.categoryBallots.flatMap((category) => category.entryIds ??
         category.entries?.map(({ entryId }) => entryId) ?? []) ?? []
@@ -254,6 +266,39 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       }
       return { event: eventView, submittedBallot: projectBallot(ballot, event, allEntries), mayCastAnother,
         browserMarker: issuedBrowserMarker }
+    },
+    async ballotHistory({ publicId, first = 20, after = null }, viewer = null,
+      { browserMarker = null, correlationId = 'ballot-history' } = {}) {
+      const event = await eventRepository.findByPublicId(publicId)
+      if (!event || event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.NOT_FOUND)
+      let pageSize; let cursor
+      try { pageSize = ballotHistoryPageSize(first ?? 20); cursor = decodeBallotHistoryCursor(after) }
+      catch (error) { throw new ApplicationError(ErrorCode.VALIDATION_FAILED, { cause: error }) }
+      const account = viewer?.account ?? null
+      const markerDigest = !account && browserMarker ? digestBrowserMarker?.(browserMarker) : null
+      const rows = account
+        ? await ballotRepository.listByAccount(event._id, account._id, { first: pageSize, after: cursor })
+        : markerDigest ? await ballotRepository.listByBrowserMarker(event._id, markerDigest,
+          { first: pageSize, after: cursor }) : []
+      const hasMore = rows.length > pageSize; const page = rows.slice(0, pageSize)
+      const selectedIds = page.flatMap((ballot) => ballot.categoryBallots.flatMap((category) => category.entryIds ??
+        category.entries?.map(({ entryId }) => entryId) ?? []))
+      const historicalEntries = selectedIds.length ? await eventEntryRepository.findByIds(selectedIds) : []
+      const activeEntries = await eventEntryRepository.listActiveByEvent(event._id)
+      let eventView = toEventView(event, account?._id ?? null)
+      if (accountRepository) {
+        const accounts = await accountRepository.findByIds(activeEntries.map(({ ownerAccountId }) => ownerAccountId))
+        eventView = projectEventEntries(event, activeEntries, accounts, account?._id ?? null)
+      }
+      const mayCastAnother = event.votingState?.status === 'open' && (event.votingRules.accessPolicy === 'code'
+        || event.votingRules.accessPolicy === 'unrestricted' && event.votingRules.unrestrictedRepeatPolicy === 'unlimited'
+        || event.votingRules.accessPolicy === 'account' && account && event.votingRules.maxBallotsPerAccount != null
+          && await ballotRepository.countByAccount(event._id, account?._id) < event.votingRules.maxBallotsPerAccount)
+      await auditRepository?.append({ name: 'voting.ballot_history_viewed', actorAccountId: account?._id ?? null,
+        subjectType: 'event', subjectId: event._id, outcome: 'success', correlationId,
+        metadata: { pageSize: page.length, hasMore } })
+      return { event: eventView, nodes: page.map((ballot) => projectBallot(ballot, event, historicalEntries)),
+        nextCursor: hasMore ? encodeBallotHistoryCursor(page.at(-1)) : null, hasMore, mayCastAnother }
     },
     async submit(rawInput, viewer, { correlationId = 'ballot-submit' } = {}) {
       const parsed = submitEventBallotInputSchema.safeParse(rawInput)

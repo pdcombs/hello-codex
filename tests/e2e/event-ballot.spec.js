@@ -6,6 +6,7 @@ import {
   openCodeBallot,
   openEventBallot,
   selectFirstAvailableChoice,
+  signInHistoryVoter,
   submitCurrentBallot,
 } from './fixtures/event-ballot.js'
 
@@ -75,11 +76,11 @@ test('CUF-005 sticky submit and confirmation remain keyboard/mobile usable', asy
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })
 
-test('code voter uses code A then code B on same device while prior ballot stays immutable', async ({ page }) => {
+test('code voter opens private paginated history after code A and code B on same device', async ({ page, browser }) => {
   test.skip(!ballotEnvironment.codePublicId || !ballotEnvironment.codeA || !ballotEnvironment.codeB,
     'Synthetic code event and two unused codes required')
   await openCodeBallot(page)
-  await submitCurrentBallot(page)
+  const firstSubmission = await submitCurrentBallot(page, 0)
   const firstReview = await page.locator('.ballot-form-readonly').textContent()
 
   await page.reload()
@@ -93,11 +94,35 @@ test('code voter uses code A then code B on same device while prior ballot stays
   await page.getByRole('dialog', { name: /enter a new voting code/i }).getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByRole('button', { name: 'Submit vote' })).toBeVisible()
   await expect(page.locator('.ballot-category input:checked')).toHaveCount(0)
-  await submitCurrentBallot(page)
+  const secondSubmission = await submitCurrentBallot(page, 1)
   const secondReview = await page.locator('.ballot-form-readonly').textContent()
   expect(secondReview).not.toBe('')
   await page.reload()
   await expect(page.locator('.ballot-form-readonly')).toContainText(secondReview.trim())
+
+  await page.goto(`/events/${ballotEnvironment.codePublicId}`)
+  await page.getByRole('button', { name: 'Vote' }).click()
+  const codeDialog = page.getByRole('dialog', { name: /enter voting code/i })
+  await expect(codeDialog.getByRole('button', { name: 'View previous votes' })).toBeVisible()
+  await codeDialog.getByRole('button', { name: 'View previous votes' }).click()
+  await expect(page).toHaveURL(new RegExp(`/events/${ballotEnvironment.codePublicId}/votes`))
+  await expect(page.getByRole('heading', { name: /Previous votes for / })).toBeVisible()
+  const history = page.locator('main article')
+  await expect(history).toHaveCount(2)
+  await expect(history.locator('time')).toHaveCount(2)
+  if (secondSubmission.selectedLabel) await expect(history.nth(0)).toContainText(secondSubmission.selectedLabel)
+  if (firstSubmission.selectedLabel) await expect(history.nth(1)).toContainText(firstSubmission.selectedLabel)
+  await page.getByRole('button', { name: 'Cast another vote' }).click()
+  await expect(page.getByRole('dialog', { name: /enter a new voting code/i })).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel' }).click()
+
+  const foreignContext = await browser.newContext()
+  try {
+    const foreignPage = await foreignContext.newPage()
+    await foreignPage.goto(`/events/${ballotEnvironment.codePublicId}/votes`)
+    await expect(foreignPage.getByRole('heading', { name: /Previous votes for / })).toBeVisible()
+    await expect(foreignPage.locator('main article')).toHaveCount(0)
+  } finally { await foreignContext.close() }
 })
 
 test('code re-entry cancel preserves review and keyboard focus on mobile', async ({ page }) => {
@@ -113,5 +138,18 @@ test('code re-entry cancel preserves review and keyboard focus on mobile', async
   await page.getByRole('dialog', { name: /enter a new voting code/i }).getByRole('button', { name: 'Cancel' }).click()
   await expect(page.locator('.ballot-form-readonly')).toContainText(review.trim())
   await expect(another).toBeFocused()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+})
+
+test('closed voting keeps account history private and read-only on mobile', async ({ page }) => {
+  test.skip(!ballotEnvironment.closedHistoryPublicId || !ballotEnvironment.historyVoterEmail
+    || !ballotEnvironment.historyVoterPassword, 'Synthetic closed history voter and event required')
+  await page.setViewportSize({ width: 320, height: 640 })
+  await signInHistoryVoter(page)
+  await page.goto(`/events/${ballotEnvironment.closedHistoryPublicId}/votes`)
+  await expect(page.getByRole('heading', { name: /Previous votes for / })).toBeVisible()
+  await expect(page.locator('main article').first()).toBeVisible()
+  await expect(page.getByText('Voting is closed. Previous votes remain available to review.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Cast another vote' })).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
 })

@@ -64,9 +64,10 @@ describe('voting access decisions', () => {
     const test = setup(event); const code = votingCodeFixture()
     test.voterAccessRepository.findByBrowser.mockResolvedValue({ status: 'active', codeId: code._id })
     test.ballotRepository.findByAccessCode.mockResolvedValue({ _id: votingTestIds.entryId, accessCodeId: code._id })
+    test.ballotRepository.findLatestByBrowserMarker.mockResolvedValue({ _id: votingTestIds.entryId })
     const required = await test.service.requestAccess({ eventId: String(event._id) }, null,
       { browserMarker: 'browser-1', correlationId: 'repeat-code' })
-    expect(required.access).toMatchObject({ decision: 'CODE_REQUIRED', allowed: false,
+    expect(required.access).toMatchObject({ decision: 'CODE_REQUIRED', allowed: false, hasBallotHistory: true,
       requirements: { codeRequired: true, mayRetryCode: true } })
     expect(test.auditRepository.append).toHaveBeenCalledWith(expect.objectContaining({
       name: 'voting.code_reuse_denied', outcome: 'denied', metadata: { reasonCode: 'ACCESS_CODE_USED' },
@@ -91,5 +92,18 @@ describe('voting access decisions', () => {
     expect(view.submittedBallot).toMatchObject({ votingStateVersion: 1, categoryBallots: [{
       categoryTitle: 'Category', entries: [{ entryTitle: 'Legacy entry', selectionOrder: 0 }],
     }] })
+  })
+  it('keeps closed and used-code direct ballot views gated when no review ballot exists', async () => {
+    const closed = setup(closedVotingEvent())
+    await expect(closed.service.ballotView({ publicId: closedVotingEvent().publicId }, null,
+      { browserMarker: 'browser-1' })).rejects.toMatchObject({ code: 'VOTING_CLOSED' })
+
+    const codeEvent = openVotingEvent({ votingRules: { ...openVotingEvent().votingRules,
+      accessPolicy: 'code', codeRequiresCompletedAccount: false } })
+    const code = setup(codeEvent); const accessCode = votingCodeFixture()
+    code.voterAccessRepository.findByBrowser.mockResolvedValue({ status: 'active', codeId: accessCode._id })
+    code.ballotRepository.findByAccessCode.mockResolvedValue({ _id: votingTestIds.entryId, accessCodeId: accessCode._id })
+    await expect(code.service.ballotView({ publicId: codeEvent.publicId }, null,
+      { browserMarker: 'browser-1' })).rejects.toMatchObject({ code: 'INVALID_ACCESS_CODE' })
   })
 })

@@ -15,6 +15,7 @@ describe('GraphQL schema contract', () => {
       'viewer', 'ownedEvents', 'eventByPublicId', 'eventParticipants', 'entryOwnerChoices', 'eventRegistrations',
       'eventVotingCapability', 'eventVotingCodes', 'searchPublicEvents', 'eventDetailView', 'inspectPasswordReset',
       'eventBallotView',
+      'eventBallotHistory',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')
