@@ -24,6 +24,9 @@ describe('event voting privacy and observability', () => {
       outcome: 'success', correlationId: 'correlation-id', metadata: { rulesVersion: 2, accessPolicy: 'code' } })
     await repository.append({ name: 'voting.code_reconciled', subjectType: 'votingAccessCode', subjectId: 'code-id',
       outcome: 'success', correlationId: 'migration-id', metadata: { reasonCode: 'ORPHANED_CLAIM_RESTORED' } })
+    await repository.append({ name: 'voting.results_viewed', actorAccountId: null, subjectType: 'event',
+      subjectId: 'event-id', outcome: 'success', correlationId: 'results-id',
+      metadata: { ballotCount: 12, categoryCount: 3 } })
     expect(JSON.stringify(documents)).not.toMatch(/abc123|voter@example\.test|entry-secret/)
     await expect(repository.append({ name: 'voting.ballot_submitted', subjectType: 'ballotSubmission',
       subjectId: 'ballot-id', outcome: 'success', correlationId: 'correlation-id',

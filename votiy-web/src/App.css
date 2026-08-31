@@ -571,6 +571,56 @@ main:focus {
   text-align: center;
 }
 
+.voting-results { display: grid; gap: 18px; }
+.voting-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid rgba(98, 198, 242, 0.28);
+  border-radius: 18px;
+  background: rgba(98, 198, 242, 0.07);
+}
+.voting-results-header h2, .voting-results-header p { margin: 0; }
+.votes-received { display: grid; min-width: 130px; text-align: right; }
+.votes-received strong { color: #fff; font-size: clamp(2rem, 7vw, 3.4rem); line-height: 1; }
+.votes-received span { color: var(--color-text-muted); font-size: .82rem; }
+.voting-result-categories { display: grid; gap: 16px; }
+.voting-result-category {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+.voting-result-category-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.voting-result-category-head h3 { margin: 0; }
+.voting-result-category-head > span { color: var(--color-text-muted); font-size: .8rem; }
+.voting-result-entries { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.voting-result-entries li {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .035);
+}
+.voting-result-entries li.winner { border-color: rgba(98, 198, 242, .65); background: rgba(98, 198, 242, .13); }
+.voting-result-entries li > strong { min-width: 2ch; color: #fff; font-size: 1.2rem; text-align: right; }
+.result-entry-title { min-width: 0; overflow-wrap: anywhere; }
+.result-entry-title [aria-label="Winner"] { color: #62c6f2; }
+.results-empty { margin: 0; padding: 18px; color: var(--color-text-muted); text-align: center; }
+.results-retry { display: block; margin: 16px auto 0; }
+
+@media (max-width: 560px) {
+  .voting-results-header { align-items: flex-end; }
+  .votes-received { min-width: 100px; }
+  .voting-result-category { padding: 14px; }
+}
+
 .event-photo-dialog {
   display: grid;
   width: min(92vw, 720px);

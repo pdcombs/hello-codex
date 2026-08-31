@@ -5,7 +5,7 @@ export default function EventWorkspaceTabs({ publicId }) {
   const tabs = [
     ['Entries', `/events/${publicId}`, true],
     ['Participants', `/events/${publicId}/participants`, false],
-    ['Results (coming soon)', `/events/${publicId}/results`, false],
+    ['Results', `/events/${publicId}/results`, false],
   ]
   return <nav className="event-workspace-tabs" aria-label="Event views" role="tablist">
     {tabs.map(([label, to, end]) => {

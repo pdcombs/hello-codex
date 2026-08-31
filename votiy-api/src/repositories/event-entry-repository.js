@@ -17,6 +17,9 @@ export function createEventEntryRepository(database) {
       return collection.find({ eventId: id(eventId), status: 'active' }, options)
         .sort({ createdAt: 1, _id: 1 }).toArray()
     },
+    listByEvent(eventId, options = {}) {
+      return collection.find({ eventId: id(eventId) }, options).sort({ createdAt: 1, _id: 1 }).toArray()
+    },
     listActiveByEventAndCategory(eventId, categoryId, options = {}) {
       return collection.find({ eventId: id(eventId), categoryId: id(categoryId), status: 'active' }, options)
         .sort({ createdAt: 1, _id: 1 }).toArray()

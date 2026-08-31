@@ -2,25 +2,55 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventWorkspaceLayout from './EventWorkspaceLayout.jsx'
-import { loadEventByPublicId } from './events.graphql.js'
+import { loadEventVotingResults } from '../voting/voting.graphql.js'
 
-export default function OwnerEventResultsPage({ loader = loadEventByPublicId }) {
+export default function OwnerEventResultsPage({ loader = loadEventVotingResults }) {
   const { publicId } = useParams()
-  const [state, setState] = useState({ status: 'loading', event: null, error: null })
+  const [state, setState] = useState({ status: 'loading', results: null, error: null })
+  const [revision, setRevision] = useState(0)
   useEffect(() => {
-    loader(publicId).then(({ event }) => setState({ status: 'success', event, error: null }))
-      .catch((error) => setState({ status: 'error', event: null, error }))
-  }, [loader, publicId])
+    const controller = new AbortController()
+    setState((current) => ({ status: 'loading', results: current.results, error: null }))
+    loader(publicId, { signal: controller.signal })
+      .then((results) => setState({ status: 'success', results, error: null }))
+      .catch((error) => { if (error.name !== 'AbortError') setState({ status: 'error', results: null, error }) })
+    return () => controller.abort()
+  }, [loader, publicId, revision])
   async function reloadEvent() {
-    const result = await loader(publicId)
-    setState({ status: 'success', event: result.event, error: null })
+    setRevision((value) => value + 1)
   }
   if (state.status === 'loading') return <main id="main-content" className="page-shell"><LoadingState message="Loading event…" /></main>
-  if (state.status === 'error') return <main id="main-content" className="page-shell"><ErrorState title="Event unavailable" message={state.error.message} /></main>
+  if (state.status === 'error') return <main id="main-content" className="page-shell">
+    <ErrorState title="Results unavailable" message={state.error.message} />
+    <button className="secondary-action results-retry" type="button" onClick={reloadEvent}>Try again</button>
+  </main>
+  const results = state.results
   return <main id="main-content" className="page-shell">
-    <EventWorkspaceLayout event={state.event} onChanged={reloadEvent}>
-      <section className="coming-soon" aria-labelledby="results-title">
-        <h2 id="results-title">🎉 Feature Coming Soon</h2>
+    <EventWorkspaceLayout event={results.event} onChanged={reloadEvent}>
+      <section className="voting-results" aria-labelledby="results-title">
+        <header className="voting-results-header">
+          <div><p className="eyebrow">Review results</p><h2 id="results-title">Voting results</h2></div>
+          <div className="votes-received" aria-label={`${results.votesReceived} votes received`}>
+            <strong>{results.votesReceived}</strong><span>Votes received</span>
+          </div>
+        </header>
+        {results.votesReceived === 0 && <p className="results-empty" role="status">No votes received yet.</p>}
+        <div className="voting-result-categories">
+          {results.categories.map((category) => <section className="voting-result-category" key={category.categoryId}
+            aria-labelledby={`result-category-${category.categoryId}`}>
+            <div className="voting-result-category-head">
+              <h3 id={`result-category-${category.categoryId}`}>{category.categoryTitle}</h3>
+              <span>{category.method === 'RANKING' ? 'Rank points' : 'Selections'}</span>
+            </div>
+            {category.entries.length === 0 ? <p className="results-empty">No entries in this category.</p>
+              : <ol className="voting-result-entries">
+                {category.entries.map((entry) => <li key={entry.entryId} className={entry.winner ? 'winner' : undefined}>
+                  <span className="result-entry-title">{entry.winner && <span aria-label="Winner">★</span>} {entry.entryTitle}</span>
+                  <strong aria-label={`${entry.total} ${category.method === 'RANKING' ? 'points' : 'selections'}`}>{entry.total}</strong>
+                </li>)}
+              </ol>}
+          </section>)}
+        </div>
       </section>
     </EventWorkspaceLayout>
   </main>

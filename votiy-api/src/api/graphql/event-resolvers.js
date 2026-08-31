@@ -17,6 +17,7 @@ const successVotingStatus = (result) => ({ __typename: 'VotingStatusChangeSucces
 const successVotingAccess = (access) => ({ __typename: 'VotingAccessDecisionSuccess', access })
 const successBallotView = (ballotView) => ({ __typename: 'EventBallotViewSuccess', ballotView })
 const successBallotHistory = (history) => ({ __typename: 'EventBallotHistorySuccess', history })
+const successVotingResults = (results) => ({ __typename: 'EventVotingResultsSuccess', results })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -28,7 +29,7 @@ const failure = (error, correlationId) => ({ __typename: 'OperationError', ...to
 export function createEventResolvers({ eventService, eventRegistrationService, eventEntryService = null,
   eventCategoryService, eventVotingRulesService = null, eventVotingStateService = null,
   eventVotingService = null, eventSearchService = null,
-  eventVisibilityService = null, auditRepository }) {
+  eventVisibilityService = null, eventResultsService = null, auditRepository }) {
   return Object.freeze({
     async searchPublicEvents(args, context) {
       try {
@@ -94,6 +95,11 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     async eventBallotHistory({ publicId, first, after }, context) {
       try { return successBallotHistory(await eventVotingService.ballotHistory({ publicId, first, after }, context.viewer,
         { browserMarker: context.votingBrowserMarker, correlationId: context.correlationId })) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventVotingResults({ publicId }, context) {
+      try { return successVotingResults(await eventResultsService.results({ publicId }, context.viewer,
+        { correlationId: context.correlationId })) }
       catch (error) { return failure(error, context.correlationId) }
     },
     async setEventVotingStatus({ input }, context) {

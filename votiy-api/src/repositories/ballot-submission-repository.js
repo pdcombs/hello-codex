@@ -19,6 +19,9 @@ export function createBallotSubmissionRepository(database) {
     findByAccessCode(accessCodeId, options = {}) {
       return collection.findOne({ accessCodeId: id(accessCodeId) }, options)
     },
+    listByEvent(eventId, options = {}) {
+      return collection.find({ eventId: id(eventId) }, options).sort({ submittedAt: 1, _id: 1 }).toArray()
+    },
     findLatestByAccount(eventId, accountId, options = {}) {
       return collection.findOne({ eventId: id(eventId), accountId: id(accountId) },
         { ...options, sort: { submittedAt: -1, _id: -1 } })

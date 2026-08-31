@@ -53,6 +53,7 @@ import { createPasswordResetService } from './services/password-reset-service.js
 import { createEventVotingRulesService } from './services/event-voting-rules-service.js'
 import { createEventVotingService } from './services/event-voting-service.js'
 import { createEventVotingStateService } from './services/event-voting-state-service.js'
+import { createEventResultsService } from './services/event-results-service.js'
 import { createEventSearchService } from './services/event-search-service.js'
 import { createEventVisibilityService } from './services/event-visibility-service.js'
 import { createBallotSubmissionRepository } from './repositories/ballot-submission-repository.js'
@@ -204,6 +205,8 @@ const eventVotingService = createEventVotingService({ eventRepository, eventEntr
   digestBrowserMarker: (marker) => digestSecret(marker, environment.tokenPepper),
   generateBrowserMarker: generateOpaqueToken, votingCodeEncryptionKey: environment.votingCodeEncryptionKey,
   withTransaction: mongo.withTransaction, logger })
+const eventResultsService = createEventResultsService({ eventRepository, eventEntryRepository, ballotRepository,
+  eventService, auditRepository, logger })
 const eventPhotoService = createEventPhotoService({
   eventRepository,
   photoRepository: eventPhotoRepository,
@@ -238,7 +241,7 @@ const rootValue = {
   ...createSessionResolvers({ authenticationService, auditRepository }),
   ...createEventResolvers({ eventService, eventRegistrationService, eventEntryService, eventCategoryService,
     eventVotingRulesService, eventVotingStateService, eventVotingService, eventSearchService,
-    eventVisibilityService, auditRepository }),
+    eventVisibilityService, eventResultsService, auditRepository }),
 }
 const graphqlHandler = createGraphqlHandler({
   schema,

@@ -1,0 +1,33 @@
+extend type Query {
+  eventVotingResults(publicId: String!): EventVotingResultsResult!
+}
+
+type VotingEntryResult {
+  entryId: ID!
+  entryTitle: String!
+  entryOrder: Int!
+  total: Int!
+  winner: Boolean!
+}
+
+type VotingCategoryResult {
+  categoryId: ID!
+  categoryTitle: String!
+  categoryOrder: Int!
+  method: CategoryVotingMethod!
+  contributingBallots: Int!
+  entries: [VotingEntryResult!]!
+}
+
+type EventVotingResults {
+  event: Event!
+  votesReceived: Int!
+  calculatedAt: DateTime!
+  categories: [VotingCategoryResult!]!
+}
+
+type EventVotingResultsSuccess {
+  results: EventVotingResults!
+}
+
+union EventVotingResultsResult = EventVotingResultsSuccess | OperationError

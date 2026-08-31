@@ -24,11 +24,12 @@ describe('event workspace subroutes', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Only the event host')
   })
 
-  it('renders the results placeholder under selected URL tab', async () => {
+  it('renders voting results under selected URL tab', async () => {
     render(<MemoryRouter initialEntries={['/events/demo/results']}><Routes>
-      <Route path="/events/:publicId/results" element={<OwnerEventResultsPage loader={async () => ({ event })} />} />
+      <Route path="/events/:publicId/results" element={<OwnerEventResultsPage loader={async () =>
+        ({ event, votesReceived: 0, categories: [] })} />} />
     </Routes></MemoryRouter>)
-    expect(await screen.findByRole('heading', { name: '🎉 Feature Coming Soon' })).toBeVisible()
-    expect(screen.getByRole('tab', { name: 'Results (coming soon)' })).toHaveAttribute('aria-selected', 'true')
+    expect(await screen.findByRole('heading', { name: 'Voting results' })).toBeVisible()
+    expect(screen.getByRole('tab', { name: 'Results' })).toHaveAttribute('aria-selected', 'true')
   })
 })

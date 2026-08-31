@@ -10,7 +10,7 @@ describe('event workspace tabs', () => {
       <Route path="/events/:publicId/*" element={<EventWorkspaceTabs publicId="demo" />} />
     </Routes></MemoryRouter>)
     expect(screen.getByRole('tab', { name: 'Participants' })).toHaveAttribute('aria-selected', 'true')
-    await userEvent.setup().click(screen.getByRole('tab', { name: 'Results (coming soon)' }))
-    expect(screen.getByRole('tab', { name: 'Results (coming soon)' })).toHaveAttribute('aria-selected', 'true')
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Results' }))
+    expect(screen.getByRole('tab', { name: 'Results' })).toHaveAttribute('aria-selected', 'true')
   })
 })

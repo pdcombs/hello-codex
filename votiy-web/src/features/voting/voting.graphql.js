@@ -110,6 +110,22 @@ export const EVENT_BALLOT_HISTORY = `query EventBallotHistory($publicId: String!
   }
 }`
 
+export const EVENT_VOTING_RESULTS = `query EventVotingResults($publicId: String!) {
+  eventVotingResults(publicId: $publicId) { __typename
+    ... on EventVotingResultsSuccess { results {
+      event { id publicId title description location registrationPolicy isOwner createdAt updatedAt
+        visibility lifecycleStatus detailAccess archivedAt
+        votingState { status version openedAt closedAt updatedAt }
+        categories { id title isDefault createdAt updatedAt }
+        voting { votingStatus canVote reasonCode rules { status version accessPolicy
+          defaultCategoryRule { method minimumSelections maximumSelections } } } }
+      votesReceived calculatedAt categories { categoryId categoryTitle categoryOrder method contributingBallots
+        entries { entryId entryTitle entryOrder total winner } }
+    } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
 import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
 
 export async function updateEventVotingRules(input) {
@@ -134,6 +150,12 @@ export async function loadEventBallotHistory(publicId, { first = 20, after = nul
   const data = await graphqlRequest({ query: EVENT_BALLOT_HISTORY, variables: { publicId, first, after },
     operationName: 'EventBallotHistory', signal })
   return unwrapGraphqlResult(data.eventBallotHistory).history
+}
+
+export async function loadEventVotingResults(publicId, { signal } = {}) {
+  const data = await graphqlRequest({ query: EVENT_VOTING_RESULTS, variables: { publicId },
+    operationName: 'EventVotingResults', signal })
+  return unwrapGraphqlResult(data.eventVotingResults).results
 }
 
 export async function loadEventVotingCapability(eventId) {
