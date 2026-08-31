@@ -146,23 +146,32 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         return { access: decision(event, count > 0 ? 'REPEAT_LIMIT_REACHED' : 'ALLOWED'),
           browserMarker: browserMarker ? null : marker }
       }
+      let currentAccess = null
       if (codeAccountRequired(rules)) {
         if (!account) return { access: decision(event, 'SIGN_IN_REQUIRED', { signInRequired: true }), browserMarker: null }
         if (!accountIsVotingComplete(account)) return { access: decision(event, 'ACCOUNT_COMPLETION_REQUIRED',
           { completedAccountRequired: true }), browserMarker: null }
         const count = await ballotRepository.countByAccount(event._id, account._id)
         if (count >= rules.maxBallotsPerAccount) return { access: decision(event, 'REPEAT_LIMIT_REACHED'), browserMarker: null }
-        const existing = await voterAccessRepository.find(event._id, account._id)
-        if (existing?.status === 'active') return { access: decision(event, 'ALLOWED'), browserMarker: null }
+        currentAccess = await voterAccessRepository.find(event._id, account._id)
       } else {
         const marker = browserMarker ?? generateBrowserMarker?.(); const markerDigest = digestBrowserMarker?.(marker)
         if (!marker || !markerDigest) throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
-        const existing = await voterAccessRepository.findByBrowser(event._id, markerDigest)
-        if (existing) return { access: decision(event, 'ALLOWED'), browserMarker: browserMarker ? null : marker }
+        currentAccess = await voterAccessRepository.findByBrowser(event._id, markerDigest)
         browserMarker = marker
       }
-      if (!input.accessCode) return { access: decision(event, 'CODE_REQUIRED',
-        { codeRequired: true, mayRetryCode: true }), browserMarker: hadBrowserMarker ? null : browserMarker }
+      const currentBallot = currentAccess?.codeId
+        ? await ballotRepository.findByAccessCode(currentAccess.codeId) : null
+      if (currentAccess && !currentBallot && !input.accessCode) {
+        return { access: decision(event, 'ALLOWED'), browserMarker: account || hadBrowserMarker ? null : browserMarker }
+      }
+      if (!input.accessCode) {
+        if (currentBallot) await auditRepository?.append({ name: 'voting.code_reuse_denied',
+          actorAccountId: account?._id ?? null, subjectType: 'votingAccessCode', subjectId: currentAccess.codeId,
+          outcome: 'denied', correlationId, metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } })
+        return { access: decision(event, 'CODE_REQUIRED',
+          { codeRequired: true, mayRetryCode: true }), browserMarker: hadBrowserMarker ? null : browserMarker }
+      }
       const timestamp = now(); const result = await withTransaction(async (session) => {
         const options = session ? { session } : {}
         const current = await eventRepository.findById(event._id, options)
@@ -170,7 +179,12 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           return decision(current, 'CLOSED')
         }
         const code = await accessCodeRepository.findUnused(current._id, digestCode(current._id, input.accessCode), options)
-        if (!code) return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
+        if (!code) {
+          await auditRepository?.append({ name: 'voting.code_reuse_denied', actorAccountId: account?._id ?? null,
+            subjectType: 'event', subjectId: current._id, outcome: 'denied', correlationId,
+            metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } }, options)
+          return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
+        }
         const markerDigest = account ? null : digestBrowserMarker(browserMarker)
         const consumed = await accessCodeRepository.consume({ codeId: code._id, accountId: account?._id ?? null,
           now: timestamp }, options)
@@ -228,7 +242,9 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       }
       let mayCastAnother = event.votingState?.status === 'open'
       if (ballot) {
-        if (event.votingRules.accessPolicy === 'unrestricted') {
+        if (event.votingRules.accessPolicy === 'code') {
+          mayCastAnother = event.votingState?.status === 'open'
+        } else if (event.votingRules.accessPolicy === 'unrestricted') {
           mayCastAnother = mayCastAnother && event.votingRules.unrestrictedRepeatPolicy === 'unlimited'
         } else if (event.votingRules.maxBallotsPerAccount != null) {
           const count = account ? await ballotRepository.countByAccount(event._id, account._id)
@@ -277,6 +293,13 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           const existingAccess = voterAccessRepository ? (account
             ? await voterAccessRepository.find(event._id, account._id, options)
             : markerDigest ? await voterAccessRepository.findByBrowser(event._id, markerDigest, options) : null) : null
+          if (existingAccess?.codeId && await ballotRepository.findByAccessCode(existingAccess.codeId, options)) {
+            await auditRepository?.append({ name: 'voting.code_reuse_denied', actorAccountId: account?._id ?? null,
+              subjectType: 'votingAccessCode', subjectId: existingAccess.codeId, outcome: 'denied', correlationId,
+              metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } }, options)
+            throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
+          }
+          if (account && existingAccess) grantedAccessCodeId = existingAccess.codeId
           if (!account && existingAccess) {
             browserMarker = input.browserMarker
             browserMarkerDigest = markerDigest
@@ -318,6 +341,12 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           createdAt: timestamp, schemaVersion: 2 }
         try { await ballotRepository.create(ballot, options) }
         catch (error) {
+          if (error?.code === 11000 && (error?.keyPattern?.accessCodeId || ballot.accessCodeId)) {
+            await auditRepository?.append({ name: 'voting.code_reuse_denied', actorAccountId: account?._id ?? null,
+              subjectType: 'votingAccessCode', subjectId: ballot.accessCodeId, outcome: 'denied', correlationId,
+              metadata: { reasonCode: ErrorCode.ACCESS_CODE_USED } }, options)
+            throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
+          }
           if (error?.code === 11000 && browserMarkerDigest) throw new ApplicationError(ErrorCode.BALLOT_LIMIT_REACHED)
           throw error
         }
@@ -334,10 +363,17 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
             metadata: { rulesVersion: event.votingRules.version } }, options)
           logger?.info({ operation: 'voting.code_consume', outcome: 'success', correlationId },
             'Voting code consumed')
+        } else if (grantedAccessCodeId) {
+          const attached = await accessCodeRepository.attachBallot({ codeId: grantedAccessCodeId,
+            ballotId: ballot._id, now: timestamp }, options)
+          if (!attached) throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
+          await auditRepository?.append({ name: 'voting.code_ballot_attached', actorAccountId: account?._id ?? null,
+            subjectType: 'votingAccessCode', subjectId: grantedAccessCodeId, outcome: 'success', correlationId,
+            metadata: { rulesVersion: event.votingRules.version } }, options)
         }
         if (event.votingRules.accessPolicy === 'code' && account && voterAccessRepository) {
           await voterAccessRepository.grant({ eventId: event._id, accountId: account._id, source: 'code',
-            codeId: accessCode?._id ?? null, rulesVersion: event.votingRules.version, now: timestamp }, options)
+            codeId: accessCode?._id ?? grantedAccessCodeId, rulesVersion: event.votingRules.version, now: timestamp }, options)
           await auditRepository?.append({ name: 'event.voter_access_granted', actorAccountId: account._id,
             subjectType: 'eventVoterAccess', subjectId: `${event._id}:${account._id}`, outcome: 'success',
             correlationId, metadata: { accessPolicy: 'code' } }, options)

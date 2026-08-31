@@ -12,6 +12,15 @@ describe('event voting repository contracts', () => {
     expect(findOneAndUpdate.mock.calls[0][0]).toMatchObject({ status: 'unused' })
   })
 
+  it('attaches one claimed code to one accepted ballot', async () => {
+    const findOneAndUpdate = vi.fn().mockResolvedValue(null)
+    const repository = createVotingAccessCodeRepository({ collection: () => ({ findOneAndUpdate }) })
+    const codeId = new ObjectId(); const ballotId = new ObjectId()
+    await repository.attachBallot({ codeId, ballotId, now: new Date() })
+    expect(findOneAndUpdate.mock.calls[0][0]).toEqual({ _id: codeId, status: 'used', usedByBallotId: null })
+    expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ $set: { usedByBallotId: ballotId } })
+  })
+
   it('upserts one event/account access relationship', async () => {
     const findOneAndUpdate = vi.fn().mockResolvedValue({ status: 'active' })
     const repository = createEventVoterAccessRepository({ collection: () => ({ findOneAndUpdate }) })

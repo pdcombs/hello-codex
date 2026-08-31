@@ -25,6 +25,13 @@ export function createVotingAccessCodeRepository(database) {
         { returnDocument: 'after', ...options },
       )
     },
+    attachBallot({ codeId, ballotId, now }, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(codeId), status: 'used', usedByBallotId: null },
+        { $set: { usedByBallotId: id(ballotId), updatedAt: now } },
+        { returnDocument: 'after', ...options },
+      )
+    },
     countUnusedByEvent(eventId, options = {}) {
       return collection.countDocuments({ eventId: id(eventId), status: 'unused' }, options)
     },

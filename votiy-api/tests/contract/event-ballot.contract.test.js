@@ -14,4 +14,8 @@ describe('event ballot GraphQL contract', () => {
       __typename ... on EventBallotViewSuccess { ballotView { mayCastAnother submittedBallot { id } } }
     } }`).errors).toEqual([])
   })
+  it('keeps used-code denial available through operation errors', async () => {
+    const schema = await createGraphqlSchema()
+    expect(schema.getType('ErrorCode').getValues().map(({ name }) => name)).toContain('ACCESS_CODE_USED')
+  })
 })

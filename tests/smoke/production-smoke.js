@@ -187,23 +187,34 @@ async function main() {
         ... on VotingCodeGenerationSuccess { codes { id code status } }
         ... on OperationError { code message }
       }
-    }`, { input: { eventId: syntheticEventId, quantity: 1, idempotencyKey: crypto.randomUUID() } },
+    }`, { input: { eventId: syntheticEventId, quantity: 2, idempotencyKey: crypto.randomUUID() } },
     { cookie, operationName: 'SmokeGenerateCode' })
     requireStatus(generatedCodes.data.generateVotingCodes?.__typename === 'VotingCodeGenerationSuccess',
       `Synthetic code generation failed: ${JSON.stringify(generatedCodes.data)}`)
-    const votingCode = generatedCodes.data.generateVotingCodes.codes[0]
+    const [votingCode, secondVotingCode] = generatedCodes.data.generateVotingCodes.codes
+    requireStatus(Boolean(votingCode && secondVotingCode), 'Synthetic smoke requires two generated voting codes')
+    const firstAccess = await graphql(`mutation SmokeClaimFirstCode($input: RequestVotingAccessInput!) {
+      requestVotingAccess(input: $input) { __typename
+        ... on VotingAccessDecisionSuccess { access { decision allowed requirements { codeRequired mayRetryCode } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, accessCode: votingCode.code } },
+    { operationName: 'SmokeClaimFirstCode' })
+    requireStatus(firstAccess.data.requestVotingAccess?.access?.allowed === true,
+      `Synthetic first code claim failed: ${JSON.stringify(firstAccess.data)}`)
+    const voterCookie = firstAccess.response.headers.get('set-cookie')?.split(';')[0] ?? ''
+    requireStatus(Boolean(voterCookie), 'Synthetic code voter browser cookie missing')
     const categoryBallots = projectedEvent.categories.filter((item) => item.entries.length > 0)
       .map((item) => ({ categoryId: item.id, entryIds: [item.entries[0].id] }))
     const ballotInput = { eventId: syntheticEventId, expectedRulesVersion: rulesVersion,
-      expectedVotingStateVersion: projectedEvent.votingState.version, accessCode: votingCode.code,
-      provisionalVoter: { email: `smoke-voter-${unique}@example.test`, phone: null }, categoryBallots,
+      expectedVotingStateVersion: projectedEvent.votingState.version, categoryBallots,
       idempotencyKey: crypto.randomUUID() }
     const ballot = await graphql(`mutation SmokeSubmitBallot($input: SubmitEventBallotInput!) {
       submitEventBallot(input: $input) { __typename
         ... on BallotSubmissionSuccess { receipt { id rulesVersion } }
         ... on OperationError { code message }
       }
-    }`, { input: ballotInput }, { operationName: 'SmokeSubmitBallot' })
+    }`, { input: ballotInput }, { cookie: voterCookie, operationName: 'SmokeSubmitBallot' })
     requireStatus(ballot.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess',
       `Synthetic ballot failed: ${JSON.stringify(ballot.data)}`)
     const replay = await graphql(`mutation SmokeReplayBallot($input: SubmitEventBallotInput!) {
@@ -211,7 +222,7 @@ async function main() {
         ... on BallotSubmissionSuccess { receipt { id rulesVersion } }
         ... on OperationError { code message }
       }
-    }`, { input: ballotInput }, { operationName: 'SmokeReplayBallot' })
+    }`, { input: ballotInput }, { cookie: voterCookie, operationName: 'SmokeReplayBallot' })
     requireStatus(replay.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess'
       && replay.data.submitEventBallot.receipt.id === ballot.data.submitEventBallot.receipt.id,
     `Synthetic ballot replay was not idempotent: ${JSON.stringify(replay.data)}`)
@@ -224,13 +235,44 @@ async function main() {
     requireStatus(privateReview.data.eventBallotView?.__typename === 'EventBallotViewSuccess'
       && privateReview.data.eventBallotView.ballotView.submittedBallot === null,
     `Host could inspect another voter's private ballot: ${JSON.stringify(privateReview.data)}`)
-    const reused = await graphql(`mutation SmokeReuseCode($input: SubmitEventBallotInput!) {
-      submitEventBallot(input: $input) { __typename ... on OperationError { code message } }
-    }`, { input: { ...ballotInput, idempotencyKey: crypto.randomUUID(),
-      provisionalVoter: { email: `smoke-reuse-${unique}@example.test`, phone: null } } },
-    { operationName: 'SmokeReuseCode' })
-    requireStatus(reused.data.submitEventBallot?.__typename === 'OperationError'
-      && reused.data.submitEventBallot.code === 'INVALID_ACCESS_CODE', 'Synthetic voting code reuse was not denied')
+    const reused = await graphql(`mutation SmokeReuseCode($input: RequestVotingAccessInput!) {
+      requestVotingAccess(input: $input) { __typename
+        ... on VotingAccessDecisionSuccess { access { decision allowed requirements { codeRequired mayRetryCode } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, accessCode: votingCode.code } },
+    { cookie: voterCookie, operationName: 'SmokeReuseCode' })
+    requireStatus(reused.data.requestVotingAccess?.access?.allowed === false
+      && reused.data.requestVotingAccess.access.decision === 'CODE_REQUIRED',
+    `Synthetic voting code reuse was not denied: ${JSON.stringify(reused.data)}`)
+    const secondAccess = await graphql(`mutation SmokeClaimSecondCode($input: RequestVotingAccessInput!) {
+      requestVotingAccess(input: $input) { __typename
+        ... on VotingAccessDecisionSuccess { access { decision allowed requirements { codeRequired mayRetryCode } } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { eventId: syntheticEventId, accessCode: secondVotingCode.code } },
+    { cookie: voterCookie, operationName: 'SmokeClaimSecondCode' })
+    requireStatus(secondAccess.data.requestVotingAccess?.access?.allowed === true,
+      `Synthetic second code claim failed: ${JSON.stringify(secondAccess.data)}`)
+    const secondBallot = await graphql(`mutation SmokeSubmitSecondBallot($input: SubmitEventBallotInput!) {
+      submitEventBallot(input: $input) { __typename
+        ... on BallotSubmissionSuccess { receipt { id rulesVersion } }
+        ... on OperationError { code message }
+      }
+    }`, { input: { ...ballotInput, idempotencyKey: crypto.randomUUID() } },
+    { cookie: voterCookie, operationName: 'SmokeSubmitSecondBallot' })
+    requireStatus(secondBallot.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess'
+      && secondBallot.data.submitEventBallot.receipt.id !== ballot.data.submitEventBallot.receipt.id,
+    `Synthetic second code did not create a distinct ballot: ${JSON.stringify(secondBallot.data)}`)
+    const latestReview = await graphql(`query SmokeLatestBallotReview($publicId: String!) {
+      eventBallotView(publicId: $publicId) { __typename
+        ... on EventBallotViewSuccess { ballotView { submittedBallot { id } mayCastAnother } }
+        ... on OperationError { code message }
+      }
+    }`, { publicId: projectedEvent.publicId }, { cookie: voterCookie, operationName: 'SmokeLatestBallotReview' })
+    requireStatus(latestReview.data.eventBallotView?.ballotView?.submittedBallot?.id
+      === secondBallot.data.submitEventBallot.receipt.id,
+    `Synthetic latest ballot review was not updated: ${JSON.stringify(latestReview.data)}`)
     const inventory = await graphql(`query SmokeVotingInventory($eventId: ID!) {
       eventVotingCodes(eventId: $eventId, first: 100) { __typename
         ... on VotingCodeListSuccess { codes { nodes { id status claimantAccountId } } }
@@ -238,8 +280,9 @@ async function main() {
       }
     }`, { eventId: syntheticEventId }, { cookie, operationName: 'SmokeVotingInventory' })
     requireStatus(inventory.data.eventVotingCodes?.codes?.nodes
-      ?.some((item) => item.id === votingCode.id && item.status === 'USED' && item.claimantAccountId),
-    'Synthetic code inventory did not report the consumed claim')
+      ?.filter((item) => [votingCode.id, secondVotingCode.id].includes(item.id)
+        && item.status === 'USED').length === 2,
+    'Synthetic code inventory did not report both consumed claims')
     if (auditMongoUri) {
       const { MongoClient } = await import('../../votiy-api/node_modules/mongodb/lib/index.js')
       const client = new MongoClient(auditMongoUri)

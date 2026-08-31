@@ -28,6 +28,7 @@ describe('voting code generation and atomic claim', () => {
       accessCodeRepository: createVotingAccessCodeRepository(mongo.database),
       idempotencyRepository: createIdempotencyRepository(mongo.database), auditRepository,
       digestCode: (eventId, code) => digestVotingCode({ eventId, code, key }), votingCodeEncryptionKey: key,
+      digestBrowserMarker: (marker) => `browser:${marker}`, generateBrowserMarker: () => 'generated-browser',
       withTransaction: transaction, now: () => new Date('2030-01-01'), logger })
   }
   beforeAll(async () => {
@@ -41,16 +42,16 @@ describe('voting code generation and atomic claim', () => {
       createdByAccountId: votingTestIds.hostId, status: 'active', archiveReason: null, archivedAt: null,
       archivedByAccountId: null, createdAt: new Date('2029-01-01'), updatedAt: new Date('2029-01-01'), schemaVersion: 1 })
     service = buildService()
-    generated = await service.generateCodes({ eventId: String(event._id), quantity: 2, idempotencyKey: 'batch-1' },
+    generated = await service.generateCodes({ eventId: String(event._id), quantity: 4, idempotencyKey: 'batch-1' },
       { account: { _id: votingTestIds.hostId } }, { correlationId: 'generate-1' })
   })
   afterAll(async () => mongo?.cleanup())
 
   it('generates exact encrypted host-only inventory with idempotent replay', async () => {
-    expect(generated).toHaveLength(2)
-    expect(new Set(generated.map(({ code }) => code)).size).toBe(2)
-    expect(await service.generateCodes({ eventId: String(event._id), quantity: 2, idempotencyKey: 'batch-1' },
-      { account: { _id: votingTestIds.hostId } })).toHaveLength(2)
+    expect(generated).toHaveLength(4)
+    expect(new Set(generated.map(({ code }) => code)).size).toBe(4)
+    expect(await service.generateCodes({ eventId: String(event._id), quantity: 4, idempotencyKey: 'batch-1' },
+      { account: { _id: votingTestIds.hostId } })).toHaveLength(4)
     const inventory = await service.listCodes({ eventId: String(event._id), first: 1 },
       { account: { _id: votingTestIds.hostId } })
     expect(inventory.nodes).toHaveLength(1); expect(inventory.nextCursor).toBeTruthy()
@@ -86,5 +87,38 @@ describe('voting code generation and atomic claim', () => {
     const logs = JSON.stringify(logger.info.mock.calls)
     expect(logs).not.toContain(generated[0].code); expect(logs).not.toContain('race-one@example.test')
     expect(logs).toContain('voting.code_generate'); expect(logs).toContain('voting.code_consume')
+  })
+
+  it('requires and links a different code for another ballot on the same browser', async () => {
+    const marker = 'shared-browser'; const input = (keySuffix) => ({ eventId: String(event._id),
+      expectedRulesVersion: 1, expectedVotingStateVersion: 1, browserMarker: marker,
+      categoryBallots: [{ categoryId: String(votingTestIds.categoryId), entryIds: [String(votingTestIds.entryId)] }],
+      idempotencyKey: `shared-${keySuffix}` })
+    expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[2].code }, null,
+      { browserMarker: marker, correlationId: 'shared-code-a' })).access.allowed).toBe(true)
+    const first = await service.submit(input('a'), null, { correlationId: 'shared-ballot-a' })
+    const replay = await service.submit(input('a'), null, { correlationId: 'shared-ballot-a-retry' })
+    expect(replay.receipt.id).toBe(first.receipt.id)
+    expect((await service.requestAccess({ eventId: String(event._id) }, null,
+      { browserMarker: marker, correlationId: 'shared-repeat' })).access.decision).toBe('CODE_REQUIRED')
+    expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[2].code }, null,
+      { browserMarker: marker, correlationId: 'shared-old-code' })).access.decision).toBe('CODE_REQUIRED')
+    expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[3].code }, null,
+      { browserMarker: marker, correlationId: 'shared-code-b' })).access.allowed).toBe(true)
+    const second = await service.submit(input('b'), null, { correlationId: 'shared-ballot-b' })
+    expect(second.receipt.id).not.toBe(first.receipt.id)
+    const review = await service.ballotView({ publicId: event.publicId }, null, { browserMarker: marker })
+    expect(review.submittedBallot.id).toBe(second.receipt.id); expect(review.mayCastAnother).toBe(true)
+    const ballots = await mongo.database.collection('ballotSubmissions').find({ browserMarkerDigest: `browser:${marker}` })
+      .sort({ submittedAt: 1, _id: 1 }).toArray()
+    expect(ballots).toHaveLength(2); expect(String(ballots[0].accessCodeId)).not.toBe(String(ballots[1].accessCodeId))
+    const codes = await mongo.database.collection('votingAccessCodes').find({ _id: { $in: ballots.map(({ accessCodeId }) => accessCodeId) } }).toArray()
+    expect(codes.every(({ usedByBallotId }) => usedByBallotId)).toBe(true)
+    const integrityAudits = await mongo.database.collection('auditEvents').find({ name: {
+      $in: ['voting.code_reuse_denied', 'voting.code_ballot_attached'] } }).toArray()
+    expect(integrityAudits.some(({ name }) => name === 'voting.code_reuse_denied')).toBe(true)
+    expect(integrityAudits.filter(({ name }) => name === 'voting.code_ballot_attached')).toHaveLength(2)
+    expect(JSON.stringify(integrityAudits)).not.toContain(generated[2].code)
+    expect(JSON.stringify(integrityAudits)).not.toContain(marker)
   })
 })

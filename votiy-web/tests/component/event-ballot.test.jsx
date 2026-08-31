@@ -53,15 +53,18 @@ describe('EventBallot', () => {
     expect(within(category).queryByRole('list')).not.toBeInTheDocument()
   })
 
-  it('renders retrieved ballot and offers another when rules allow', async () => {
+  it('preserves retrieved ballot and delegates repeat authorization', async () => {
     const ballot = { categoryBallots: [{ categoryId: 'one', categoryTitle: 'Original category', method: 'SINGLE',
       entries: [{ entryId: 'a', entryTitle: 'Original entry', selectionOrder: 0 }] },
       { categoryId: 'two', entries: [] }] }
-    render(<EventBallot event={eventFixture()} submittedBallot={ballot} mayCastAnother />)
+    const onCastAnother = vi.fn()
+    render(<EventBallot event={eventFixture()} submittedBallot={ballot} mayCastAnother onCastAnother={onCastAnother} />)
     expect(screen.getByRole('group', { name: 'Original category' })).toBeVisible()
     expect(screen.getByLabelText('Original entry')).toBeChecked()
     await userEvent.click(screen.getByRole('button', { name: 'Cast another vote' }))
-    expect(screen.getByRole('button', { name: 'Submit vote' })).toBeVisible()
-    expect(screen.getByLabelText('Alpha')).not.toBeChecked()
+    expect(onCastAnother).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('Original entry')).toBeChecked()
+    expect(screen.getByLabelText('Original entry')).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Submit vote' })).not.toBeInTheDocument()
   })
 })

@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 export const ballotEnvironment = Object.freeze({
   publicId: process.env.E2E_OPEN_VOTING_EVENT_PUBLIC_ID ?? '',
+  codePublicId: process.env.E2E_CODE_VOTING_EVENT_PUBLIC_ID ?? '',
+  codeA: process.env.E2E_VOTING_CODE_A ?? '',
+  codeB: process.env.E2E_VOTING_CODE_B ?? '',
+  codeC: process.env.E2E_VOTING_CODE_C ?? '',
 })
 
 export async function openEventBallot(page) {
@@ -28,8 +32,31 @@ export async function selectFirstAvailableChoice(page) {
 
 export async function openBallotConfirmation(page) {
   await page.getByRole('button', { name: 'Submit vote' }).click()
-  const sheet = page.getByRole('dialog', { name: /submit vote/i })
+  const sheet = page.getByRole('alertdialog', { name: /submit vote/i })
   await expect(sheet).toBeVisible()
   await expect(sheet).toContainText(/not be able to redo your vote/i)
   return sheet
+}
+
+export async function enterVotingCode(page, code) {
+  const dialog = page.getByRole('dialog', { name: /enter (a new )?voting code/i })
+  await expect(dialog).toBeVisible()
+  await dialog.getByLabel('Voting code').fill(code)
+  await dialog.getByRole('button', { name: 'Continue' }).click()
+  return dialog
+}
+
+export async function openCodeBallot(page, code = ballotEnvironment.codeA) {
+  await page.goto(`/events/${ballotEnvironment.codePublicId}`)
+  await page.getByRole('button', { name: 'Vote' }).click()
+  await enterVotingCode(page, code)
+  await expect(page).toHaveURL(new RegExp(`/events/${ballotEnvironment.codePublicId}/vote`))
+  await expect(page.getByRole('button', { name: 'Submit vote' })).toBeVisible()
+}
+
+export async function submitCurrentBallot(page) {
+  await selectFirstAvailableChoice(page)
+  const sheet = await openBallotConfirmation(page)
+  await sheet.getByRole('button', { name: /confirm|submit/i }).click()
+  await expect(page.getByText(/voting complete/i)).toBeVisible()
 }

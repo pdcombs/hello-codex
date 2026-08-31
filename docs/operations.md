@@ -120,6 +120,8 @@ never restore consumed codes or reset limits/history.
 - ballot submission or private-review errors above 5% for 10 minutes
 - ballot screen or submission p95 above 2 seconds for 10 minutes
 - any accepted ballot missing its matching privacy-safe `voting.ballot_submitted` audit
+- any generated code linked to more than one accepted ballot, or accepted code ballot without exact code linkage
+- code-reuse denial spikes above 5% for 10 minutes; first check UI retries and shared-device handoff behavior
 
 ## Find Events diagnostics and rollback
 
@@ -231,6 +233,11 @@ history. Confirm every event retains exactly one active default category after a
    phone, or other voter contact.
 5. Production smoke uses only dedicated synthetic fixtures. It proves idempotent replay and host isolation;
    it does not expose or compare synthetic vote choices.
+6. For shared-device incidents, correlate `voting.code_reuse_denied`, `voting.code_claimed`,
+   `voting.code_consumed`, and `voting.ballot_submitted`. Confirm code A remains attached to ballot A and
+   code B to ballot B. Review identity may retrieve latest ballot but must not authorize another submission.
+7. A consumed-code retry with a new attempt must return the safe code-required decision. Same-attempt replay
+   must return original success. Distinguish these using idempotency outcome and correlation ID, never code text.
 
 ### Ballot rollback
 
@@ -239,6 +246,11 @@ Roll back application code to last tested commit. Retain `ballotSubmissions`, `e
 Keep voting-code encryption key and manual event voting state unchanged. Never delete a ballot, unconsume
 a code, or reopen voting to repair a deploy. Confirm `/ready`, run production smoke, verify deployed commit
 header, then forward-fix schema or UI compatibility.
+
+If grant rotation fails during shared-device voting, disable or roll back only affected application code.
+Do not rewrite the browser/account review identity, latest grant, used-code record, or prior ballot. Query
+for duplicate `accessCodeId` linkage and missing `usedByBallotId`; any mismatch is an integrity incident and
+must be preserved for audit before repair.
 
 ## Rollback
 

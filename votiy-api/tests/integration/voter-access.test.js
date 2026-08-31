@@ -55,6 +55,9 @@ describe('voter access with real MongoDB', () => {
     expect(account).toMatchObject({ lifecycleStatus: 'provisional', referredByAccountId: null })
     expect(await mongo.database.collection('eventVoterAccess').findOne({ eventId: event._id, accountId: account._id }))
       .toMatchObject({ source: 'code', status: 'active', codeId })
+    const review = await service.ballotView({ publicId: event.publicId }, { account })
+    expect(review.submittedBallot?.id).toBeTruthy()
+    expect(review.mayCastAnother).toBe(true)
     expect(await mongo.database.collection('eventRegistrations').countDocuments({ eventId: event._id })).toBe(0)
 
     const rollbackCodeId = new ObjectId(); const rollbackEncrypted = encryptVotingCode({ code: 'def456', key })

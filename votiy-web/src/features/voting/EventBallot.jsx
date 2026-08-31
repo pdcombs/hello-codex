@@ -4,19 +4,18 @@ import BallotConfirmationSheet from './BallotConfirmationSheet.jsx'
 import { submitEventBallot } from './voting.graphql.js'
 
 export default function EventBallot({ event, submittedBallot = null, mayCastAnother = false,
-  submitter = submitEventBallot }) {
+  onCastAnother = () => {}, submitter = submitEventBallot }) {
   const categories = useMemo(() => (event.categories ?? []).filter((category) => category.entries?.length), [event.categories])
   const rules = event.voting?.rules
   const [choices, setChoices] = useState(() => choicesFromBallot(submittedBallot))
   const [completed, setCompleted] = useState(submittedBallot)
-  const [castingAnother, setCastingAnother] = useState(!submittedBallot)
   const [confirming, setConfirming] = useState(false)
   const [state, setState] = useState({ status: 'idle', error: null })
   const attemptKey = useRef(createAttemptKey())
   const submitButtonRef = useRef(null)
 
   if (!rules) return <p role="alert">Voting rules are unavailable.</p>
-  const readOnly = Boolean(completed && !castingAnother)
+  const readOnly = Boolean(completed)
   const method = rules.defaultCategoryRule.method
   const displayedCategories = readOnly
     ? completed.categoryBallots.map((category) => {
@@ -62,21 +61,18 @@ export default function EventBallot({ event, submittedBallot = null, mayCastAnot
         categoryBallots: categories.map((category) => ({ categoryId: category.id, entryIds: choices[category.id] ?? [] })),
         idempotencyKey: attemptKey.current })
       const ballot = result.ballot ?? ballotFromChoices(event, choices, result.receipt, method)
-      setCompleted(ballot); setChoices(choicesFromBallot(ballot)); setCastingAnother(false); setConfirming(false)
+      setCompleted(ballot); setChoices(choicesFromBallot(ballot)); setConfirming(false)
       setState({ status: 'success', error: null })
       requestAnimationFrame(() => document.querySelector('[data-ballot-complete]')?.focus())
     } catch (error) { setConfirming(false); setState({ status: 'error', error }) }
-  }
-
-  function startAnother() {
-    setChoices({}); setCastingAnother(true); setState({ status: 'idle', error: null }); attemptKey.current = createAttemptKey()
   }
 
   return <>
     {readOnly && <div className="ballot-complete" role="status" tabIndex="-1" data-ballot-complete>
       <p className="eyebrow">Voting complete</p><h2>Your vote was recorded</h2>
       <p>Review your submitted choices below.</p>
-      {mayCastAnother && <button className="secondary-action" type="button" onClick={startAnother}>Cast another vote</button>}
+      {mayCastAnother && <button className="secondary-action" type="button"
+        onClick={(event) => onCastAnother(event.currentTarget)}>Cast another vote</button>}
     </div>}
     <form className={`ballot-form${readOnly ? ' ballot-form-readonly' : ''}`} onSubmit={requestConfirmation} noValidate>
       {displayedCategories.map((category) => <BallotCategorySection key={category.id} category={category}
