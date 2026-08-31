@@ -10,7 +10,8 @@ function setup(event = openVotingEvent()) {
     findLatestByAccount: vi.fn().mockResolvedValue(null), findLatestByBrowserMarker: vi.fn().mockResolvedValue(null),
     findByAccessCode: vi.fn().mockResolvedValue(null) }
   const voterAccessRepository = { find: vi.fn().mockResolvedValue(null), findByBrowser: vi.fn().mockResolvedValue(null), grant: vi.fn() }
-  const accessCodeRepository = { findUnused: vi.fn().mockResolvedValue(votingCodeFixture()), consume: vi.fn().mockResolvedValue({}) }
+  const accessCodeRepository = { findUnused: vi.fn().mockResolvedValue(votingCodeFixture()),
+    findUnusedById: vi.fn().mockResolvedValue(votingCodeFixture()), consume: vi.fn().mockResolvedValue({}) }
   const auditRepository = { append: vi.fn() }
   const service = createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
     idempotencyRepository: {}, auditRepository, accountRepository: { findByIds: vi.fn().mockResolvedValue([]) },
@@ -46,7 +47,7 @@ describe('voting access decisions', () => {
     const result = await test.service.requestAccess({ eventId: String(event._id) }, null, { browserMarker: 'browser-1' })
     expect(result.access.decision).toBe('REPEAT_LIMIT_REACHED')
   })
-  it('requires then atomically claims code and browser grant', async () => {
+  it('validates code and grants browser access without consuming it', async () => {
     const event = openVotingEvent({ votingRules: { ...openVotingEvent().votingRules,
       accessPolicy: 'code', codeRequiresCompletedAccount: false } })
     const test = setup(event)
@@ -54,9 +55,11 @@ describe('voting access decisions', () => {
     expect(required.access).toMatchObject({ decision: 'CODE_REQUIRED', requirements: { mayRetryCode: true } })
     const allowed = await test.service.requestAccess({ eventId: String(event._id), accessCode: 'ABC123' })
     expect(allowed.access.allowed).toBe(true); expect(allowed.browserMarker).toBe('new-browser-marker')
-    expect(test.accessCodeRepository.consume).toHaveBeenCalledWith(expect.objectContaining({ accountId: null }), expect.anything())
+    expect(test.accessCodeRepository.consume).not.toHaveBeenCalled()
     expect(test.voterAccessRepository.grant).toHaveBeenCalledWith(expect.objectContaining({
       browserMarkerDigest: 'browser:new-browser-marker', source: 'code' }), expect.anything())
+    expect(test.auditRepository.append).toHaveBeenCalledWith(expect.objectContaining({ name: 'voting.code_validated' }),
+      expect.anything())
   })
   it('requires a new code after the current grant has a ballot', async () => {
     const event = openVotingEvent({ votingRules: { ...openVotingEvent().votingRules,

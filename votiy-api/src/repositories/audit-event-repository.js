@@ -18,9 +18,9 @@ export const AUDIT_EVENT_NAMES = Object.freeze([
   'password_reset.requested', 'password_reset.bypassed', 'password_reset.email_sent',
   'password_reset.email_failed', 'password_reset.denied', 'password_reset.completed',
   'voting.state_opened', 'voting.state_closed', 'voting.state_change_denied',
-  'voting.access_allowed', 'voting.access_denied', 'voting.code_claimed',
+  'voting.access_allowed', 'voting.access_denied', 'voting.code_claimed', 'voting.code_validated',
   'voting.code_reuse_denied', 'voting.code_ballot_attached',
-  'voting.ballot_history_viewed',
+  'voting.ballot_history_viewed', 'voting.code_reconciled',
 ])
 
 const outcomes = new Set(['success', 'denied', 'failure'])

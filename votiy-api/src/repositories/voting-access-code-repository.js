@@ -17,18 +17,15 @@ export function createVotingAccessCodeRepository(database) {
     findUnused(eventId, codeDigest, options = {}) {
       return collection.findOne({ eventId: id(eventId), codeDigest, status: 'unused' }, options)
     },
-    consume({ codeId, accountId = null, ballotId = null, now }, options = {}) {
+    findUnusedById(codeId, options = {}) {
+      return collection.findOne({ _id: id(codeId), status: 'unused' }, options)
+    },
+    consume({ codeId, accountId = null, ballotId, now }, options = {}) {
+      if (!ballotId) throw new TypeError('ballotId is required to consume a voting code')
       return collection.findOneAndUpdate(
         { _id: id(codeId), status: 'unused' },
         { $set: { status: 'used', claimedByAccountId: accountId ? id(accountId) : null,
-          usedByBallotId: ballotId ? id(ballotId) : null, usedAt: now, updatedAt: now } },
-        { returnDocument: 'after', ...options },
-      )
-    },
-    attachBallot({ codeId, ballotId, now }, options = {}) {
-      return collection.findOneAndUpdate(
-        { _id: id(codeId), status: 'used', usedByBallotId: null },
-        { $set: { usedByBallotId: id(ballotId), updatedAt: now } },
+          usedByBallotId: id(ballotId), usedAt: now, updatedAt: now } },
         { returnDocument: 'after', ...options },
       )
     },

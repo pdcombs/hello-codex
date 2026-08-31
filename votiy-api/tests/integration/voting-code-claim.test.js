@@ -77,6 +77,12 @@ describe('voting code generation and atomic claim', () => {
     const usedCode = usedInventory.nodes.find(({ id }) => id === generated[0].id)
     expect(usedCode).toMatchObject({ status: 'USED' })
     expect(usedCode.claimantEmail).toMatch(/^race-(one|two)@example\.test$/)
+    expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[1].code }, null,
+      { browserMarker: 'abandoned-browser', correlationId: 'abandoned-first' })).access.allowed).toBe(true)
+    expect((await service.requestAccess({ eventId: String(event._id) }, null,
+      { browserMarker: 'abandoned-browser', correlationId: 'abandoned-return' })).access.allowed).toBe(true)
+    expect(await mongo.database.collection('votingAccessCodes').findOne({ _id: new ObjectId(generated[1].id) }))
+      .toMatchObject({ status: 'unused', usedByBallotId: null, usedAt: null })
     const failing = buildService({ append: async () => { throw new Error('AUDIT_FAILURE') } })
     await expect(failing.submit({ eventId: String(event._id), expectedRulesVersion: 1, expectedVotingStateVersion: 1, accessCode: generated[1].code,
       provisionalVoter: { email: 'rollback-code@example.test' }, categoryBallots: [{ categoryId: String(votingTestIds.categoryId),
@@ -115,9 +121,10 @@ describe('voting code generation and atomic claim', () => {
     const codes = await mongo.database.collection('votingAccessCodes').find({ _id: { $in: ballots.map(({ accessCodeId }) => accessCodeId) } }).toArray()
     expect(codes.every(({ usedByBallotId }) => usedByBallotId)).toBe(true)
     const integrityAudits = await mongo.database.collection('auditEvents').find({ name: {
-      $in: ['voting.code_reuse_denied', 'voting.code_ballot_attached'] } }).toArray()
+      $in: ['voting.code_reuse_denied', 'voting.code_consumed'] } }).toArray()
     expect(integrityAudits.some(({ name }) => name === 'voting.code_reuse_denied')).toBe(true)
-    expect(integrityAudits.filter(({ name }) => name === 'voting.code_ballot_attached')).toHaveLength(2)
+    expect(integrityAudits.filter(({ name, subjectId }) => name === 'voting.code_consumed'
+      && [generated[2].id, generated[3].id].includes(subjectId))).toHaveLength(2)
     expect(JSON.stringify(integrityAudits)).not.toContain(generated[2].code)
     expect(JSON.stringify(integrityAudits)).not.toContain(marker)
   })

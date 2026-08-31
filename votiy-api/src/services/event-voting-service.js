@@ -166,10 +166,12 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       }
       const currentBallot = currentAccess?.codeId
         ? await ballotRepository.findByAccessCode(currentAccess.codeId) : null
+      const currentUnusedCode = currentAccess?.codeId && !currentBallot
+        ? await accessCodeRepository.findUnusedById(currentAccess.codeId) : null
       const latestBallot = account ? await ballotRepository.findLatestByAccount(event._id, account._id)
         : browserMarker ? await ballotRepository.findLatestByBrowserMarker(event._id, digestBrowserMarker(browserMarker)) : null
       const hasBallotHistory = Boolean(latestBallot)
-      if (currentAccess && !currentBallot && !input.accessCode) {
+      if (currentAccess && currentUnusedCode && !input.accessCode) {
         return { access: decision(event, 'ALLOWED', { hasBallotHistory }), browserMarker: account || hadBrowserMarker ? null : browserMarker }
       }
       if (!input.accessCode) {
@@ -193,13 +195,10 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true, hasBallotHistory })
         }
         const markerDigest = account ? null : digestBrowserMarker(browserMarker)
-        const consumed = await accessCodeRepository.consume({ codeId: code._id, accountId: account?._id ?? null,
-          now: timestamp }, options)
-        if (!consumed) return decision(current, 'CODE_REQUIRED', { codeRequired: true, mayRetryCode: true })
         await voterAccessRepository.grant({ eventId: current._id, accountId: account?._id ?? null,
           browserMarkerDigest: markerDigest, source: 'code', codeId: code._id,
           rulesVersion: current.votingRules.version, now: timestamp }, options)
-        await auditRepository?.append({ name: 'voting.code_claimed', actorAccountId: account?._id ?? null,
+        await auditRepository?.append({ name: 'voting.code_validated', actorAccountId: account?._id ?? null,
           subjectType: 'votingAccessCode', subjectId: code._id, outcome: 'success', correlationId,
           metadata: { rulesVersion: current.votingRules.version,
             votingStateVersion: current.votingState.version, accessPolicy: 'code' } }, options)
@@ -350,6 +349,10 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
             browserMarkerDigest = markerDigest
             grantedAccessCodeId = existingAccess.codeId
           }
+          if (grantedAccessCodeId) {
+            accessCode = await accessCodeRepository.findUnusedById(grantedAccessCodeId, options)
+            if (!accessCode) throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
+          }
           if (!existingAccess) {
             if (!input.accessCode || !accessCodeRepository || !digestCode) throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
             accessCode = await accessCodeRepository.findUnused(event._id, digestCode(event._id, input.accessCode), options)
@@ -396,25 +399,18 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           throw error
         }
         if (accessCode) {
-          const consumed = await accessCodeRepository.consume({ codeId: accessCode._id, accountId: account._id,
+          const consumed = await accessCodeRepository.consume({ codeId: accessCode._id, accountId: account?._id ?? null,
             ballotId: ballot._id, now: timestamp }, options)
           if (!consumed) {
             logger?.warn({ operation: 'voting.code_consume', outcome: 'conflict',
-              errorCode: ErrorCode.INVALID_ACCESS_CODE, correlationId }, 'Voting code claim conflict')
-            throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
+              errorCode: ErrorCode.ACCESS_CODE_USED, correlationId }, 'Voting code claim conflict')
+            throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
           }
-          await auditRepository?.append({ name: 'voting.code_consumed', actorAccountId: account._id,
+          await auditRepository?.append({ name: 'voting.code_consumed', actorAccountId: account?._id ?? null,
             subjectType: 'votingAccessCode', subjectId: accessCode._id, outcome: 'success', correlationId,
             metadata: { rulesVersion: event.votingRules.version } }, options)
           logger?.info({ operation: 'voting.code_consume', outcome: 'success', correlationId },
             'Voting code consumed')
-        } else if (grantedAccessCodeId) {
-          const attached = await accessCodeRepository.attachBallot({ codeId: grantedAccessCodeId,
-            ballotId: ballot._id, now: timestamp }, options)
-          if (!attached) throw new ApplicationError(ErrorCode.ACCESS_CODE_USED)
-          await auditRepository?.append({ name: 'voting.code_ballot_attached', actorAccountId: account?._id ?? null,
-            subjectType: 'votingAccessCode', subjectId: grantedAccessCodeId, outcome: 'success', correlationId,
-            metadata: { rulesVersion: event.votingRules.version } }, options)
         }
         if (event.votingRules.accessPolicy === 'code' && account && voterAccessRepository) {
           await voterAccessRepository.grant({ eventId: event._id, accountId: account._id, source: 'code',

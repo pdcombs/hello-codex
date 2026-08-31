@@ -8,17 +8,15 @@ describe('event voting repository contracts', () => {
   it('uses conditional unused status for atomic code consumption', async () => {
     const findOneAndUpdate = vi.fn().mockResolvedValue(null)
     const repository = createVotingAccessCodeRepository({ collection: () => ({ findOneAndUpdate }) })
-    await repository.consume({ codeId: new ObjectId(), accountId: new ObjectId(), ballotId: new ObjectId(), now: new Date() })
+    const ballotId = new ObjectId()
+    await repository.consume({ codeId: new ObjectId(), accountId: new ObjectId(), ballotId, now: new Date() })
     expect(findOneAndUpdate.mock.calls[0][0]).toMatchObject({ status: 'unused' })
+    expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ $set: { usedByBallotId: ballotId } })
   })
 
-  it('attaches one claimed code to one accepted ballot', async () => {
-    const findOneAndUpdate = vi.fn().mockResolvedValue(null)
-    const repository = createVotingAccessCodeRepository({ collection: () => ({ findOneAndUpdate }) })
-    const codeId = new ObjectId(); const ballotId = new ObjectId()
-    await repository.attachBallot({ codeId, ballotId, now: new Date() })
-    expect(findOneAndUpdate.mock.calls[0][0]).toEqual({ _id: codeId, status: 'used', usedByBallotId: null })
-    expect(findOneAndUpdate.mock.calls[0][1]).toMatchObject({ $set: { usedByBallotId: ballotId } })
+  it('refuses code consumption without an accepted ballot identity', () => {
+    const repository = createVotingAccessCodeRepository({ collection: () => ({}) })
+    expect(() => repository.consume({ codeId: new ObjectId(), now: new Date() })).toThrow('ballotId is required')
   })
 
   it('upserts one event/account access relationship', async () => {
