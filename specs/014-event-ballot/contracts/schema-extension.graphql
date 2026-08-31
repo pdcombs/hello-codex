@@ -1,0 +1,36 @@
+type BallotEntryChoice {
+  entryId: ID!
+  entryTitle: String!
+  selectionOrder: Int!
+}
+
+type BallotCategoryChoice {
+  categoryId: ID!
+  categoryTitle: String!
+  categoryOrder: Int!
+  method: CategoryVotingMethod!
+  entries: [BallotEntryChoice!]!
+}
+
+type SubmittedEventBallot {
+  id: ID!
+  eventId: ID!
+  rulesVersion: Int!
+  votingStateVersion: Int!
+  categoryBallots: [BallotCategoryChoice!]!
+  submittedAt: DateTime!
+}
+
+type EventBallotView {
+  event: Event!
+  submittedBallot: SubmittedEventBallot
+  mayCastAnother: Boolean!
+}
+
+type EventBallotViewSuccess { ballotView: EventBallotView! }
+union EventBallotViewResult = EventBallotViewSuccess | OperationError
+
+extend input SubmitEventBallotInput { expectedVotingStateVersion: Int! }
+extend type BallotSubmissionSuccess { ballot: SubmittedEventBallot! }
+
+extend type Query { eventBallotView(publicId: String!): EventBallotViewResult! }

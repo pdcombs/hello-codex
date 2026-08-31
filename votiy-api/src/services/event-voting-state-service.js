@@ -24,7 +24,7 @@ export function createEventVotingStateService({ eventRepository, eventEntryRepos
       if (input.status === 'OPEN') {
         if (event.votingRules?.status !== 'configured') throw new ApplicationError(ErrorCode.VOTING_NOT_CONFIGURED)
         const entries = await eventEntryRepository.listActiveByEvent(event._id)
-        if (!entries.length) throw new ApplicationError(ErrorCode.CONFLICT)
+        if (!entries.length) throw new ApplicationError(ErrorCode.VOTING_REQUIRES_ENTRY)
       }
       if (input.expectedVersion !== event.votingState.version || input.status.toLowerCase() === event.votingState.status) {
         throw new ApplicationError(ErrorCode.CONFLICT)

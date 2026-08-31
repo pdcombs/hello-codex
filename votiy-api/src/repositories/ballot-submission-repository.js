@@ -12,5 +12,13 @@ export function createBallotSubmissionRepository(database) {
       return collection.countDocuments({ eventId: id(eventId), browserMarkerDigest }, options)
     },
     findById(ballotId, options = {}) { return collection.findOne({ _id: id(ballotId) }, options) },
+    findLatestByAccount(eventId, accountId, options = {}) {
+      return collection.findOne({ eventId: id(eventId), accountId: id(accountId) },
+        { ...options, sort: { submittedAt: -1, _id: -1 } })
+    },
+    findLatestByBrowserMarker(eventId, browserMarkerDigest, options = {}) {
+      return collection.findOne({ eventId: id(eventId), browserMarkerDigest },
+        { ...options, sort: { submittedAt: -1, _id: -1 } })
+    },
   })
 }

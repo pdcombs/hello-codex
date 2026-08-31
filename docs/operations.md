@@ -117,6 +117,9 @@ never restore consumed codes or reset limits/history.
 - event photo upload failures above 5%, or processing p95 above 3 seconds, for 15 minutes
 - event search first-page p95 above 1 second or error rate above 2% for 10 minutes
 - any visibility/archive attempt without exactly one corresponding audit event
+- ballot submission or private-review errors above 5% for 10 minutes
+- ballot screen or submission p95 above 2 seconds for 10 minutes
+- any accepted ballot missing its matching privacy-safe `voting.ballot_submitted` audit
 
 ## Find Events diagnostics and rollback
 
@@ -214,6 +217,28 @@ history. Confirm every event retains exactly one active default category after a
 3. Match request completion event with nearby audit or service log lines.
 4. If DB issue, inspect Atlas metrics at same UTC minute.
 5. If deploy issue, compare `X-App-Commit` header with expected Git SHA.
+
+## Ballot submission and private review
+
+1. Query `operation:"voting.ballot_submit"` by `outcome`, safe `reasonCode`, and `correlationId`; graph p95
+   and error rate. Retry with the same idempotency key must return the original ballot, never create a row.
+2. Query `operation:"voting.ballot_review"` by outcome and safe reason. A host, public visitor, or different
+   voter must never receive another voter's submitted choices.
+3. For `RULES_CHANGED`, `VOTING_CLOSED`, or invalid-entry spikes, compare event voting-state/rules versions
+   and active entry counts. Do not inspect individual choices to diagnose aggregate failures.
+4. Audit metadata may include ballot ID, rules version, voting-state version, category count, outcome, and
+   correlation ID. Logs and audits must never include entry IDs, choice order, code, browser marker, email,
+   phone, or other voter contact.
+5. Production smoke uses only dedicated synthetic fixtures. It proves idempotent replay and host isolation;
+   it does not expose or compare synthetic vote choices.
+
+### Ballot rollback
+
+Roll back application code to last tested commit. Retain `ballotSubmissions`, `eventVoterAccess`,
+`votingAccessCodes`, `idempotencyRecords`, and `auditEvents`; accepted ballots are immutable evidence.
+Keep voting-code encryption key and manual event voting state unchanged. Never delete a ballot, unconsume
+a code, or reopen voting to repair a deploy. Confirm `/ready`, run production smoke, verify deployed commit
+header, then forward-fix schema or UI compatibility.
 
 ## Rollback
 

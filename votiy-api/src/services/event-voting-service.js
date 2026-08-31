@@ -1,11 +1,31 @@
 import { ObjectId } from 'mongodb'
+import { createHash } from 'node:crypto'
 import { ApplicationError, ErrorCode } from '../domain/errors.js'
 import { validateCategoryBallots, votingWindowStatus } from '../domain/ballot-submission.js'
 import { toEventView } from '../domain/event.js'
 import { assertAccountEligibility, browserMarkerRequired, codeAccountRequired, provisionalContact } from '../domain/voter-eligibility.js'
 import { decryptVotingCode, generateUniqueVotingCodes } from '../domain/voting-access-code.js'
 import { accountIsVotingComplete } from '../domain/voter-eligibility.js'
-import { requestVotingAccessInputSchema } from '../domain/validation.js'
+import { requestVotingAccessInputSchema, submitEventBallotInputSchema } from '../domain/validation.js'
+import { projectEventEntries } from './event-service.js'
+
+const ballotDigest = (input) => createHash('sha256').update(JSON.stringify({ eventId: input.eventId,
+  expectedRulesVersion: input.expectedRulesVersion, expectedVotingStateVersion: input.expectedVotingStateVersion,
+  categoryBallots: input.categoryBallots, accessCode: input.accessCode ?? null })).digest('hex')
+
+const projectBallot = (ballot, event = null, entries = []) => ballot ? ({ id: String(ballot._id), eventId: String(ballot.eventId),
+  rulesVersion: ballot.rulesVersion, votingStateVersion: ballot.votingStateVersion ?? event?.votingState?.version ?? 1,
+  categoryBallots: ballot.categoryBallots.map((category, categoryIndex) => {
+    const currentCategory = event?.categories?.find(({ _id }) => String(_id) === String(category.categoryId))
+    const selectedEntries = category.entries ?? category.entryIds.map((entryId, selectionOrder) => {
+      const currentEntry = entries.find(({ _id }) => String(_id) === String(entryId))
+      return { entryId, entryTitle: currentEntry?.title ?? 'Unavailable entry', selectionOrder }
+    })
+    return { categoryId: String(category.categoryId), categoryTitle: category.categoryTitle ?? currentCategory?.title ?? 'Unavailable category',
+      categoryOrder: category.categoryOrder ?? Math.max(0, event?.categories?.indexOf(currentCategory) ?? categoryIndex),
+      method: category.method.toUpperCase(), entries: selectedEntries.map((entry) => ({ entryId: String(entry.entryId),
+        entryTitle: entry.entryTitle, selectionOrder: entry.selectionOrder })) }
+  }), submittedAt: ballot.submittedAt }) : null
 
 export function createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
   idempotencyRepository, auditRepository, accountRepository = null, voterAccessRepository = null,
@@ -120,10 +140,9 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
           browserMarker: null }
       }
       if (rules.accessPolicy === 'unrestricted') {
-        if (!browserMarkerRequired(rules)) return { access: decision(event, 'ALLOWED'), browserMarker: null }
         const marker = browserMarker ?? generateBrowserMarker?.(); const markerDigest = digestBrowserMarker?.(marker)
         if (!marker || !markerDigest) throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
-        const count = await ballotRepository.countByBrowserMarker(event._id, markerDigest)
+        const count = browserMarkerRequired(rules) ? await ballotRepository.countByBrowserMarker(event._id, markerDigest) : 0
         return { access: decision(event, count > 0 ? 'REPEAT_LIMIT_REACHED' : 'ALLOWED'),
           browserMarker: browserMarker ? null : marker }
       }
@@ -169,7 +188,61 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         reasonCode: result.decision, correlationId }, 'Voting access evaluated')
       return { access: result, browserMarker: account || hadBrowserMarker ? null : browserMarker }
     },
-    async submit(input, viewer, { correlationId = 'ballot-submit' } = {}) {
+    async ballotView({ publicId }, viewer = null, { browserMarker = null } = {}) {
+      const event = await eventRepository.findByPublicId(publicId)
+      if (!event || event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.NOT_FOUND)
+      if (event.votingRules?.status !== 'configured') throw new ApplicationError(ErrorCode.VOTING_NOT_CONFIGURED)
+      if (event.votingState?.status !== 'open') throw new ApplicationError(ErrorCode.VOTING_CLOSED)
+      const account = viewer?.account ?? null
+      if (event.votingRules.accessPolicy === 'account') {
+        if (!account) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
+        if (!accountIsVotingComplete(account)) throw new ApplicationError(ErrorCode.ACCOUNT_REQUIREMENTS_NOT_MET)
+      }
+      let issuedBrowserMarker = null
+      if (!account && event.votingRules.accessPolicy === 'unrestricted' && !browserMarker) {
+        issuedBrowserMarker = generateBrowserMarker?.()
+        browserMarker = issuedBrowserMarker
+      }
+      const markerDigest = !account && browserMarker ? digestBrowserMarker?.(browserMarker) : null
+      if (!account && event.votingRules.accessPolicy === 'unrestricted' && !markerDigest) {
+        throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
+      }
+      if (event.votingRules.accessPolicy === 'code') {
+        const access = account ? await voterAccessRepository?.find(event._id, account._id)
+          : markerDigest ? await voterAccessRepository?.findByBrowser(event._id, markerDigest) : null
+        if (!access) throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
+      }
+      const ballot = account
+        ? await ballotRepository.findLatestByAccount(event._id, account._id)
+        : markerDigest ? await ballotRepository.findLatestByBrowserMarker(event._id, markerDigest) : null
+      const activeEntries = await eventEntryRepository.listActiveByEvent(event._id)
+      const selectedIds = ballot?.categoryBallots.flatMap((category) => category.entryIds ??
+        category.entries?.map(({ entryId }) => entryId) ?? []) ?? []
+      const historicalEntries = selectedIds.length ? await eventEntryRepository.findByIds(selectedIds) : []
+      const allEntries = [...activeEntries, ...historicalEntries.filter((historical) =>
+        !activeEntries.some(({ _id }) => String(_id) === String(historical._id)))]
+      let eventView = toEventView(event, account?._id ?? null)
+      if (accountRepository) {
+        const accounts = await accountRepository.findByIds(activeEntries.map(({ ownerAccountId }) => ownerAccountId))
+        eventView = projectEventEntries(event, activeEntries, accounts, account?._id ?? null)
+      }
+      let mayCastAnother = event.votingState?.status === 'open'
+      if (ballot) {
+        if (event.votingRules.accessPolicy === 'unrestricted') {
+          mayCastAnother = mayCastAnother && event.votingRules.unrestrictedRepeatPolicy === 'unlimited'
+        } else if (event.votingRules.maxBallotsPerAccount != null) {
+          const count = account ? await ballotRepository.countByAccount(event._id, account._id)
+            : await ballotRepository.countByBrowserMarker(event._id, markerDigest)
+          mayCastAnother = mayCastAnother && count < event.votingRules.maxBallotsPerAccount
+        } else mayCastAnother = false
+      }
+      return { event: eventView, submittedBallot: projectBallot(ballot, event, allEntries), mayCastAnother,
+        browserMarker: issuedBrowserMarker }
+    },
+    async submit(rawInput, viewer, { correlationId = 'ballot-submit' } = {}) {
+      const parsed = submitEventBallotInputSchema.safeParse(rawInput)
+      if (!parsed.success) throw new ApplicationError(ErrorCode.VALIDATION_FAILED)
+      const input = parsed.data
       const timestamp = now()
       return withTransaction(async (session) => {
         const options = session ? { session } : {}
@@ -181,16 +254,34 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         if (status === 'UPCOMING') throw new ApplicationError(ErrorCode.VOTING_NOT_OPEN)
         if (status === 'CLOSED') throw new ApplicationError(ErrorCode.VOTING_CLOSED)
         if (input.expectedRulesVersion !== event.votingRules.version) throw new ApplicationError(ErrorCode.RULES_CHANGED)
+        if (input.expectedVotingStateVersion !== event.votingState.version) throw new ApplicationError(ErrorCode.CONFLICT)
+        const identity = { scope: `ballot:${event._id}`, operation: 'submitEventBallot', key: input.idempotencyKey }
+        const requestDigest = ballotDigest(input)
+        const prior = await idempotencyRepository.find(identity, options)
+        if (prior) {
+          if (prior.requestDigest !== requestDigest) throw new ApplicationError(ErrorCode.CONFLICT)
+          const priorBallot = await ballotRepository.findById(prior.resultReference.receipt.id, options)
+          const entries = await eventEntryRepository.listActiveByEvent(event._id, options)
+          return { receipt: prior.resultReference.receipt, ballot: projectBallot(priorBallot, event, entries), capability: capability(event) }
+        }
         let account = viewer?.account ?? null
         let accessCode = null
+        let grantedAccessCodeId = null
         let browserMarker = null
         let browserMarkerDigest = null
         if (event.votingRules.accessPolicy === 'account') {
           const count = account ? await ballotRepository.countByAccount(event._id, account._id, options) : 0
           assertAccountEligibility({ rules: event.votingRules, account, ballotCount: count })
         } else if (event.votingRules.accessPolicy === 'code') {
-          const existingAccess = account && voterAccessRepository
-            ? await voterAccessRepository.find(event._id, account._id, options) : null
+          const markerDigest = !account && input.browserMarker ? digestBrowserMarker?.(input.browserMarker) : null
+          const existingAccess = voterAccessRepository ? (account
+            ? await voterAccessRepository.find(event._id, account._id, options)
+            : markerDigest ? await voterAccessRepository.findByBrowser(event._id, markerDigest, options) : null) : null
+          if (!account && existingAccess) {
+            browserMarker = input.browserMarker
+            browserMarkerDigest = markerDigest
+            grantedAccessCodeId = existingAccess.codeId
+          }
           if (!existingAccess) {
             if (!input.accessCode || !accessCodeRepository || !digestCode) throw new ApplicationError(ErrorCode.INVALID_ACCESS_CODE)
             accessCode = await accessCodeRepository.findUnused(event._id, digestCode(event._id, input.accessCode), options)
@@ -207,22 +298,24 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
             const count = await ballotRepository.countByAccount(event._id, account._id, options)
             if (count >= event.votingRules.maxBallotsPerAccount) throw new ApplicationError(ErrorCode.BALLOT_LIMIT_REACHED)
           }
-        } else if (browserMarkerRequired(event.votingRules)) {
+        } else if (event.votingRules.accessPolicy === 'unrestricted') {
           browserMarker = input.browserMarker ?? generateBrowserMarker?.()
           browserMarkerDigest = digestBrowserMarker?.(browserMarker)
           if (!browserMarker || !browserMarkerDigest) throw new ApplicationError(ErrorCode.SERVICE_UNAVAILABLE)
+          if (browserMarkerRequired(event.votingRules)) {
+            const count = await ballotRepository.countByBrowserMarker(event._id, browserMarkerDigest, options)
+            if (count > 0) throw new ApplicationError(ErrorCode.BALLOT_LIMIT_REACHED)
+          }
         }
         const entries = await eventEntryRepository.listActiveByEvent(event._id, options)
         let categoryBallots
         try { categoryBallots = validateCategoryBallots({ event, entries, categoryBallots: input.categoryBallots }) }
         catch (error) { throw new ApplicationError(ErrorCode.INVALID_BALLOT, { cause: error }) }
-        const identity = { scope: `ballot:${event._id}`, operation: 'submitEventBallot', key: input.idempotencyKey }
-        const prior = await idempotencyRepository.find(identity, options)
-        if (prior) return { receipt: prior.resultReference.receipt, capability: capability(event) }
         const ballot = { _id: new ObjectId(), eventId: event._id, accountId: account?._id ?? null,
-          accessCodeId: accessCode?._id ?? null, browserMarkerDigest, rulesVersion: event.votingRules.version,
+          accessCodeId: accessCode?._id ?? grantedAccessCodeId ?? null, browserMarkerDigest, rulesVersion: event.votingRules.version,
+          votingStateVersion: event.votingState.version,
           accessPolicy: event.votingRules.accessPolicy, categoryBallots, submittedAt: timestamp,
-          createdAt: timestamp, schemaVersion: 1 }
+          createdAt: timestamp, schemaVersion: 2 }
         try { await ballotRepository.create(ballot, options) }
         catch (error) {
           if (error?.code === 11000 && browserMarkerDigest) throw new ApplicationError(ErrorCode.BALLOT_LIMIT_REACHED)
@@ -251,14 +344,14 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
         }
         const receipt = { id: String(ballot._id), eventId: String(event._id), rulesVersion: ballot.rulesVersion,
           submittedAt: timestamp }
-        await idempotencyRepository.create({ ...identity, requestDigest: input.idempotencyKey,
+        await idempotencyRepository.create({ ...identity, requestDigest,
           resultReference: { receipt }, expiresAt: new Date(timestamp.getTime() + 86_400_000), createdAt: timestamp }, options)
         await auditRepository?.append({ name: 'voting.ballot_submitted', actorAccountId: viewer?.account?._id ?? null,
           subjectType: 'ballotSubmission', subjectId: ballot._id, outcome: 'success', correlationId,
           metadata: { rulesVersion: ballot.rulesVersion, categoryCount: categoryBallots.length } }, options)
         logger?.info({ operation: 'voting.ballot_submit', outcome: 'success', rulesVersion: ballot.rulesVersion,
           categoryCount: categoryBallots.length, correlationId }, 'Ballot submitted')
-        return { receipt, capability: capability(event), browserMarker }
+        return { receipt, ballot: projectBallot(ballot, event, entries), capability: capability(event), browserMarker }
       })
     },
   })

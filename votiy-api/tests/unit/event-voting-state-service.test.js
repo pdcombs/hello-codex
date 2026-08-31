@@ -26,7 +26,9 @@ describe('event voting state service', () => {
   it('rejects no entries, non-owner, same-state, and stale version', async () => {
     const noEntries = setup(); noEntries.eventEntryRepository.listActiveByEvent.mockResolvedValue([])
     await expect(noEntries.service.setStatus({ eventId: String(votingTestIds.eventId), status: 'OPEN', expectedVersion: 2 },
-      { account: { _id: votingTestIds.hostId } })).rejects.toMatchObject({ code: 'CONFLICT' })
+      { account: { _id: votingTestIds.hostId } })).rejects.toMatchObject({
+        code: 'VOTING_REQUIRES_ENTRY', message: 'One event entry and participant is required for voting.',
+      })
     const wrong = setup(); await expect(wrong.service.setStatus({ eventId: String(votingTestIds.eventId), status: 'OPEN', expectedVersion: 2 },
       { account: { _id: votingTestIds.voterId } })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     const same = setup(openVotingEvent()); await expect(same.service.setStatus({ eventId: String(votingTestIds.eventId), status: 'OPEN', expectedVersion: 1 },

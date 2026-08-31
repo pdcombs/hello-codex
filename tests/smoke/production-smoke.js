@@ -130,7 +130,8 @@ async function main() {
     const accountId = created.data.createEventEntry.result.affectedParticipant.accountId
     const projection = await graphql(`query SmokeEntryProjection($eventId: ID!) {
       ownedEvents(first: 20) { __typename
-        ... on EventListSuccess { events { nodes { id title description location updatedAt voting { rules { version } }
+        ... on EventListSuccess { events { nodes { id publicId title description location updatedAt
+          votingState { status version } voting { rules { version } }
           categories { id title updatedAt entries { id title updatedAt } } } } }
         ... on OperationError { code message }
       }
@@ -193,7 +194,8 @@ async function main() {
     const votingCode = generatedCodes.data.generateVotingCodes.codes[0]
     const categoryBallots = projectedEvent.categories.filter((item) => item.entries.length > 0)
       .map((item) => ({ categoryId: item.id, entryIds: [item.entries[0].id] }))
-    const ballotInput = { eventId: syntheticEventId, expectedRulesVersion: rulesVersion, accessCode: votingCode.code,
+    const ballotInput = { eventId: syntheticEventId, expectedRulesVersion: rulesVersion,
+      expectedVotingStateVersion: projectedEvent.votingState.version, accessCode: votingCode.code,
       provisionalVoter: { email: `smoke-voter-${unique}@example.test`, phone: null }, categoryBallots,
       idempotencyKey: crypto.randomUUID() }
     const ballot = await graphql(`mutation SmokeSubmitBallot($input: SubmitEventBallotInput!) {
@@ -204,6 +206,24 @@ async function main() {
     }`, { input: ballotInput }, { operationName: 'SmokeSubmitBallot' })
     requireStatus(ballot.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess',
       `Synthetic ballot failed: ${JSON.stringify(ballot.data)}`)
+    const replay = await graphql(`mutation SmokeReplayBallot($input: SubmitEventBallotInput!) {
+      submitEventBallot(input: $input) { __typename
+        ... on BallotSubmissionSuccess { receipt { id rulesVersion } }
+        ... on OperationError { code message }
+      }
+    }`, { input: ballotInput }, { operationName: 'SmokeReplayBallot' })
+    requireStatus(replay.data.submitEventBallot?.__typename === 'BallotSubmissionSuccess'
+      && replay.data.submitEventBallot.receipt.id === ballot.data.submitEventBallot.receipt.id,
+    `Synthetic ballot replay was not idempotent: ${JSON.stringify(replay.data)}`)
+    const privateReview = await graphql(`query SmokePrivateBallotReview($publicId: String!) {
+      eventBallotView(publicId: $publicId) { __typename
+        ... on EventBallotViewSuccess { ballotView { submittedBallot { id } } }
+        ... on OperationError { code message }
+      }
+    }`, { publicId: projectedEvent.publicId }, { cookie, operationName: 'SmokePrivateBallotReview' })
+    requireStatus(privateReview.data.eventBallotView?.__typename === 'EventBallotViewSuccess'
+      && privateReview.data.eventBallotView.ballotView.submittedBallot === null,
+    `Host could inspect another voter's private ballot: ${JSON.stringify(privateReview.data)}`)
     const reused = await graphql(`mutation SmokeReuseCode($input: SubmitEventBallotInput!) {
       submitEventBallot(input: $input) { __typename ... on OperationError { code message } }
     }`, { input: { ...ballotInput, idempotencyKey: crypto.randomUUID(),

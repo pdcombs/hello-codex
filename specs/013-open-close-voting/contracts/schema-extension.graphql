@@ -1,4 +1,5 @@
 enum ManualVotingStatus { CLOSED OPEN }
+extend enum ErrorCode { VOTING_REQUIRES_ENTRY }
 enum VotingAccessDecisionCode {
   ALLOWED
   CLOSED

@@ -7,7 +7,7 @@ describe('Mongo persistence contract', () => {
     const database = {
       listCollections: () => ({ toArray: async () => [] }),
       createCollection: vi.fn(),
-      collection: () => ({ createIndexes }),
+      collection: () => ({ createIndexes, listIndexes: () => ({ toArray: async () => [] }), dropIndex: vi.fn() }),
     }
     await ensureCollectionsAndIndexes(database)
     expect(database.createCollection).toHaveBeenCalledTimes(Object.keys(collectionDefinitions).length)

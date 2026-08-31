@@ -222,17 +222,27 @@ export const collectionDefinitions = Object.freeze({
     ],
   },
   ballotSubmissions: {
-    validator: { $jsonSchema: { bsonType: 'object', additionalProperties: false,
-      required: ['eventId', 'accountId', 'accessCodeId', 'browserMarkerDigest', 'rulesVersion', 'accessPolicy',
-        'categoryBallots', 'submittedAt', 'createdAt', 'schemaVersion'],
-      properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: objectIdOrNull,
-        accessCodeId: objectIdOrNull, browserMarkerDigest: stringOrNull, rulesVersion: { bsonType: 'int', minimum: 1 },
-        accessPolicy: { enum: ['unrestricted', 'account', 'code'] }, categoryBallots: { bsonType: 'array', items: { bsonType: 'object' } },
-        submittedAt: { bsonType: 'date' }, createdAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } } },
+    validator: { $jsonSchema: { oneOf: [
+      { bsonType: 'object', additionalProperties: false,
+        required: ['eventId', 'accountId', 'accessCodeId', 'browserMarkerDigest', 'rulesVersion', 'accessPolicy',
+          'categoryBallots', 'submittedAt', 'createdAt', 'schemaVersion'],
+        properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: objectIdOrNull,
+          accessCodeId: objectIdOrNull, browserMarkerDigest: stringOrNull, rulesVersion: { bsonType: 'int', minimum: 1 },
+          accessPolicy: { enum: ['unrestricted', 'account', 'code'] }, categoryBallots: { bsonType: 'array', items: { bsonType: 'object' } },
+          submittedAt: { bsonType: 'date' }, createdAt: { bsonType: 'date' }, schemaVersion: { enum: [1] } } },
+      { bsonType: 'object', additionalProperties: false,
+        required: ['eventId', 'accountId', 'accessCodeId', 'browserMarkerDigest', 'rulesVersion', 'votingStateVersion',
+          'accessPolicy', 'categoryBallots', 'submittedAt', 'createdAt', 'schemaVersion'],
+        properties: { _id: { bsonType: 'objectId' }, eventId: { bsonType: 'objectId' }, accountId: objectIdOrNull,
+          accessCodeId: objectIdOrNull, browserMarkerDigest: stringOrNull, rulesVersion: { bsonType: 'int', minimum: 1 },
+          votingStateVersion: { bsonType: 'int', minimum: 1 }, accessPolicy: { enum: ['unrestricted', 'account', 'code'] },
+          categoryBallots: { bsonType: 'array', items: { bsonType: 'object' } }, submittedAt: { bsonType: 'date' },
+          createdAt: { bsonType: 'date' }, schemaVersion: { enum: [2] } } },
+    ] } },
     indexes: [
       { key: { eventId: 1, submittedAt: 1, _id: 1 }, name: 'ballot_event_submitted' },
       { key: { eventId: 1, accountId: 1, submittedAt: 1 }, name: 'ballot_event_account' },
-      { key: { eventId: 1, browserMarkerDigest: 1 }, name: 'ballot_event_browser_unique', unique: true,
+      { key: { eventId: 1, browserMarkerDigest: 1 }, name: 'ballot_event_browser_unique',
         partialFilterExpression: { browserMarkerDigest: { $type: 'string' } } },
       { key: { accessCodeId: 1 }, name: 'ballot_access_code_unique', unique: true,
         partialFilterExpression: { accessCodeId: { $type: 'objectId' } } },
@@ -390,6 +400,11 @@ export async function ensureCollectionsAndIndexes(database) {
       const legacyAccountIndex = indexes.find((index) => index.name === 'voter_access_event_account_unique'
         && !index.partialFilterExpression)
       if (legacyAccountIndex) await database.collection(name).dropIndex(legacyAccountIndex.name)
+    }
+    if (name === 'ballotSubmissions') {
+      const indexes = await database.collection(name).listIndexes().toArray()
+      const legacyBrowserIndex = indexes.find((index) => index.name === 'ballot_event_browser_unique' && index.unique)
+      if (legacyBrowserIndex) await database.collection(name).dropIndex(legacyBrowserIndex.name)
     }
     await database.collection(name).createIndexes(definition.indexes)
   }

@@ -15,6 +15,7 @@ const successCodeList = (codes) => ({ __typename: 'VotingCodeListSuccess', codes
 const successSearch = (events) => ({ __typename: 'PublicEventSearchSuccess', events })
 const successVotingStatus = (result) => ({ __typename: 'VotingStatusChangeSuccess', ...result })
 const successVotingAccess = (access) => ({ __typename: 'VotingAccessDecisionSuccess', access })
+const successBallotView = (ballotView) => ({ __typename: 'EventBallotViewSuccess', ballotView })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -78,6 +79,15 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async eventVotingCapability({ eventId }, context) {
       try { return successVotingCapability(await eventVotingService.capability({ eventId }, context.viewer)) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventBallotView({ publicId }, context) {
+      try {
+        const result = await eventVotingService.ballotView({ publicId }, context.viewer,
+          { browserMarker: context.votingBrowserMarker })
+        if (result.browserMarker) context.setVotingBrowserMarker(result.browserMarker)
+        return successBallotView(result)
+      }
       catch (error) { return failure(error, context.correlationId) }
     },
     async setEventVotingStatus({ input }, context) {

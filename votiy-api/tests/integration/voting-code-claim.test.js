@@ -61,7 +61,7 @@ describe('voting code generation and atomic claim', () => {
   })
 
   it('allows exactly one concurrent claim and rolls back code when audit fails', async () => {
-    const ballot = (code, email, keySuffix) => service.submit({ eventId: String(event._id), expectedRulesVersion: 1,
+    const ballot = (code, email, keySuffix) => service.submit({ eventId: String(event._id), expectedRulesVersion: 1, expectedVotingStateVersion: 1,
       accessCode: code, provisionalVoter: { email }, categoryBallots: [{ categoryId: String(votingTestIds.categoryId),
         entryIds: [String(votingTestIds.entryId)] }], idempotencyKey: `claim-${keySuffix}` }, null,
     { correlationId: `claim-${keySuffix}` })
@@ -77,7 +77,7 @@ describe('voting code generation and atomic claim', () => {
     expect(usedCode).toMatchObject({ status: 'USED' })
     expect(usedCode.claimantEmail).toMatch(/^race-(one|two)@example\.test$/)
     const failing = buildService({ append: async () => { throw new Error('AUDIT_FAILURE') } })
-    await expect(failing.submit({ eventId: String(event._id), expectedRulesVersion: 1, accessCode: generated[1].code,
+    await expect(failing.submit({ eventId: String(event._id), expectedRulesVersion: 1, expectedVotingStateVersion: 1, accessCode: generated[1].code,
       provisionalVoter: { email: 'rollback-code@example.test' }, categoryBallots: [{ categoryId: String(votingTestIds.categoryId),
         entryIds: [String(votingTestIds.entryId)] }], idempotencyKey: 'claim-rollback' }, null))
       .rejects.toThrow('AUDIT_FAILURE')

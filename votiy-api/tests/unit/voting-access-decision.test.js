@@ -4,17 +4,20 @@ import { openVotingEvent, closedVotingEvent } from '../support/open-close-voting
 import { votingCodeFixture, votingTestIds } from '../support/event-voting-rules.js'
 
 function setup(event = openVotingEvent()) {
-  const eventRepository = { findById: vi.fn().mockResolvedValue(event) }
-  const ballotRepository = { countByAccount: vi.fn().mockResolvedValue(0), countByBrowserMarker: vi.fn().mockResolvedValue(0) }
+  const eventRepository = { findById: vi.fn().mockResolvedValue(event), findByPublicId: vi.fn().mockResolvedValue(event) }
+  const eventEntryRepository = { listActiveByEvent: vi.fn().mockResolvedValue([]), findByIds: vi.fn().mockResolvedValue([]) }
+  const ballotRepository = { countByAccount: vi.fn().mockResolvedValue(0), countByBrowserMarker: vi.fn().mockResolvedValue(0),
+    findLatestByAccount: vi.fn().mockResolvedValue(null), findLatestByBrowserMarker: vi.fn().mockResolvedValue(null) }
   const voterAccessRepository = { find: vi.fn().mockResolvedValue(null), findByBrowser: vi.fn().mockResolvedValue(null), grant: vi.fn() }
   const accessCodeRepository = { findUnused: vi.fn().mockResolvedValue(votingCodeFixture()), consume: vi.fn().mockResolvedValue({}) }
   const auditRepository = { append: vi.fn() }
-  const service = createEventVotingService({ eventRepository, eventEntryRepository: {}, ballotRepository,
-    idempotencyRepository: {}, auditRepository, accountRepository: {}, voterAccessRepository, accessCodeRepository,
+  const service = createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
+    idempotencyRepository: {}, auditRepository, accountRepository: { findByIds: vi.fn().mockResolvedValue([]) },
+    voterAccessRepository, accessCodeRepository,
     digestCode: (_eventId, code) => `code:${code}`, digestBrowserMarker: (marker) => `browser:${marker}`,
     generateBrowserMarker: () => 'new-browser-marker', votingCodeEncryptionKey: '0'.repeat(64),
     withTransaction: (operation) => operation({ test: true }), now: () => new Date('2030-01-01T13:00:00Z') })
-  return { service, eventRepository, ballotRepository, voterAccessRepository, accessCodeRepository, auditRepository }
+  return { service, eventRepository, eventEntryRepository, ballotRepository, voterAccessRepository, accessCodeRepository, auditRepository }
 }
 
 describe('voting access decisions', () => {
@@ -53,5 +56,18 @@ describe('voting access decisions', () => {
     expect(test.accessCodeRepository.consume).toHaveBeenCalledWith(expect.objectContaining({ accountId: null }), expect.anything())
     expect(test.voterAccessRepository.grant).toHaveBeenCalledWith(expect.objectContaining({
       browserMarkerDigest: 'browser:new-browser-marker', source: 'code' }), expect.anything())
+  })
+  it('privately projects a legacy ballot using current titles', async () => {
+    const event = openVotingEvent(); const test = setup(event)
+    const legacy = { _id: votingTestIds.entryId, eventId: event._id, accountId: null,
+      rulesVersion: 1, categoryBallots: [{ categoryId: votingTestIds.categoryId,
+        method: 'single', entryIds: [votingTestIds.entryId] }], submittedAt: new Date('2030-01-01T13:00:00Z') }
+    test.ballotRepository.findLatestByBrowserMarker.mockResolvedValue(legacy)
+    test.eventEntryRepository.findByIds.mockResolvedValue([{ _id: votingTestIds.entryId,
+      categoryId: votingTestIds.categoryId, title: 'Legacy entry', status: 'archived' }])
+    const view = await test.service.ballotView({ publicId: event.publicId }, null, { browserMarker: 'legacy-browser' })
+    expect(view.submittedBallot).toMatchObject({ votingStateVersion: 1, categoryBallots: [{
+      categoryTitle: 'Category', entries: [{ entryTitle: 'Legacy entry', selectionOrder: 0 }],
+    }] })
   })
 })

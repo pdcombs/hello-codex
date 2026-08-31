@@ -182,6 +182,18 @@ Voting method and multiple-choice bounds are configured once per event. Legacy c
 stored for rollback compatibility, but current reads, ballots, and settings ignore them. Code voting's
 completed-account option is an accessible switch; its saved API value is unchanged.
 
+## Casting and reviewing ballots
+
+Open events expose one scrolling ballot at `/events/:publicId/vote`. Each active category uses the
+event-wide single-select, multi-select, or best-to-worst ranking method. Categories may be skipped, but a
+ballot needs at least one choice. Submission requires an irreversible confirmation and remains idempotent
+if the browser retries after a lost response.
+
+Accepted ballots are immutable. The submitting account, retained browser identity, or code-derived access
+may revisit its private read-only ballot. Event hosts and other voters cannot inspect individual choices.
+Clearing anonymous browser identity can make its previous ballot unavailable. Results and winner
+calculation remain separate from ballot submission.
+
 ## Password recovery
 
 Sign-in includes **Forgot password?**. Normal accounts receive a single-use reset link at configured
@@ -199,7 +211,8 @@ Post-deploy smoke workflow hits:
 - deployed commit header when available
 
 With all `PRODUCTION_SYNTHETIC_*` variables set, smoke also validates legacy event setup plus voting-rule
-update, code generation, ballot submission, used-code inventory, and reuse denial. Alert when rules,
+update, code generation, ballot submission, idempotent replay, private-review isolation, used-code
+inventory, and reuse denial. Alert when rules,
 eligibility, or ballot p95 exceeds two seconds, voting errors exceed 5%, migration readiness fails, an
 event invariant fails, or code-claim conflicts spike. Correlate diagnostics by `correlationId`; never paste
 codes or voter contact into logs.
@@ -214,6 +227,11 @@ On a failed deployment, roll back the application to the prior tested commit and
 Do not delete or rewrite voting rules, codes, voter-access grants, ballots, idempotency records, or audits.
 Keep `VOTING_CODE_ENCRYPTION_KEY` unchanged. Confirm `/ready`, rerun production smoke, then inspect
 structured migration, invariant, and claim-conflict events before restoring traffic.
+
+Ballot-screen rollback is code-only. Preserve accepted ballot documents and private-review identity
+evidence; older releases safely ignore additive review fields. Never reopen voting, delete ballots, or
+reset consumed codes as rollback steps. After rollback, verify new submissions remain closed or open per
+each event's stored manual state.
 # Event photos
 
 Event hosts can upload one JPEG, PNG, or WebP photo per event. The API—not the browser—validates and

@@ -29,17 +29,24 @@ describe('event ballot submission with real MongoDB', () => {
         try { await session.withTransaction(async () => { value = await operation(session) }); return value }
         finally { await session.endSession() }
       },
+      digestBrowserMarker: (marker) => `digest:${marker}`, generateBrowserMarker: () => 'ballot-browser',
       now: () => new Date('2030-01-01T13:00:00Z') })
   })
   afterAll(async () => mongo?.cleanup())
 
   it('atomically saves an immutable rule-valid ballot and idempotent replay', async () => {
-    const input = { eventId: String(votingTestIds.eventId), expectedRulesVersion: 1,
+    const input = { eventId: String(votingTestIds.eventId), expectedRulesVersion: 1, expectedVotingStateVersion: 1,
       categoryBallots: [{ categoryId: String(votingTestIds.categoryId), entryIds: [String(votingTestIds.entryId)] }],
       idempotencyKey: 'ballot-1' }
     const first = await service.submit(input, null, { correlationId: 'ballot-1' })
     const replay = await service.submit(input, null, { correlationId: 'ballot-1' })
     expect(replay.receipt.id).toBe(first.receipt.id)
+    expect(first.ballot.categoryBallots[0]).toMatchObject({ categoryTitle: 'Category', method: 'SINGLE',
+      entries: [{ entryTitle: 'Entry', selectionOrder: 0 }] })
+    const review = await service.ballotView({ publicId: 'voting-event-fixture' }, null,
+      { browserMarker: 'ballot-browser' })
+    expect(review.submittedBallot.id).toBe(first.receipt.id)
+    expect(review.mayCastAnother).toBe(true)
     expect(await mongo.database.collection('ballotSubmissions').countDocuments()).toBe(1)
   })
 })

@@ -13,7 +13,7 @@ describe('event voting persistence contract', () => {
       name: 'voter_access_event_account_unique', unique: true,
     }))
     expect(collectionDefinitions.ballotSubmissions.indexes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: 'ballot_event_browser_unique', unique: true }),
+      expect.objectContaining({ name: 'ballot_event_browser_unique' }),
       expect.objectContaining({ name: 'ballot_access_code_unique', unique: true }),
     ]))
   })

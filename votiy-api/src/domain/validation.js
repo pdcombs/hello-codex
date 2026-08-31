@@ -69,6 +69,29 @@ export const requestVotingAccessInputSchema = z.object({
     .transform((value) => value || null),
 }).strict()
 
+export const submitEventBallotInputSchema = z.object({
+  eventId: z.string().min(1),
+  expectedRulesVersion: z.number().int().min(1),
+  expectedVotingStateVersion: z.number().int().min(1),
+  categoryBallots: z.array(z.object({
+    categoryId: z.string().min(1),
+    entryIds: z.array(z.string().min(1)).max(5_000),
+  }).strict()).max(1_000),
+  accessCode: z.string().trim().min(1).max(128).nullish().transform((value) => value || null),
+  provisionalVoter: z.object({ email: emailSchema, phone: z.string().max(32).nullish() }).strict().nullish(),
+  idempotencyKey: z.string().min(1).max(200),
+  browserMarker: z.string().min(1).max(512).nullish(),
+}).strict().superRefine((value, context) => {
+  const categories = new Set()
+  value.categoryBallots.forEach((ballot, index) => {
+    if (categories.has(ballot.categoryId)) context.addIssue({ code: 'custom',
+      path: ['categoryBallots', index, 'categoryId'], message: 'Each category can appear only once.' })
+    categories.add(ballot.categoryId)
+    if (new Set(ballot.entryIds).size !== ballot.entryIds.length) context.addIssue({ code: 'custom',
+      path: ['categoryBallots', index, 'entryIds'], message: 'Each entry can appear only once per category.' })
+  })
+})
+
 export const addEventParticipantInputSchema = z.object({
   eventId: z.string().min(1),
   displayName: trimmedRequiredText(100, 'Display name'),

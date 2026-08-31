@@ -6,7 +6,12 @@ describe('event ballot GraphQL contract', () => {
     const schema = await createGraphqlSchema()
     expect(validateGraphqlOperation(schema, `query C($id: ID!) { eventVotingCapability(eventId: $id) { __typename } }`).errors).toEqual([])
     expect(validateGraphqlOperation(schema, `mutation S($input: SubmitEventBallotInput!) {
-      submitEventBallot(input: $input) { __typename ... on BallotSubmissionSuccess { receipt { id rulesVersion } } }
+      submitEventBallot(input: $input) { __typename ... on BallotSubmissionSuccess {
+        receipt { id rulesVersion } ballot { id votingStateVersion categoryBallots { method entries { entryTitle } } }
+      } }
     }`).errors).toEqual([])
+    expect(validateGraphqlOperation(schema, `query B($publicId: String!) { eventBallotView(publicId: $publicId) {
+      __typename ... on EventBallotViewSuccess { ballotView { mayCastAnother submittedBallot { id } } }
+    } }`).errors).toEqual([])
   })
 })

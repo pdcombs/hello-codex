@@ -16,10 +16,10 @@ export function validateCategoryBallots({ event, entries, categoryBallots }) {
   const submitted = new Map(categoryBallots.map((ballot) => [String(ballot.categoryId), ballot]))
   if (submitted.size !== categoryBallots.length) throw new TypeError('Duplicate category ballot')
   const normalized = []
-  for (const category of activeCategories) {
+  for (const [categoryOrder, category] of activeCategories.entries()) {
     const available = entriesByCategory.get(String(category._id)) ?? []
     if (available.length === 0) continue
-    const ballot = submitted.get(String(category._id)); if (!ballot) throw new TypeError('Missing category ballot')
+    const ballot = submitted.get(String(category._id)); if (!ballot || ballot.entryIds.length === 0) continue
     const ids = ballot.entryIds.map(String); const unique = new Set(ids)
     if (unique.size !== ids.length || ids.some((value) => !available.some(({ _id }) => String(_id) === value))) {
       throw new TypeError('Ballot contains invalid entries')
@@ -33,8 +33,15 @@ export function validateCategoryBallots({ event, entries, categoryBallots }) {
       throw new TypeError('Selection count is outside allowed range')
     }
     if (rule.method === 'ranking' && ids.length !== available.length) throw new TypeError('Rank every entry')
-    normalized.push({ categoryId: new ObjectId(category._id), method: rule.method, entryIds: ids.map((value) => new ObjectId(value)) })
+    normalized.push({ categoryId: new ObjectId(category._id), categoryTitle: category.title,
+      categoryOrder, method: rule.method, entryIds: ids.map((value) => new ObjectId(value)),
+      entries: ids.map((value, selectionOrder) => {
+        const selected = available.find(({ _id }) => String(_id) === value)
+        return { entryId: new ObjectId(value), entryTitle: selected.title, selectionOrder }
+      }) })
   }
-  if (submitted.size !== normalized.length) throw new TypeError('Unknown or empty category ballot')
+  const activeIds = new Set(activeCategories.map(({ _id }) => String(_id)))
+  if ([...submitted.keys()].some((categoryId) => !activeIds.has(categoryId))) throw new TypeError('Unknown category ballot')
+  if (normalized.length === 0) throw new TypeError('Select at least one entry')
   return normalized
 }

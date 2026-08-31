@@ -11,6 +11,7 @@ const searchContractPath = join(directory, '..', '..', '..', '..', 'specs', '010
 const detailsContractPath = join(directory, '..', '..', '..', '..', 'specs', '011-edit-event-voting-summary', 'contracts', 'schema-extension.graphql')
 const passwordResetContractPath = join(directory, '..', '..', '..', '..', 'specs', '012-password-reset', 'contracts', 'schema-extension.graphql')
 const votingStateContractPath = join(directory, '..', '..', '..', '..', 'specs', '013-open-close-voting', 'contracts', 'schema-extension.graphql')
+const ballotContractPath = join(directory, '..', '..', '..', '..', 'specs', '014-event-ballot', 'contracts', 'schema-extension.graphql')
 
 function configureDateTimeScalar(schema) {
   const scalar = schema.getType('DateTime')
@@ -28,7 +29,8 @@ function configureDateTimeScalar(schema) {
 }
 
 export async function createGraphqlSchema() {
-  const [source, votingSource, workspaceSource, searchSource, detailsSource, passwordResetSource, votingStateSource] = await Promise.all([
+  const [source, votingSource, workspaceSource, searchSource, detailsSource, passwordResetSource, votingStateSource,
+    ballotSource] = await Promise.all([
     readFile(contractPath, 'utf8'),
     readFile(votingContractPath, 'utf8'),
     readFile(workspaceContractPath, 'utf8'),
@@ -36,8 +38,9 @@ export async function createGraphqlSchema() {
     readFile(detailsContractPath, 'utf8'),
     readFile(passwordResetContractPath, 'utf8'),
     readFile(votingStateContractPath, 'utf8'),
+    readFile(ballotContractPath, 'utf8'),
   ])
-  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}\n${searchSource}\n${detailsSource}\n${passwordResetSource}\n${votingStateSource}`)
+  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}\n${searchSource}\n${detailsSource}\n${passwordResetSource}\n${votingStateSource}\n${ballotSource}`)
   configureDateTimeScalar(schema)
   return schema
 }

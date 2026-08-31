@@ -48,7 +48,7 @@ describe('voter access with real MongoDB', () => {
   afterAll(async () => mongo?.cleanup())
 
   it('creates provisional account/access atomically without participant registration', async () => {
-    await service.submit({ eventId: String(event._id), expectedRulesVersion: 1, accessCode: 'abc123',
+    await service.submit({ eventId: String(event._id), expectedRulesVersion: 1, expectedVotingStateVersion: 1, accessCode: 'abc123',
       provisionalVoter: { email: 'new-voter@example.test' }, categoryBallots: [{
         categoryId: String(votingTestIds.categoryId), entryIds: [String(votingTestIds.entryId)] }], idempotencyKey: 'code-ballot' }, null)
     const account = await mongo.database.collection('accounts').findOne({ emailNormalized: 'new-voter@example.test' })
@@ -62,7 +62,7 @@ describe('voter access with real MongoDB', () => {
       codeDigest: digestVotingCode({ eventId: event._id, code: 'def456', key }), ...rollbackEncrypted, status: 'unused',
       batchId: new ObjectId(), claimedByAccountId: null, usedByBallotId: null, createdByAccountId: votingTestIds.hostId,
       createdAt: new Date('2029-01-01'), usedAt: null, revokedAt: null, updatedAt: new Date('2029-01-01'), schemaVersion: 1 })
-    await expect(service.submit({ eventId: String(event._id), expectedRulesVersion: 1, accessCode: 'def456',
+    await expect(service.submit({ eventId: String(event._id), expectedRulesVersion: 1, expectedVotingStateVersion: 1, accessCode: 'def456',
       provisionalVoter: { email: 'rollback-voter@example.test' }, categoryBallots: [],
       idempotencyKey: 'rollback-code-ballot' }, null)).rejects.toMatchObject({ code: 'INVALID_BALLOT' })
     expect(await mongo.database.collection('accounts').findOne({ emailNormalized: 'rollback-voter@example.test' })).toBeNull()
@@ -79,7 +79,7 @@ describe('voter access with real MongoDB', () => {
       categoryId: votingTestIds.categoryId, ownerAccountId: votingTestIds.voterId, title: 'Browser entry',
       createdByAccountId: votingTestIds.hostId, status: 'active', archiveReason: null, archivedAt: null,
       archivedByAccountId: null, createdAt: new Date('2029-01-01'), updatedAt: new Date('2029-01-01'), schemaVersion: 1 })
-    const input = { eventId: String(browserEventId), expectedRulesVersion: 1, browserMarker: 'browser-one',
+    const input = { eventId: String(browserEventId), expectedRulesVersion: 1, expectedVotingStateVersion: 1, browserMarker: 'browser-one',
       categoryBallots: [{ categoryId: String(votingTestIds.categoryId), entryIds: [String(browserEntryId)] }] }
     await service.submit({ ...input, idempotencyKey: 'browser-1' }, null)
     await expect(service.submit({ ...input, idempotencyKey: 'browser-2' }, null)).rejects.toMatchObject({
@@ -101,7 +101,7 @@ describe('voter access with real MongoDB', () => {
       categoryId: votingTestIds.categoryId, ownerAccountId: votingTestIds.voterId, title: 'Account entry',
       createdByAccountId: votingTestIds.hostId, status: 'active', archiveReason: null, archivedAt: null,
       archivedByAccountId: null, createdAt: new Date('2029-01-01'), updatedAt: new Date('2029-01-01'), schemaVersion: 1 })
-    const input = { eventId: String(accountEventId), expectedRulesVersion: 1,
+    const input = { eventId: String(accountEventId), expectedRulesVersion: 1, expectedVotingStateVersion: 1,
       categoryBallots: [{ categoryId: String(votingTestIds.categoryId), entryIds: [String(accountEntryId)] }] }
     await service.submit({ ...input, idempotencyKey: 'account-1' }, { account })
     await expect(service.submit({ ...input, idempotencyKey: 'account-2' }, { account })).rejects.toMatchObject({

@@ -42,7 +42,10 @@ export const SUBMIT_EVENT_BALLOT = `
   mutation SubmitEventBallot($input: SubmitEventBallotInput!) {
     submitEventBallot(input: $input) {
       __typename
-      ... on BallotSubmissionSuccess { receipt { id eventId rulesVersion submittedAt } }
+      ... on BallotSubmissionSuccess { receipt { id eventId rulesVersion submittedAt }
+        ballot { id eventId rulesVersion votingStateVersion submittedAt categoryBallots {
+          categoryId categoryTitle categoryOrder method entries { entryId entryTitle selectionOrder }
+        } } }
       ... on OperationError { ${ERROR_FIELDS} }
     }
   }
@@ -78,6 +81,21 @@ export const REQUEST_VOTING_ACCESS = `mutation RequestVotingAccess($input: Reque
   }
 }`
 
+export const EVENT_BALLOT_VIEW = `query EventBallotView($publicId: String!) {
+  eventBallotView(publicId: $publicId) { __typename
+    ... on EventBallotViewSuccess { ballotView {
+      event { id publicId title votingState { status version openedAt closedAt updatedAt }
+        categories { id title entries { id title status } }
+        voting { votingStatus rules { version defaultCategoryRule { method minimumSelections maximumSelections } } } }
+      submittedBallot { id eventId rulesVersion votingStateVersion submittedAt categoryBallots {
+        categoryId categoryTitle categoryOrder method entries { entryId entryTitle selectionOrder }
+      } }
+      mayCastAnother
+    } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+
 import { graphqlRequest, unwrapGraphqlResult } from '../../lib/graphql.js'
 
 export async function updateEventVotingRules(input) {
@@ -90,6 +108,12 @@ export async function submitEventBallot(input) {
   const data = await graphqlRequest({ query: SUBMIT_EVENT_BALLOT, variables: { input },
     operationName: 'SubmitEventBallot' })
   return unwrapGraphqlResult(data.submitEventBallot)
+}
+
+export async function loadEventBallotView(publicId, { signal } = {}) {
+  const data = await graphqlRequest({ query: EVENT_BALLOT_VIEW, variables: { publicId },
+    operationName: 'EventBallotView', signal })
+  return unwrapGraphqlResult(data.eventBallotView).ballotView
 }
 
 export async function loadEventVotingCapability(eventId) {
