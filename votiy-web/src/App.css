@@ -368,6 +368,19 @@ main:focus {
 .short-link-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .short-link-field span { white-space: nowrap; font-weight: 700; }
 .short-link-field input { flex: 1 1 180px; min-width: 0; text-align: left; }
+.short-link-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.short-link-qr-notice { margin: 0; color: var(--color-text-muted); font-size: .82rem; }
+.short-link-qr-preview {
+  width: min(720px, 100%);
+  margin-top: 18px;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+.short-link-qr-preview canvas { padding: 8px; border-radius: 14px; background: #fff; }
+.short-link-qr-preview p { margin: 0; color: var(--color-text-muted); font-size: .76rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; }
+.short-link-qr-preview code { max-width: 100%; color: var(--color-text); overflow-wrap: anywhere; }
 
 .voting-status-control {
   margin-top: 18px;
@@ -2155,6 +2168,9 @@ footer {
   .modal-heading-actions { gap: 6px; }
   .modal-heading-actions .primary-action { padding-inline: 12px; }
   .modal-actions { justify-content: flex-start; }
+  .short-link-actions { align-items: stretch; flex-direction: column; }
+  .short-link-actions button { width: 100%; }
+  .short-link-qr-preview { justify-items: center; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

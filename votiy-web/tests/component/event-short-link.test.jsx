@@ -5,6 +5,13 @@ import { describe, expect, it, vi } from 'vitest'
 import EventShortLinkEditor from '../../src/features/events/EventShortLinkEditor.jsx'
 import EventShortLinkRedirect from '../../src/features/events/EventShortLinkRedirect.jsx'
 
+vi.mock('qrcode.react', async () => {
+  const { forwardRef } = await vi.importActual('react')
+  return { QRCodeCanvas: forwardRef(function MockQrCode({ value, ...props }, ref) {
+    return <canvas ref={ref} data-qr-value={value} {...props} />
+  }) }
+})
+
 const event = { id: 'event-1', publicId: 'Public_1', shortId: 'Public_1', updatedAt: '2030-01-01T00:00:00Z',
   lifecycleStatus: 'ACTIVE' }
 
@@ -32,5 +39,57 @@ describe('event short link UI', () => {
     render(<EventShortLinkEditor event={event} saver={vi.fn().mockRejectedValue(error)} onSaved={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: 'Save short URL' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('already taken')
+  })
+
+  it('renders and downloads saved short URL as PNG', async () => {
+    const toDataURL = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL')
+      .mockReturnValue('data:image/png;base64,qr')
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const createElement = document.createElement.bind(document)
+    let downloadLink
+    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const element = createElement(tagName, options)
+      if (tagName === 'a') downloadLink = element
+      return element
+    })
+
+    render(<EventShortLinkEditor event={{ ...event, shortId: 'my-event' }} saver={vi.fn()} onSaved={vi.fn()} />)
+
+    expect(screen.getByTitle('QR code for https://www.votiy.com/my-event'))
+      .toHaveAttribute('data-qr-value', 'https://www.votiy.com/my-event')
+    expect(screen.getByText('https://www.votiy.com/my-event')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Download QR Code' }))
+
+    expect(toDataURL).toHaveBeenCalledWith('image/png')
+    expect(downloadLink.download).toBe('votiy-my-event-qr.png')
+    expect(downloadLink.href).toBe('data:image/png;base64,qr')
+    expect(click).toHaveBeenCalledOnce()
+  })
+
+  it('keeps QR bound to saved alias until new alias is saved', async () => {
+    const { rerender } = render(<EventShortLinkEditor event={{ ...event, shortId: 'saved-event' }}
+      saver={vi.fn()} onSaved={vi.fn()} />)
+    const input = screen.getByLabelText(/Event Short Url:/)
+
+    await userEvent.clear(input); await userEvent.type(input, 'new-event')
+
+    expect(screen.getByText(/Save short URL before downloading a QR code for the new address/)).toBeVisible()
+    expect(screen.getByTitle('QR code for https://www.votiy.com/saved-event'))
+      .toHaveAttribute('data-qr-value', 'https://www.votiy.com/saved-event')
+
+    rerender(<EventShortLinkEditor event={{ ...event, shortId: 'new-event' }} saver={vi.fn()} onSaved={vi.fn()} />)
+    expect(screen.getByTitle('QR code for https://www.votiy.com/new-event'))
+      .toHaveAttribute('data-qr-value', 'https://www.votiy.com/new-event')
+  })
+
+  it('shows an actionable error when PNG generation fails', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockImplementation(() => {
+      throw new Error('Canvas unavailable')
+    })
+    render(<EventShortLinkEditor event={{ ...event, shortId: 'my-event' }} saver={vi.fn()} onSaved={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download QR Code' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('QR code could not be downloaded. Please try again.')
   })
 })
