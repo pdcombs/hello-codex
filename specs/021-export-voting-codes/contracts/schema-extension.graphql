@@ -1,0 +1,11 @@
+type VotingCodeInventorySummary {
+  usedCount: Int!
+  availableCount: Int!
+  revokedCount: Int!
+  totalCount: Int!
+}
+
+extend type VotingCodePage { summary: VotingCodeInventorySummary! }
+type VotingCodeExportSuccess { codes: [VotingAccessCode!]! }
+union VotingCodeExportResult = VotingCodeExportSuccess | OperationError
+extend type Query { eventVotingCodeExport(eventId: ID!): VotingCodeExportResult! }

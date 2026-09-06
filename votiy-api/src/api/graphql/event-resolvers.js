@@ -12,6 +12,7 @@ const successVotingCapability = (capability) => ({ __typename: 'EventVotingCapab
 const successBallot = (result) => ({ __typename: 'BallotSubmissionSuccess', ...result })
 const successCodeGeneration = (codes) => ({ __typename: 'VotingCodeGenerationSuccess', codes })
 const successCodeList = (codes) => ({ __typename: 'VotingCodeListSuccess', codes })
+const successCodeExport = (codes) => ({ __typename: 'VotingCodeExportSuccess', codes })
 const successSearch = (events) => ({ __typename: 'PublicEventSearchSuccess', events })
 const successVotingStatus = (result) => ({ __typename: 'VotingStatusChangeSuccess', ...result })
 const successVotingAccess = (access) => ({ __typename: 'VotingAccessDecisionSuccess', access })
@@ -133,6 +134,10 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
     },
     async eventVotingCodes({ eventId, first, after }, context) {
       try { return successCodeList(await eventVotingService.listCodes({ eventId, first, after }, context.viewer)) }
+      catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventVotingCodeExport({ eventId }, context) {
+      try { return successCodeExport(await eventVotingService.exportCodes({ eventId }, context.viewer)) }
       catch (error) { return failure(error, context.correlationId) }
     },
     async addEventCategory({ input }, context) {

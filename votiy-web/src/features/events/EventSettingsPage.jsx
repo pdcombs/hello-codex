@@ -58,6 +58,7 @@ export default function EventSettingsPage({ loader = loadEventDetailView, visibi
       {state.error && <p role="alert">{state.error.message}</p>}
     </section>
     {state.event.voting?.rules && <EventRulesEditor event={state.event} saver={updateEventVotingRules} onSaved={reload} />}
-    {state.event.voting?.rules?.accessPolicy === 'CODE' && <VotingCodeManager eventId={state.event.id} />}
+    {state.event.voting?.rules?.accessPolicy === 'CODE' && <VotingCodeManager eventId={state.event.id}
+      eventTitle={state.event.title} />}
   </main>
 }

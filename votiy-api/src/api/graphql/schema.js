@@ -14,6 +14,7 @@ const votingStateContractPath = join(directory, '..', '..', '..', '..', 'specs',
 const ballotContractPath = join(directory, '..', '..', '..', '..', 'specs', '014-event-ballot', 'contracts', 'schema-extension.graphql')
 const ballotHistoryContractPath = join(directory, '..', '..', '..', '..', 'specs', '016-previous-vote-history', 'contracts', 'schema-extension.graphql')
 const votingResultsContractPath = join(directory, '..', '..', '..', '..', 'specs', '018-review-voting-results', 'contracts', 'schema-extension.graphql')
+const votingCodeExportContractPath = join(directory, '..', '..', '..', '..', 'specs', '021-export-voting-codes', 'contracts', 'schema-extension.graphql')
 
 function configureDateTimeScalar(schema) {
   const scalar = schema.getType('DateTime')
@@ -32,7 +33,7 @@ function configureDateTimeScalar(schema) {
 
 export async function createGraphqlSchema() {
   const [source, votingSource, workspaceSource, searchSource, detailsSource, passwordResetSource, votingStateSource,
-    ballotSource, ballotHistorySource, votingResultsSource] = await Promise.all([
+    ballotSource, ballotHistorySource, votingResultsSource, votingCodeExportSource] = await Promise.all([
     readFile(contractPath, 'utf8'),
     readFile(votingContractPath, 'utf8'),
     readFile(workspaceContractPath, 'utf8'),
@@ -43,8 +44,9 @@ export async function createGraphqlSchema() {
     readFile(ballotContractPath, 'utf8'),
     readFile(ballotHistoryContractPath, 'utf8'),
     readFile(votingResultsContractPath, 'utf8'),
+    readFile(votingCodeExportContractPath, 'utf8'),
   ])
-  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}\n${searchSource}\n${detailsSource}\n${passwordResetSource}\n${votingStateSource}\n${ballotSource}\n${ballotHistorySource}\n${votingResultsSource}`)
+  const schema = buildSchema(`${source}\n${votingSource}\n${workspaceSource}\n${searchSource}\n${detailsSource}\n${passwordResetSource}\n${votingStateSource}\n${ballotSource}\n${ballotHistorySource}\n${votingResultsSource}\n${votingCodeExportSource}`)
   configureDateTimeScalar(schema)
   return schema
 }

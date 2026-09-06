@@ -17,6 +17,7 @@ describe('GraphQL schema contract', () => {
       'eventBallotView',
       'eventBallotHistory',
       'eventVotingResults',
+      'eventVotingCodeExport',
     ])
     expect(Object.keys(schema.getMutationType().getFields())).toContain('addEventParticipant')
     expect(Object.keys(schema.getMutationType().getFields())).toContain('archiveEventParticipantEntries')

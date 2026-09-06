@@ -1075,6 +1075,24 @@ main:focus {
 .ballot-confirm-sheet p { color: var(--color-text-muted); line-height: 1.55; }
 
 .voting-code-dialog .voting-history-action { margin-right: auto; }
+.voting-code-summary { display: flex; gap: 12px; margin: 18px 0; }
+.voting-code-summary > div { min-width: 120px; padding: 14px 18px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+.voting-code-summary strong, .voting-code-summary span { display: block; }
+.voting-code-summary strong { font-size: 1.6rem; }
+.voting-code-summary span { color: var(--color-text-muted); }
+.voting-code-toolbar { display: flex; justify-content: flex-end; margin: 16px 0 10px; }
+.voting-code-table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--color-border); border-radius: 12px; }
+.voting-code-table { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; }
+.voting-code-table th, .voting-code-table td { padding: 11px 14px; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+.voting-code-table tbody tr:last-child td { border-bottom: 0; }
+.voting-code-table th { color: var(--color-text-muted); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+.voting-code-table code { user-select: all; font-size: 1rem; }
+.voting-code-table td:last-child span, .voting-code-table td:last-child small { display: block; }
+.voting-code-table td:last-child small { color: var(--color-text-muted); }
+.code-status { display: inline-block; padding: 3px 9px; border-radius: 999px; font-weight: 700; font-size: .82rem; }
+.code-status-used { color: #86efac; background: rgba(34, 197, 94, .14); }
+.code-status-unused { color: var(--color-text); background: var(--color-surface-raised); }
+.code-status-revoked { color: #fca5a5; background: rgba(239, 68, 68, .14); }
 .voting-history-list { margin-top: 28px; display: grid; gap: 24px; }
 .submitted-ballot {
   min-width: 0;

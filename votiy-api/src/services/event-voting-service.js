@@ -90,9 +90,23 @@ export function createEventVotingService({ eventRepository, eventEntryRepository
       const page = rows.slice(0, first)
       const accounts = accountRepository ? await accountRepository.findByIds(page.flatMap((row) => row.claimedByAccountId ? [row.claimedByAccountId] : [])) : []
       const accountById = new Map(accounts.map((account) => [String(account._id), account]))
+      const counts = await accessCodeRepository.countByStatus(event._id)
       const hasMore = rows.length > first; const nodes = page.map((row) => projectCode(row, null,
         accountById.get(String(row.claimedByAccountId))))
-      return { nodes, nextCursor: hasMore ? String(rows[first - 1]._id) : null }
+      const usedCount = counts.used ?? 0; const availableCount = counts.unused ?? 0; const revokedCount = counts.revoked ?? 0
+      return { nodes, nextCursor: hasMore ? String((Number.parseInt(after ?? '0', 10) || 0) + first) : null,
+        summary: { usedCount, availableCount, revokedCount, totalCount: usedCount + availableCount + revokedCount } }
+    },
+    async exportCodes({ eventId }, viewer) {
+      if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
+      const event = await eventRepository.findById(eventId)
+      if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
+      if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+      const rows = await accessCodeRepository.listAllByEvent(event._id)
+      const accounts = accountRepository ? await accountRepository.findByIds(rows.flatMap((row) =>
+        row.claimedByAccountId ? [row.claimedByAccountId] : [])) : []
+      const accountById = new Map(accounts.map((account) => [String(account._id), account]))
+      return rows.map((row) => projectCode(row, null, accountById.get(String(row.claimedByAccountId))))
     },
     async capability({ eventId }, viewer = null) {
       const event = await eventRepository.findById(eventId)

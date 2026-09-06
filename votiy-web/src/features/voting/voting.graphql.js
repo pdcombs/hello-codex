@@ -59,7 +59,14 @@ export const GENERATE_VOTING_CODES = `mutation GenerateVotingCodes($input: Gener
 }`
 export const EVENT_VOTING_CODES = `query EventVotingCodes($eventId: ID!, $first: Int, $after: String) {
   eventVotingCodes(eventId: $eventId, first: $first, after: $after) { __typename
-    ... on VotingCodeListSuccess { codes { nodes { id code status claimantAccountId claimantDisplayName claimantEmail createdAt usedAt } nextCursor } }
+    ... on VotingCodeListSuccess { codes { nodes { id code status claimantAccountId claimantDisplayName claimantEmail createdAt usedAt }
+      nextCursor summary { usedCount availableCount revokedCount totalCount } } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const EVENT_VOTING_CODE_EXPORT = `query EventVotingCodeExport($eventId: ID!) {
+  eventVotingCodeExport(eventId: $eventId) { __typename
+    ... on VotingCodeExportSuccess { codes { id code status claimantDisplayName claimantEmail createdAt usedAt } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
@@ -173,6 +180,12 @@ export async function loadVotingCodes(eventId, first = 50, after = null) {
   const data = await graphqlRequest({ query: EVENT_VOTING_CODES, variables: { eventId, first, after },
     operationName: 'EventVotingCodes' })
   return unwrapGraphqlResult(data.eventVotingCodes).codes
+}
+
+export async function loadVotingCodeExport(eventId) {
+  const data = await graphqlRequest({ query: EVENT_VOTING_CODE_EXPORT, variables: { eventId },
+    operationName: 'EventVotingCodeExport' })
+  return unwrapGraphqlResult(data.eventVotingCodeExport).codes
 }
 
 export async function setEventVotingStatus(input) {

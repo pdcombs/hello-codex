@@ -32,9 +32,21 @@ export function createVotingAccessCodeRepository(database) {
     countUnusedByEvent(eventId, options = {}) {
       return collection.countDocuments({ eventId: id(eventId), status: 'unused' }, options)
     },
+    async countByStatus(eventId, options = {}) {
+      const rows = await collection.aggregate([
+        { $match: { eventId: id(eventId) } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ], options).toArray()
+      return Object.fromEntries(rows.map((row) => [row._id, row.count]))
+    },
     listByEvent(eventId, { after = null, limit = 50, ...options } = {}) {
-      const filter = { eventId: id(eventId), ...(after ? { _id: { $gt: id(after) } } : {}) }
-      return collection.find(filter, options).sort({ _id: 1 }).limit(Math.min(limit, 100)).toArray()
+      const offset = Math.max(0, Number.parseInt(after ?? '0', 10) || 0)
+      return collection.find({ eventId: id(eventId) }, options)
+        .sort({ status: -1, usedAt: -1, createdAt: -1, _id: -1 }).skip(offset).limit(Math.min(limit, 100)).toArray()
+    },
+    listAllByEvent(eventId, options = {}) {
+      return collection.find({ eventId: id(eventId) }, options)
+        .sort({ status: -1, usedAt: -1, createdAt: -1, _id: -1 }).toArray()
     },
     listByBatch(eventId, batchId, options = {}) {
       return collection.find({ eventId: id(eventId), batchId: id(batchId) }, options).sort({ _id: 1 }).toArray()

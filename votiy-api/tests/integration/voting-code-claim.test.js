@@ -56,6 +56,7 @@ describe('voting code generation and atomic claim', () => {
     const inventory = await service.listCodes({ eventId: String(event._id), first: 1 },
       { account: { _id: votingTestIds.hostId } })
     expect(inventory.nodes).toHaveLength(1); expect(inventory.nextCursor).toBeTruthy()
+    expect(inventory.summary).toEqual({ usedCount: 0, availableCount: 4, revokedCount: 0, totalCount: 4 })
     await expect(service.listCodes({ eventId: String(event._id) }, { account: { _id: votingTestIds.voterId } }))
       .rejects.toMatchObject({ code: 'FORBIDDEN' })
     const stored = await mongo.database.collection('votingAccessCodes').findOne({ _id: new ObjectId(generated[0].id) })
@@ -77,6 +78,12 @@ describe('voting code generation and atomic claim', () => {
       { account: { _id: votingTestIds.hostId } })
     const usedCode = usedInventory.nodes.find(({ id }) => id === generated[0].id)
     expect(usedCode).toMatchObject({ status: 'USED' })
+    expect(usedInventory.summary).toEqual({ usedCount: 1, availableCount: 3, revokedCount: 0, totalCount: 4 })
+    const exported = await service.exportCodes({ eventId: String(event._id) },
+      { account: { _id: votingTestIds.hostId } })
+    expect(exported).toHaveLength(4); expect(exported[0]).toMatchObject({ id: generated[0].id, status: 'USED' })
+    await expect(service.exportCodes({ eventId: String(event._id) },
+      { account: { _id: votingTestIds.voterId } })).rejects.toMatchObject({ code: 'FORBIDDEN' })
     expect(usedCode.claimantEmail).toMatch(/^race-(one|two)@example\.test$/)
     expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[0].code.toUpperCase() }, null,
       { browserMarker: 'case-reuse', correlationId: 'case-reuse' })).access.decision).toBe('CODE_REQUIRED')
