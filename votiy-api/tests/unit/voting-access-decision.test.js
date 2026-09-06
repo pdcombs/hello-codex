@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { canonicalizeVotingCode } from '../../src/domain/voting-access-code.js'
 import { createEventVotingService } from '../../src/services/event-voting-service.js'
 import { openVotingEvent, closedVotingEvent } from '../support/open-close-voting-fixtures.js'
 import { votingCodeFixture, votingTestIds } from '../support/event-voting-rules.js'
@@ -13,13 +14,15 @@ function setup(event = openVotingEvent()) {
   const accessCodeRepository = { findUnused: vi.fn().mockResolvedValue(votingCodeFixture()),
     findUnusedById: vi.fn().mockResolvedValue(votingCodeFixture()), consume: vi.fn().mockResolvedValue({}) }
   const auditRepository = { append: vi.fn() }
+  const digestCode = vi.fn((_eventId, code) => `code:${canonicalizeVotingCode(code)}`)
   const service = createEventVotingService({ eventRepository, eventEntryRepository, ballotRepository,
     idempotencyRepository: {}, auditRepository, accountRepository: { findByIds: vi.fn().mockResolvedValue([]) },
     voterAccessRepository, accessCodeRepository,
-    digestCode: (_eventId, code) => `code:${code}`, digestBrowserMarker: (marker) => `browser:${marker}`,
+    digestCode, digestBrowserMarker: (marker) => `browser:${marker}`,
     generateBrowserMarker: () => 'new-browser-marker', votingCodeEncryptionKey: '0'.repeat(64),
     withTransaction: (operation) => operation({ test: true }), now: () => new Date('2030-01-01T13:00:00Z') })
-  return { service, eventRepository, eventEntryRepository, ballotRepository, voterAccessRepository, accessCodeRepository, auditRepository }
+  return { service, eventRepository, eventEntryRepository, ballotRepository, voterAccessRepository,
+    accessCodeRepository, auditRepository, digestCode }
 }
 
 describe('voting access decisions', () => {
@@ -55,6 +58,7 @@ describe('voting access decisions', () => {
     expect(required.access).toMatchObject({ decision: 'CODE_REQUIRED', requirements: { mayRetryCode: true } })
     const allowed = await test.service.requestAccess({ eventId: String(event._id), accessCode: 'ABC123' })
     expect(allowed.access.allowed).toBe(true); expect(allowed.browserMarker).toBe('new-browser-marker')
+    expect(test.digestCode).toHaveReturnedWith('code:abc123')
     expect(test.accessCodeRepository.consume).not.toHaveBeenCalled()
     expect(test.voterAccessRepository.grant).toHaveBeenCalledWith(expect.objectContaining({
       browserMarkerDigest: 'browser:new-browser-marker', source: 'code' }), expect.anything())

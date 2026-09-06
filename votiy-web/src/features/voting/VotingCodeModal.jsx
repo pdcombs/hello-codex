@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FormField, FormSurface, TextInput } from '../../components/Form.jsx'
 
 export default function VotingCodeModal({ pending = false, error = null, title = 'Enter voting code',
@@ -6,6 +6,7 @@ export default function VotingCodeModal({ pending = false, error = null, title =
   canViewPrevious = false, onViewPrevious = null, onCancel, onSubmit }) {
   const dialogRef = useRef(null)
   const inputRef = useRef(null)
+  const [code, setCode] = useState('')
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -35,7 +36,9 @@ export default function VotingCodeModal({ pending = false, error = null, title =
     <p id="voting-code-description">{description}</p>
     <FormSurface onSubmit={(event) => { event.preventDefault(); onSubmit(new FormData(event.currentTarget).get('code')) }}>
       <FormField label="Voting code" htmlFor="voting-access-code" error={error?.message} fullWidth>
-        <TextInput ref={inputRef} id="voting-access-code" name="code" autoComplete="one-time-code" required />
+        <TextInput ref={inputRef} id="voting-access-code" name="code" value={code}
+          onChange={(event) => setCode(event.target.value.toLowerCase())}
+          autoComplete="one-time-code" autoCapitalize="none" autoCorrect="off" spellCheck={false} required />
       </FormField>
       <div className="dialog-actions">
         {canViewPrevious && <button className="secondary-action voting-history-action" type="button"

@@ -21,14 +21,20 @@ export function generateVotingCode(random = randomBytes) {
   return output.join('')
 }
 
+export function canonicalizeVotingCode(code) {
+  if (typeof code !== 'string') throw new TypeError('Voting code must be a string')
+  return code.trim().toLowerCase()
+}
+
 export function digestVotingCode({ eventId, code, key }) {
-  return createHmac('sha256', keyBuffer(key)).update(`${eventId}:${code}`).digest('hex')
+  return createHmac('sha256', keyBuffer(key)).update(`${eventId}:${canonicalizeVotingCode(code)}`).digest('hex')
 }
 
 export function encryptVotingCode({ code, key, keyVersion = 1, random = randomBytes }) {
+  const canonicalCode = canonicalizeVotingCode(code)
   const iv = random(12)
   const cipher = createCipheriv('aes-256-gcm', keyBuffer(key), iv)
-  const ciphertext = Buffer.concat([cipher.update(code, 'utf8'), cipher.final()])
+  const ciphertext = Buffer.concat([cipher.update(canonicalCode, 'utf8'), cipher.final()])
   return Object.freeze({
     codeCiphertext: ciphertext.toString('base64'),
     codeIv: iv.toString('base64'),

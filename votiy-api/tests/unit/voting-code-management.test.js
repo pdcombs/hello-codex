@@ -10,6 +10,7 @@ describe('voting code management', () => {
     const codes = await generateUniqueVotingCodes({ eventId: 'event-1', quantity: 3, key, exists })
     expect(codes).toHaveLength(3)
     expect(new Set(codes.map(({ code }) => code)).size).toBe(3)
+    expect(codes.every(({ code }) => /^[a-z0-9]{6}$/.test(code))).toBe(true)
     expect(codes.every(({ code, codeCiphertext }) => !codeCiphertext.includes(code))).toBe(true)
     expect(exists).toHaveBeenCalled()
   })

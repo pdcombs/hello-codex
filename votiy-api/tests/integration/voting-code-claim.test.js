@@ -50,6 +50,7 @@ describe('voting code generation and atomic claim', () => {
   it('generates exact encrypted host-only inventory with idempotent replay', async () => {
     expect(generated).toHaveLength(4)
     expect(new Set(generated.map(({ code }) => code)).size).toBe(4)
+    expect(generated.every(({ code }) => /^[a-z0-9]{6}$/.test(code))).toBe(true)
     expect(await service.generateCodes({ eventId: String(event._id), quantity: 4, idempotencyKey: 'batch-1' },
       { account: { _id: votingTestIds.hostId } })).toHaveLength(4)
     const inventory = await service.listCodes({ eventId: String(event._id), first: 1 },
@@ -67,7 +68,7 @@ describe('voting code generation and atomic claim', () => {
         entryIds: [String(votingTestIds.entryId)] }], idempotencyKey: `claim-${keySuffix}` }, null,
     { correlationId: `claim-${keySuffix}` })
     const outcomes = await Promise.allSettled([
-      ballot(generated[0].code, 'race-one@example.test', 'one'),
+      ballot(generated[0].code.toUpperCase(), 'race-one@example.test', 'one'),
       ballot(generated[0].code, 'race-two@example.test', 'two'),
     ])
     expect(outcomes.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
@@ -77,6 +78,8 @@ describe('voting code generation and atomic claim', () => {
     const usedCode = usedInventory.nodes.find(({ id }) => id === generated[0].id)
     expect(usedCode).toMatchObject({ status: 'USED' })
     expect(usedCode.claimantEmail).toMatch(/^race-(one|two)@example\.test$/)
+    expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[0].code.toUpperCase() }, null,
+      { browserMarker: 'case-reuse', correlationId: 'case-reuse' })).access.decision).toBe('CODE_REQUIRED')
     expect((await service.requestAccess({ eventId: String(event._id), accessCode: generated[1].code }, null,
       { browserMarker: 'abandoned-browser', correlationId: 'abandoned-first' })).access.allowed).toBe(true)
     expect((await service.requestAccess({ eventId: String(event._id) }, null,

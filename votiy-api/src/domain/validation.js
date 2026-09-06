@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { canonicalizeVotingCode } from './voting-access-code.js'
 
 const trimmedRequiredText = (maximum, label) => z.string()
   .trim()
@@ -66,7 +67,7 @@ export const setEventVotingStatusInputSchema = z.object({
 
 export const requestVotingAccessInputSchema = z.object({
   eventId: z.string().min(1), accessCode: z.string().trim().min(1).max(128).nullish()
-    .transform((value) => value || null),
+    .transform((value) => value ? canonicalizeVotingCode(value) : null),
 }).strict()
 
 export const submitEventBallotInputSchema = z.object({
@@ -77,7 +78,8 @@ export const submitEventBallotInputSchema = z.object({
     categoryId: z.string().min(1),
     entryIds: z.array(z.string().min(1)).max(5_000),
   }).strict()).max(1_000),
-  accessCode: z.string().trim().min(1).max(128).nullish().transform((value) => value || null),
+  accessCode: z.string().trim().min(1).max(128).nullish()
+    .transform((value) => value ? canonicalizeVotingCode(value) : null),
   provisionalVoter: z.object({ email: emailSchema, phone: z.string().max(32).nullish() }).strict().nullish(),
   idempotencyKey: z.string().min(1).max(200),
   browserMarker: z.string().min(1).max(512).nullish(),

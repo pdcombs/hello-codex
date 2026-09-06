@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  decryptVotingCode, digestVotingCode, encryptVotingCode, generateUniqueVotingCodes, generateVotingCode,
+  canonicalizeVotingCode, decryptVotingCode, digestVotingCode, encryptVotingCode, generateUniqueVotingCodes,
+  generateVotingCode,
 } from '../../src/domain/voting-access-code.js'
 
 const key = 'a'.repeat(64)
@@ -8,6 +9,14 @@ const key = 'a'.repeat(64)
 describe('voting access code security', () => {
   it('generates six lowercase alphanumeric characters', () => {
     expect(generateVotingCode(() => Buffer.from([0, 1, 2, 25, 26, 35]))).toMatch(/^[a-z0-9]{6}$/)
+  })
+
+  it('canonicalizes whitespace and case before protected storage and comparison', () => {
+    expect(canonicalizeVotingCode(' AbC123 ')).toBe('abc123')
+    expect(digestVotingCode({ eventId: 'one', code: 'ABC123', key }))
+      .toBe(digestVotingCode({ eventId: 'one', code: 'abc123', key }))
+    const encrypted = encryptVotingCode({ code: ' ABC123 ', key })
+    expect(decryptVotingCode({ ...encrypted, key })).toBe('abc123')
   })
 
   it('binds digest to event and round-trips authenticated ciphertext', () => {

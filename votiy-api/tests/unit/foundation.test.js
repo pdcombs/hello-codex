@@ -15,6 +15,8 @@ import {
   eventInputSchema,
   participantIdentifierSchema,
   registerInputSchema,
+  requestVotingAccessInputSchema,
+  submitEventBallotInputSchema,
 } from '../../src/domain/validation.js'
 
 describe('environment configuration', () => {
@@ -145,6 +147,13 @@ describe('security helpers', () => {
 })
 
 describe('input validation', () => {
+  it('canonicalizes voting codes at access and ballot boundaries', () => {
+    expect(requestVotingAccessInputSchema.parse({ eventId: 'event-1', accessCode: ' AbC123 ' }).accessCode)
+      .toBe('abc123')
+    expect(submitEventBallotInputSchema.parse({ eventId: 'event-1', expectedRulesVersion: 1,
+      expectedVotingStateVersion: 1, categoryBallots: [], accessCode: ' XYZ789 ', provisionalVoter: null,
+      idempotencyKey: 'request-1', browserMarker: null }).accessCode).toBe('xyz789')
+  })
   it('normalizes valid event text and defaults registration policy', () => {
     const result = eventInputSchema.parse({
       title: '  Team lunch  ',
