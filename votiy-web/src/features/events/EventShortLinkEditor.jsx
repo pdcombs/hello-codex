@@ -25,16 +25,30 @@ export default function EventShortLinkEditor({ event, saver = updateEventShortId
   const message = state.error?.code === 'SHORT_LINK_TAKEN' ? 'This short URL is already taken.'
     : state.error?.code === 'SHORT_LINK_RESERVED' ? 'This short URL is protected and cannot be used.'
       : state.error?.fieldErrors?.find(({ field }) => field === 'shortId')?.message ?? state.error?.message
-  function downloadQrCode() {
+  async function downloadQrCode() {
     setDownloadError(null)
     try {
       if (!qrCanvasRef.current) throw new Error('QR canvas unavailable')
+      const filename = `votiy-${savedShortId.replaceAll(/[^a-zA-Z0-9_-]/g, '-')}-qr.png`
+      const dataUrl = qrCanvasRef.current.toDataURL('image/png')
+      const encodedPng = dataUrl.split(',')[1]
+      if (!encodedPng) throw new Error('QR PNG unavailable')
+      const bytes = Uint8Array.from(atob(encodedPng), (character) => character.charCodeAt(0))
+      const file = new File([bytes], filename, { type: 'image/png' })
+      const shareData = { files: [file], title: `${event.title ?? 'Event'} QR code` }
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        try { await navigator.share(shareData) }
+        catch (error) { if (error.name !== 'AbortError') throw error }
+        return
+      }
+      const objectUrl = URL.createObjectURL(file)
       const link = document.createElement('a')
-      link.download = `votiy-${savedShortId.replaceAll(/[^a-zA-Z0-9_-]/g, '-')}-qr.png`
-      link.href = qrCanvasRef.current.toDataURL('image/png')
+      link.download = filename
+      link.href = objectUrl
       document.body.append(link)
       link.click()
       link.remove()
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000)
     } catch {
       setDownloadError('QR code could not be downloaded. Please try again.')
     }

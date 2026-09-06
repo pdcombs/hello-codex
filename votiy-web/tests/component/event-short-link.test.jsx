@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import EventShortLinkEditor from '../../src/features/events/EventShortLinkEditor.jsx'
 import EventShortLinkRedirect from '../../src/features/events/EventShortLinkRedirect.jsx'
 
@@ -14,6 +14,11 @@ vi.mock('qrcode.react', async () => {
 
 const event = { id: 'event-1', publicId: 'Public_1', shortId: 'Public_1', updatedAt: '2030-01-01T00:00:00Z',
   lifecycleStatus: 'ACTIVE' }
+
+afterEach(() => {
+  delete navigator.canShare
+  delete navigator.share
+})
 
 describe('event short link UI', () => {
   it('lowercases and saves host alias', async () => {
@@ -41,17 +46,12 @@ describe('event short link UI', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('already taken')
   })
 
-  it('renders and downloads saved short URL as PNG', async () => {
+  it('renders and shares saved short URL as named PNG on supported mobile browsers', async () => {
     const toDataURL = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL')
-      .mockReturnValue('data:image/png;base64,qr')
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    const createElement = document.createElement.bind(document)
-    let downloadLink
-    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
-      const element = createElement(tagName, options)
-      if (tagName === 'a') downloadLink = element
-      return element
-    })
+      .mockReturnValue('data:image/png;base64,cXI=')
+    const share = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: vi.fn(() => true) })
+    Object.defineProperty(navigator, 'share', { configurable: true, value: share })
 
     render(<EventShortLinkEditor event={{ ...event, shortId: 'my-event' }} saver={vi.fn()} onSaved={vi.fn()} />)
 
@@ -61,9 +61,23 @@ describe('event short link UI', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Download QR Code' }))
 
     expect(toDataURL).toHaveBeenCalledWith('image/png')
-    expect(downloadLink.download).toBe('votiy-my-event-qr.png')
-    expect(downloadLink.href).toBe('data:image/png;base64,qr')
-    expect(click).toHaveBeenCalledOnce()
+    expect(share).toHaveBeenCalledOnce()
+    const sharedFile = share.mock.calls[0][0].files[0]
+    expect(sharedFile).toBeInstanceOf(File)
+    expect(sharedFile.name).toBe('votiy-my-event-qr.png')
+    expect(sharedFile.type).toBe('image/png')
+  })
+
+  it('treats closing the native share sheet as cancellation, not failure', async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,cXI=')
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: vi.fn(() => true) })
+    Object.defineProperty(navigator, 'share', { configurable: true,
+      value: vi.fn().mockRejectedValue(new DOMException('Cancelled', 'AbortError')) })
+    render(<EventShortLinkEditor event={{ ...event, shortId: 'my-event' }} saver={vi.fn()} onSaved={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Download QR Code' }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('keeps QR bound to saved alias until new alias is saved', async () => {
