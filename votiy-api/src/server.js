@@ -19,6 +19,7 @@ import { createEmailSender } from './email/email-sender.js'
 import { createFakeSender } from './email/fake-sender.js'
 import { createMailpitSender } from './email/mailpit-sender.js'
 import { createProviderSender } from './email/provider-sender.js'
+import { createSmtpSender } from './email/smtp-sender.js'
 import { createLogger } from './observability/logger.js'
 import { runEventSetupMigration } from './migrations/002-event-categories-entries.js'
 import { runEntryDerivedParticipantMigration } from './migrations/003-entry-derived-participants.js'
@@ -95,6 +96,9 @@ const eventAccessService = createEventAccessService({ eventRepository })
 const transport =
   environment.emailTransport === 'provider'
     ? createProviderSender({ endpoint: environment.emailProviderEndpoint, apiKey: environment.emailProviderApiKey })
+    : environment.emailTransport === 'smtp'
+      ? createSmtpSender({ host: environment.smtpHost, port: environment.smtpPort,
+          secure: environment.smtpSecure, username: environment.smtpUsername, password: environment.smtpPassword })
     : environment.emailTransport === 'fake'
       ? createFakeSender({ logger })
       : createMailpitSender({ host: environment.smtpHost, port: environment.smtpPort })

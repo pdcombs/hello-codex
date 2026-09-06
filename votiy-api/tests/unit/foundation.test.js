@@ -60,6 +60,19 @@ describe('environment configuration', () => {
     })
     expect(assertAccountFeatureEnvironment(environment).emailTransport).toBe('fake')
   })
+
+  it('requires credentials for production SMTP and parses secure transport settings', () => {
+    const base = {
+      NODE_ENV: 'production', APP_ORIGIN: 'https://votiy.app', TOKEN_PEPPER: 'a'.repeat(32),
+      VOTING_CODE_ENCRYPTION_KEY: 'a'.repeat(64), EMAIL_TRANSPORT: 'smtp',
+      SMTP_HOST: 'smtp.example.com', SMTP_PORT: '465', SMTP_SECURE: 'true',
+    }
+    expect(() => assertAccountFeatureEnvironment(loadEnvironment(base))).toThrow('SMTP_USERNAME, SMTP_PASSWORD')
+    const environment = assertAccountFeatureEnvironment(loadEnvironment({ ...base,
+      SMTP_USERNAME: 'mailer', SMTP_PASSWORD: 'secret' }))
+    expect(environment).toMatchObject({ emailTransport: 'smtp', smtpHost: 'smtp.example.com',
+      smtpPort: 465, smtpSecure: true, smtpUsername: 'mailer', smtpPassword: 'secret' })
+  })
 })
 
 describe('application errors', () => {

@@ -6,6 +6,7 @@ import { createSessionContext } from '../../src/api/graphql/session-context.js'
 import { createEmailSender, verificationEmail } from '../../src/email/email-sender.js'
 import { createFakeSender } from '../../src/email/fake-sender.js'
 import { createProviderSender } from '../../src/email/provider-sender.js'
+import { createSmtpSender, smtpTransportOptions } from '../../src/email/smtp-sender.js'
 import { createLogger, logRequestCompletion } from '../../src/observability/logger.js'
 import {
   correlationIdFromRequest,
@@ -113,6 +114,17 @@ describe('platform support helpers', () => {
       }),
     })
     await expect(provider.send(email)).resolves.toEqual({ accepted: true })
+  })
+
+  it('configures authenticated Nodemailer SMTP delivery', async () => {
+    const configuration = { host: 'smtp.example.com', port: 465, secure: true,
+      username: 'mailer', password: 'secret' }
+    expect(smtpTransportOptions(configuration)).toEqual({ host: 'smtp.example.com', port: 465,
+      secure: true, auth: { user: 'mailer', pass: 'secret' } })
+    expect(() => smtpTransportOptions({ ...configuration, password: '' })).toThrow('must both be provided')
+    const smtp = createSmtpSender(configuration)
+    expect(smtp.send).toBeTypeOf('function')
+    expect(smtp.verify).toBeTypeOf('function')
   })
 
   it('handles request context and logger redaction', () => {

@@ -1,6 +1,5 @@
-import nodemailer from 'nodemailer'
+import { createSmtpSender } from './smtp-sender.js'
 
 export function createMailpitSender({ host, port }) {
-  const transport = nodemailer.createTransport({ host, port, secure: false })
-  return Object.freeze({ send: (message) => transport.sendMail(message) })
+  return createSmtpSender({ host, port, secure: false })
 }

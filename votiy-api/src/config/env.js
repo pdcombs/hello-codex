@@ -16,6 +16,8 @@ function productionDiagnostics(environment) {
     hasTokenPepper: Boolean(environment.tokenPepper && environment.tokenPepper !== LOCAL_TOKEN_PEPPER),
     hasEmailProviderEndpoint: Boolean(environment.emailProviderEndpoint),
     hasEmailProviderApiKey: Boolean(environment.emailProviderApiKey),
+    hasSmtpUsername: Boolean(environment.smtpUsername),
+    hasSmtpPassword: Boolean(environment.smtpPassword),
     hasVotingCodeEncryptionKey: Boolean(
       environment.votingCodeEncryptionKey
       && environment.votingCodeEncryptionKey !== LOCAL_VOTING_CODE_ENCRYPTION_KEY
@@ -38,10 +40,13 @@ const environmentSchema = z.object({
   TOKEN_PEPPER: z.string().min(32).default(LOCAL_TOKEN_PEPPER),
   VOTING_CODE_ENCRYPTION_KEY: z.string().regex(/^[a-fA-F0-9]{64}$/).default(LOCAL_VOTING_CODE_ENCRYPTION_KEY),
   VERIFICATION_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
-  EMAIL_TRANSPORT: z.enum(['fake', 'mailpit', 'provider']).default('mailpit'),
+  EMAIL_TRANSPORT: z.enum(['fake', 'mailpit', 'provider', 'smtp']).default('mailpit'),
   EMAIL_FROM: z.string().trim().min(3).default('Votiy <no-reply@votiy.local>'),
   SMTP_HOST: z.string().trim().min(1).default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().int().min(1).max(65_535).default(1025),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  SMTP_USERNAME: z.string().default(''),
+  SMTP_PASSWORD: z.string().default(''),
   EMAIL_PROVIDER_ENDPOINT: z.union([z.literal(''), z.string().url()]).default(''),
   EMAIL_PROVIDER_API_KEY: z.string().default(''),
   VERIFICATION_BYPASS_EMAILS: csv,
@@ -58,9 +63,11 @@ export function assertAccountFeatureEnvironment(environment) {
   if (environment.votingCodeEncryptionKey === LOCAL_VOTING_CODE_ENCRYPTION_KEY) {
     problems.push('VOTING_CODE_ENCRYPTION_KEY')
   }
-  if (!['fake', 'provider'].includes(environment.emailTransport)) problems.push('EMAIL_TRANSPORT')
+  if (!['fake', 'provider', 'smtp'].includes(environment.emailTransport)) problems.push('EMAIL_TRANSPORT')
   if (environment.emailTransport === 'provider' && !environment.emailProviderEndpoint) problems.push('EMAIL_PROVIDER_ENDPOINT')
   if (environment.emailTransport === 'provider' && !environment.emailProviderApiKey) problems.push('EMAIL_PROVIDER_API_KEY')
+  if (environment.emailTransport === 'smtp' && !environment.smtpUsername) problems.push('SMTP_USERNAME')
+  if (environment.emailTransport === 'smtp' && !environment.smtpPassword) problems.push('SMTP_PASSWORD')
   if (!environment.appOrigin.startsWith('https://')) problems.push('APP_ORIGIN')
 
   if (problems.length > 0) {
@@ -101,6 +108,9 @@ export function loadEnvironment(source = process.env) {
     emailFrom: result.data.EMAIL_FROM,
     smtpHost: result.data.SMTP_HOST,
     smtpPort: result.data.SMTP_PORT,
+    smtpSecure: result.data.SMTP_SECURE,
+    smtpUsername: result.data.SMTP_USERNAME,
+    smtpPassword: result.data.SMTP_PASSWORD,
     emailProviderEndpoint: result.data.EMAIL_PROVIDER_ENDPOINT,
     emailProviderApiKey: result.data.EMAIL_PROVIDER_API_KEY,
     verificationBypassEmails: result.data.VERIFICATION_BYPASS_EMAILS,

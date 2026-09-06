@@ -124,6 +124,12 @@ For temporary MVP deployments without a real email provider, production can run 
 `EMAIL_TRANSPORT=fake`. In that mode, verification emails are not sent externally; the API logs the
 verification link and token so you can complete the flow manually from Render logs.
 
+Paid Render services can use authenticated SMTP through Nodemailer. Set `EMAIL_TRANSPORT=smtp`,
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and an `EMAIL_FROM` address
+authorized by that SMTP server. Use `SMTP_SECURE=true` for implicit TLS (normally port 465) and
+`SMTP_SECURE=false` for STARTTLS (normally port 587). Keep SMTP credentials in Render secrets. Render
+does not provide a mailbox or SMTP relay; use credentials from the service hosting the sender mailbox.
+
 Render service config lives in [render.yaml](./render.yaml). It now uses `/ready` for health gating and
 declares app origin, cookie name, token TTLs, and log level without committing secret values.
 
