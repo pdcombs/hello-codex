@@ -19,6 +19,7 @@ const successVotingAccess = (access) => ({ __typename: 'VotingAccessDecisionSucc
 const successBallotView = (ballotView) => ({ __typename: 'EventBallotViewSuccess', ballotView })
 const successBallotHistory = (history) => ({ __typename: 'EventBallotHistorySuccess', history })
 const successVotingResults = (results) => ({ __typename: 'EventVotingResultsSuccess', results })
+const successShortLink = (shortLink) => ({ __typename: 'EventShortLinkSuccess', shortLink })
 const legacyRegistration = (participant, source) => ({
   id: participant.accountId, accountId: participant.accountId, email: participant.email, phone: null,
   displayName: participant.displayName, entryCount: participant.entryCount, entries: participant.entries,
@@ -70,6 +71,18 @@ export function createEventResolvers({ eventService, eventRegistrationService, e
         }
         return failure(error, context.correlationId)
       }
+    },
+    async updateEventShortId({ input }, context) {
+      try {
+        const result = await eventService.updateShortId(input, context.viewer, { correlationId: context.correlationId })
+        await auditRepository?.append({ name: 'event.short_link_updated', actorAccountId: context.viewer?.account?._id ?? null,
+          subjectType: 'event', subjectId: result.event.id, outcome: 'success', correlationId: context.correlationId })
+        return successEvent(result.event)
+      } catch (error) { return failure(error, context.correlationId) }
+    },
+    async eventShortLink({ shortId }, context) {
+      try { return successShortLink(await eventService.shortLink({ shortId }, context.viewer)) }
+      catch (error) { return failure(error, context.correlationId) }
     },
     async updateEventVotingRules({ input }, context) {
       try {

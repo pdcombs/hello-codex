@@ -99,6 +99,8 @@ export const collectionDefinitions = Object.freeze({
         additionalProperties: false,
         properties: {
           _id: { bsonType: 'objectId' }, ownerAccountId: { bsonType: 'objectId' }, publicId: { bsonType: 'string' },
+          shortId: { bsonType: 'string', minLength: 1, maxLength: 100 },
+          shortIdNormalized: { bsonType: 'string', minLength: 1, maxLength: 100 },
           title: { bsonType: 'string', minLength: 1, maxLength: 120 },
           description: { ...stringOrNull, maxLength: 2_000 }, location: { ...stringOrNull, maxLength: 300 },
           registrationPolicy: { enum: ['admin_managed', 'open'] }, createdAt: timestamps.createdAt,
@@ -108,6 +110,8 @@ export const collectionDefinitions = Object.freeze({
     },
     indexes: [
       { key: { publicId: 1 }, name: 'event_public_id_unique', unique: true },
+      { key: { shortIdNormalized: 1 }, name: 'event_short_id_unique', unique: true,
+        partialFilterExpression: { shortIdNormalized: { $type: 'string' } } },
       { key: { ownerAccountId: 1, createdAt: -1 }, name: 'event_owner_recent' },
       { key: { lifecycleStatus: 1, visibility: 1, searchGrams: 1 },
         name: 'event_search_eligibility_grams' },

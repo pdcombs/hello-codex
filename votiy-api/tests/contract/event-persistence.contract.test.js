@@ -5,6 +5,7 @@ describe('event persistence contract', () => {
   it('defines event and registration validators plus required indexes', () => {
     expect(collectionDefinitions.events.indexes.map(({ name }) => name)).toEqual([
       'event_public_id_unique',
+      'event_short_id_unique',
       'event_owner_recent',
       'event_search_eligibility_grams',
     ])

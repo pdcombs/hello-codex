@@ -365,6 +365,10 @@ main:focus {
 .voting-access-action p { max-width: 300px; margin: 0; color: #ffb4b4; font-size: 0.82rem; }
 .voting-closed-message { font-weight: 700; color: var(--color-text); }
 
+.short-link-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.short-link-field span { white-space: nowrap; font-weight: 700; }
+.short-link-field input { flex: 1 1 180px; min-width: 0; text-align: left; }
+
 .voting-status-control {
   margin-top: 18px;
   display: grid;

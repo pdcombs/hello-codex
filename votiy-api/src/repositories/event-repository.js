@@ -24,6 +24,15 @@ export function createEventRepository(database) {
     findByPublicId(publicId, options = {}) {
       return collection.findOne({ publicId }, options)
     },
+    findByShortId(shortIdNormalized, options = {}) {
+      return collection.findOne({ shortIdNormalized }, options)
+    },
+    updateShortId(eventId, ownerAccountId, expectedUpdatedAt, shortId, shortIdNormalized, now, options = {}) {
+      return collection.findOneAndUpdate(
+        { _id: id(eventId), ownerAccountId: id(ownerAccountId), lifecycleStatus: 'active', updatedAt: expectedUpdatedAt },
+        { $set: { shortId, shortIdNormalized, updatedAt: now } }, { returnDocument: 'after', ...options },
+      )
+    },
     async search({ terms, first, cursor = null }) {
       const requiredGrams = [...new Set(terms.flatMap((term) => term.length === 2 ? [term] : [term.slice(0, 2), term.slice(0, 3)]))]
       const rows = await collection.find({

@@ -1,0 +1,15 @@
+extend enum ErrorCode { SHORT_LINK_TAKEN SHORT_LINK_RESERVED }
+extend type Event { shortId: String! }
+
+input UpdateEventShortIdInput {
+  eventId: ID!
+  shortId: String!
+  expectedUpdatedAt: DateTime!
+}
+
+type EventShortLink { publicId: String! }
+type EventShortLinkSuccess { shortLink: EventShortLink! }
+union EventShortLinkResult = EventShortLinkSuccess | OperationError
+
+extend type Query { eventShortLink(shortId: String!): EventShortLinkResult! }
+extend type Mutation { updateEventShortId(input: UpdateEventShortIdInput!): EventResult! }

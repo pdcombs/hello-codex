@@ -156,6 +156,10 @@ export const updateEventDetailsInputSchema = z.object({
   expectedUpdatedAt: validTimestamp,
 }).strict()
 
+export const updateEventShortIdInputSchema = z.object({
+  eventId: z.string().min(1), shortId: z.string().trim().min(1).max(50), expectedUpdatedAt: validTimestamp,
+}).strict()
+
 export const updateEventCategoryInputSchema = z.object({
   eventId: z.string().min(1),
   categoryId: z.string().min(1),

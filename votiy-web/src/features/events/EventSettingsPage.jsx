@@ -4,6 +4,7 @@ import { ErrorState, LoadingState } from '../../components/PageStatus.jsx'
 import EventRulesEditor from '../voting/EventRulesEditor.jsx'
 import VotingCodeManager from '../voting/VotingCodeManager.jsx'
 import EventDetailsEditor from './EventDetailsEditor.jsx'
+import EventShortLinkEditor from './EventShortLinkEditor.jsx'
 import { updateEventVotingRules } from '../voting/voting.graphql.js'
 import { archiveEvent, loadEventDetailView, setEventVisibility, updateEventDetails } from './events.graphql.js'
 
@@ -25,6 +26,7 @@ export default function EventSettingsPage({ loader = loadEventDetailView, visibi
     <Link className="secondary-action" to={`/events/${publicId}`} aria-label="Back to event entries">← Back</Link>
     <h1 data-page-title="true" tabIndex="-1">Event settings</h1>
     <EventDetailsEditor event={state.event} saver={updateEventDetails} onSaved={reload} />
+    <EventShortLinkEditor event={state.event} onSaved={reload} />
     <section className="section-card">
       <h2>Event visibility</h2>
       {state.event.lifecycleStatus === 'ARCHIVED' ? <p>This event is archived and read-only.</p> : (

@@ -27,11 +27,11 @@ describe('application routes', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Loading event')
   })
 
-  it('renders placeholder and not-found routes safely', () => {
+  it('renders registration and unknown short-link routes safely', async () => {
     const { rerender } = render(<MemoryRouter initialEntries={['/register']}><AppRoutes /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Create your account' })).toBeVisible()
     rerender(<MemoryRouter key="missing" initialEntries={['/missing']}><AppRoutes /></MemoryRouter>)
-    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Event not found' })).toBeVisible()
   })
 
   it('redirects protected create-event route to sign in for visitors', () => {

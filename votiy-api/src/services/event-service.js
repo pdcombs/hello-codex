@@ -2,7 +2,9 @@ import { ApplicationError, ErrorCode } from '../domain/errors.js'
 import { toEventView } from '../domain/event.js'
 import { toEntryView } from '../domain/event-entry.js'
 import { digestIdempotencyRequest, generateOpaqueToken } from '../domain/security.js'
-import { eventInputSchema, setEventRegistrationPolicyInputSchema, updateEventDetailsInputSchema } from '../domain/validation.js'
+import { eventInputSchema, setEventRegistrationPolicyInputSchema, updateEventDetailsInputSchema,
+  updateEventShortIdInputSchema } from '../domain/validation.js'
+import { normalizeShortId, validateCustomShortId } from '../domain/event-short-link.js'
 import { logGroupedView } from '../observability/logger.js'
 import { deriveEventAnalytics } from '../domain/event-analytics.js'
 
@@ -124,6 +126,38 @@ export function createEventService({
         changedFieldCount: changedFields.length,
         durationMs: Number(process.hrtime.bigint() - startedAt) / 1_000_000 }, 'Event details updated')
       return { event: toEventView(saved, viewer.account._id), changedFields }
+    },
+
+    async updateShortId(rawInput, viewer, { correlationId = 'event-short-link-update' } = {}) {
+      if (!viewer?.account?._id) throw new ApplicationError(ErrorCode.AUTHENTICATION_REQUIRED)
+      const parsed = updateEventShortIdInputSchema.safeParse(rawInput)
+      if (!parsed.success) throw validationError(parsed.error)
+      const validation = validateCustomShortId(parsed.data.shortId)
+      if (!validation.success) {
+        if (validation.reason === 'reserved') throw new ApplicationError(ErrorCode.SHORT_LINK_RESERVED)
+        throw new ApplicationError(ErrorCode.VALIDATION_FAILED, { fieldErrors: [{ field: 'shortId',
+          code: 'invalid_format', message: 'Use 3–50 lowercase letters, numbers, or single hyphens.' }] })
+      }
+      const event = await eventRepository.findById(parsed.data.eventId)
+      if (!event) throw new ApplicationError(ErrorCode.NOT_FOUND)
+      if (String(event.ownerAccountId) !== String(viewer.account._id)) throw new ApplicationError(ErrorCode.FORBIDDEN)
+      if (event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.CONFLICT)
+      try {
+        const saved = await eventRepository.updateShortId(event._id, viewer.account._id, parsed.data.expectedUpdatedAt,
+          validation.shortId, validation.shortId, now())
+        if (!saved) throw new ApplicationError(ErrorCode.CONFLICT)
+        logger?.info({ operation: 'event.short_link_update', outcome: 'success', correlationId }, 'Event short link updated')
+        return { event: toEventView(saved, viewer.account._id) }
+      } catch (error) {
+        if (error?.code === 11000) throw new ApplicationError(ErrorCode.SHORT_LINK_TAKEN)
+        throw error
+      }
+    },
+
+    async shortLink({ shortId }) {
+      const event = await eventRepository.findByShortId(normalizeShortId(shortId))
+      if (!event || event.lifecycleStatus === 'archived') throw new ApplicationError(ErrorCode.NOT_FOUND)
+      return { publicId: event.publicId }
     },
 
     async ownedEvents({ viewer, first = 20, after = null }) {

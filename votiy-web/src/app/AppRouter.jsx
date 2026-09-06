@@ -15,6 +15,7 @@ import OwnerEventParticipantsPage from '../features/events/OwnerEventParticipant
 import OwnerEventResultsPage from '../features/events/OwnerEventResultsPage.jsx'
 import OwnerEventWorkspacePage from '../features/events/OwnerEventWorkspacePage.jsx'
 import EventSettingsPage from '../features/events/EventSettingsPage.jsx'
+import EventShortLinkRedirect from '../features/events/EventShortLinkRedirect.jsx'
 import AppErrorBoundary from './AppErrorBoundary.jsx'
 import EventSearchButton from '../features/search/EventSearchButton.jsx'
 import EventSearchDialog from '../features/search/EventSearchDialog.jsx'
@@ -119,6 +120,7 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/sign-in" element={viewer ? <Navigate to="/" replace /> : <SignInPage />} />
+        <Route path="/:shortId" element={<EventShortLinkRedirect />} />
         <Route path="*" element={<PlaceholderPage title="Page not found" />} />
       </Routes>
     </div>

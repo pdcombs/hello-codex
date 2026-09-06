@@ -28,6 +28,7 @@ import { runEventVotingRulesMigration } from './migrations/005-event-voting-rule
 import { runEventSearchMigration } from './migrations/006-event-search.js'
 import { runManualVotingStateMigration } from './migrations/007-manual-voting-state.js'
 import { runVotingCodeBallotReconciliation } from './migrations/008-reconcile-voting-code-ballots.js'
+import { runEventShortLinkMigration } from './migrations/009-event-short-links.js'
 import { createAccountRepository } from './repositories/account-repository.js'
 import { createAuditEventRepository } from './repositories/audit-event-repository.js'
 import { createEventRegistrationRepository } from './repositories/event-registration-repository.js'
@@ -76,6 +77,7 @@ await runEventVotingRulesMigration({ database: mongo.database, logger })
 await runEventSearchMigration({ database: mongo.database, logger })
 await runManualVotingStateMigration({ database: mongo.database, logger })
 await runVotingCodeBallotReconciliation({ database: mongo.database, logger })
+await runEventShortLinkMigration({ database: mongo.database, logger })
 await enforceEventSetupValidators(mongo.database)
 await runEntryDerivedParticipantMigration({ database: mongo.database, logger })
 

@@ -23,6 +23,8 @@ export const ErrorCode = Object.freeze({
   IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
   UNSUPPORTED_IMAGE_TYPE: 'UNSUPPORTED_IMAGE_TYPE',
   IMAGE_PROCESSING_FAILED: 'IMAGE_PROCESSING_FAILED',
+  SHORT_LINK_TAKEN: 'SHORT_LINK_TAKEN',
+  SHORT_LINK_RESERVED: 'SHORT_LINK_RESERVED',
 })
 
 const SAFE_MESSAGES = Object.freeze({
@@ -50,6 +52,8 @@ const SAFE_MESSAGES = Object.freeze({
   [ErrorCode.IMAGE_TOO_LARGE]: 'The image must be 10 MiB or smaller.',
   [ErrorCode.UNSUPPORTED_IMAGE_TYPE]: 'Choose a JPEG, PNG, or WebP image.',
   [ErrorCode.IMAGE_PROCESSING_FAILED]: 'The image could not be safely compressed.',
+  [ErrorCode.SHORT_LINK_TAKEN]: 'This short URL is already taken.',
+  [ErrorCode.SHORT_LINK_RESERVED]: 'This short URL is protected and cannot be used.',
 })
 
 export class ApplicationError extends Error {

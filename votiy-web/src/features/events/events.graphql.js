@@ -5,7 +5,7 @@ const VOTING_FIELDS = `voting { votingStatus canVote reasonCode remainingBallots
   status version opensAt closesAt accessPolicy unrestrictedRepeatPolicy maximumBallotsPerAccount
   codeRequiresCompletedAccount updatedAt defaultCategoryRule { method minimumSelections maximumSelections }
 } }`
-const EVENT_FIELDS = `id publicId title description location registrationPolicy isOwner createdAt updatedAt
+const EVENT_FIELDS = `id publicId shortId title description location registrationPolicy isOwner createdAt updatedAt
   votingState { status version openedAt closedAt updatedAt }
   photo { url revision width height updatedAt }
   analytics { categoryCount participantCount entryCount }
@@ -80,6 +80,18 @@ export const UPDATE_EVENT_DETAILS = `mutation UpdateEventDetails($input: UpdateE
   updateEventDetails(input: $input) {
     __typename
     ... on EventSuccess { event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const UPDATE_EVENT_SHORT_ID = `mutation UpdateEventShortId($input: UpdateEventShortIdInput!) {
+  updateEventShortId(input: $input) { __typename
+    ... on EventSuccess { event { ${EVENT_FIELDS} visibility lifecycleStatus detailAccess archivedAt } }
+    ... on OperationError { ${ERROR_FIELDS} }
+  }
+}`
+export const EVENT_SHORT_LINK = `query EventShortLink($shortId: String!) {
+  eventShortLink(shortId: $shortId) { __typename
+    ... on EventShortLinkSuccess { shortLink { publicId } }
     ... on OperationError { ${ERROR_FIELDS} }
   }
 }`
@@ -256,6 +268,16 @@ export async function updateEventDetails(input) {
   const data = await graphqlRequest({ query: UPDATE_EVENT_DETAILS, variables: { input },
     operationName: 'UpdateEventDetails' })
   return unwrapGraphqlResult(data.updateEventDetails)
+}
+
+export async function updateEventShortId(input) {
+  const data = await graphqlRequest({ query: UPDATE_EVENT_SHORT_ID, variables: { input }, operationName: 'UpdateEventShortId' })
+  return unwrapGraphqlResult(data.updateEventShortId)
+}
+
+export async function loadEventShortLink(shortId) {
+  const data = await graphqlRequest({ query: EVENT_SHORT_LINK, variables: { shortId }, operationName: 'EventShortLink' })
+  return unwrapGraphqlResult(data.eventShortLink).shortLink
 }
 
 export async function setEventRegistrationPolicy(input) {
