@@ -2,16 +2,18 @@ import { Link } from 'react-router-dom'
 import EventAnalytics from './EventAnalytics.jsx'
 import EventPhoto from './EventPhoto.jsx'
 import EventVotingSummary from './EventVotingSummary.jsx'
-import VotingAccessButton from '../voting/VotingAccessButton.jsx'
+import VotingAccessButton, { VotingOpenBanner } from '../voting/VotingAccessButton.jsx'
+import useVotingAccessController from '../voting/useVotingAccessController.js'
 
 export default function EventWorkspaceSummary({ event, onChanged, onAdd }) {
+  const votingAccess = useVotingAccessController(event)
   return <section className="event-workspace-summary" aria-labelledby="event-workspace-title">
-    {event.votingState?.status === 'OPEN' && <div className="voting-open-banner" role="status">Voting is now open</div>}
+    {event.votingState?.status === 'OPEN' && <VotingOpenBanner controller={votingAccess} />}
     <div className="event-workspace-topline">
       <EventPhoto event={event} owner={event.isOwner} onChanged={onChanged} />
       <EventAnalytics analytics={event.analytics} />
       {(event.isOwner || event.votingState?.status === 'OPEN') && <div className="event-workspace-actions">
-        {event.votingState?.status === 'OPEN' && <VotingAccessButton event={event} />}
+        {event.votingState?.status === 'OPEN' && <VotingAccessButton event={event} controller={votingAccess} />}
         {event.isOwner && <><button className="primary-action" type="button" onClick={onAdd}>Add</button>
           <Link className="settings-action" to={`/events/${event.publicId}/settings`}
             aria-label="Event settings">⚙</Link></>}

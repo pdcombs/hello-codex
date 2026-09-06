@@ -342,6 +342,9 @@ main:focus {
 }
 
 .voting-open-banner {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
   width: 100%;
   padding: 18px 22px;
   border: 1px solid rgba(98, 198, 242, 0.58);
@@ -353,6 +356,10 @@ main:focus {
   font-weight: 750;
   text-align: center;
 }
+
+.voting-open-banner:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.voting-open-banner:hover:not(:disabled) { filter: brightness(1.08); }
+.voting-open-banner:disabled { cursor: wait; opacity: .78; }
 
 .voting-access-action { display: grid; justify-items: end; gap: 6px; }
 .voting-access-action p { max-width: 300px; margin: 0; color: #ffb4b4; font-size: 0.82rem; }
