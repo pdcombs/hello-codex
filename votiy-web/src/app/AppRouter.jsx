@@ -22,6 +22,9 @@ import EventSearchDialog from '../features/search/EventSearchDialog.jsx'
 import useEventSearch from '../features/search/useEventSearch.js'
 import VotingPage from '../features/voting/VotingPage.jsx'
 import VotingHistoryPage from '../features/voting/VotingHistoryPage.jsx'
+import AnalyticsObserver from '../analytics/AnalyticsObserver.jsx'
+import { AnalyticsConsentProvider, useAnalyticsConsent } from '../analytics/AnalyticsConsent.jsx'
+import PrivacyPage from '../features/privacy/PrivacyPage.jsx'
 
 function SiteHeader({ viewer }) {
   const search = useEventSearch()
@@ -45,6 +48,19 @@ function SiteHeader({ viewer }) {
       </header>
       <EventSearchDialog controller={search} triggerRef={searchButtonRef} />
     </>
+  )
+}
+
+function SiteFooter() {
+  const { openPreferences } = useAnalyticsConsent()
+  return (
+    <footer className="site-footer">
+      <span>© {new Date().getFullYear()} Votiy</span>
+      <nav aria-label="Privacy navigation">
+        <Link to="/privacy">Privacy</Link>
+        <button type="button" onClick={openPreferences}>Analytics preferences</button>
+      </nav>
+    </footer>
   )
 }
 
@@ -120,9 +136,11 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/sign-in" element={viewer ? <Navigate to="/" replace /> : <SignInPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/:shortId" element={<EventShortLinkRedirect />} />
         <Route path="*" element={<PlaceholderPage title="Page not found" />} />
       </Routes>
+      <SiteFooter />
     </div>
   )
 }
@@ -130,7 +148,7 @@ export function AppRoutes({ viewer = null, authLoading = false, onVerified }) {
 function AuthenticatedRoutes() {
   const { viewer, setViewer, loading } = useAuth()
   useRouteFocus()
-  return <AppRoutes viewer={viewer} authLoading={loading} onVerified={setViewer} />
+  return <><AnalyticsObserver /><AppRoutes viewer={viewer} authLoading={loading} onVerified={setViewer} /></>
 }
 
 function useRouteFocus() {
@@ -148,9 +166,11 @@ export default function AppRouter({ viewer = null }) {
   return (
     <AppErrorBoundary>
       <BrowserRouter>
-        <AuthProvider initialViewer={viewer}>
-          <AuthenticatedRoutes />
-        </AuthProvider>
+        <AnalyticsConsentProvider>
+          <AuthProvider initialViewer={viewer}>
+            <AuthenticatedRoutes />
+          </AuthProvider>
+        </AnalyticsConsentProvider>
       </BrowserRouter>
     </AppErrorBoundary>
   )

@@ -15,7 +15,7 @@ const contentTypes = {
 export function securityHeaders(contentType) {
   return {
     'Content-Type': contentType,
-    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self'; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://*.google-analytics.com; img-src 'self' data: https://www.google-analytics.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
     'Referrer-Policy': 'no-referrer',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',

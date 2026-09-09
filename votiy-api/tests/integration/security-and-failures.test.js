@@ -114,6 +114,8 @@ describe('security and failure behavior', () => {
     expect(res.statusCode).toBe(404)
     expect(res.body).toContain('Not found')
     expect(res.headers['Content-Security-Policy']).toContain("default-src 'self'")
+    expect(res.headers['Content-Security-Policy']).toContain('https://www.googletagmanager.com')
+    expect(res.headers['Content-Security-Policy']).toContain('https://www.google-analytics.com')
   })
 
   it('redacts secrets from structured logs', () => {
