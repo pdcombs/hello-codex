@@ -14,8 +14,8 @@ const SAFE_ACTIONS = new Map([
   ['search events', 'Search events'], ['sign out', 'Sign out'], ['open voting', 'Open voting'],
   ['close voting', 'Close voting'], ['vote', 'Vote'], ['submit vote', 'Submit vote'],
   ['save event details', 'Save event details'], ['save short url', 'Save short URL'],
-  ['download qr code', 'Download QR code'], ['accept analytics', 'Accept analytics'],
-  ['decline analytics', 'Decline analytics'], ['analytics preferences', 'Analytics preferences'],
+  ['download qr code', 'Download QR code'], ['accept', 'Accept'],
+  ['decline', 'Decline'], ['analytics preferences', 'Analytics preferences'],
   ['refresh page', 'Refresh page'], ['close', 'Close'], ['cancel', 'Cancel'], ['continue', 'Continue'],
   ['sign in', 'Sign in'], ['create account', 'Create account'], ['save', 'Save'], ['delete', 'Delete'],
 ])

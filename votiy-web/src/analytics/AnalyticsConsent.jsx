@@ -20,13 +20,11 @@ export function AnalyticsConsentProvider({ children }) {
     <ConsentContext.Provider value={{ preference, openPreferences: () => setOpen(true) }}>
       {children}
       {open && (
-        <section className="analytics-consent" role="dialog" aria-modal="false" aria-labelledby="analytics-consent-title">
-          <h2 id="analytics-consent-title">Analytics preferences</h2>
-          <p>Votiy uses Google Analytics to understand visits, page use, button actions, and general errors. We never send voting codes, ballots, form entries, account details, or event identifiers.</p>
-          <p>Cookieless measurements may be sent before your choice. Accepting allows analytics storage; declining keeps it disabled.</p>
+        <section className="analytics-consent" role="dialog" aria-modal="false" aria-label="Cookie preferences">
+          <p>We use cookies to improve your experience on our site, analyze site traffic, and personalize content. By clicking Accept you consent to our use of cookies.</p>
           <div className="analytics-consent-actions">
-            <button type="button" onClick={() => choose('accepted')}>Accept analytics</button>
-            <button type="button" onClick={() => choose('declined')}>Decline analytics</button>
+            <button type="button" className="primary-action" onClick={() => choose('accepted')}>Accept</button>
+            <button type="button" onClick={() => choose('declined')}>Decline</button>
           </div>
         </section>
       )}

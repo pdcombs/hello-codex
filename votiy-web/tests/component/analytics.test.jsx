@@ -85,9 +85,9 @@ describe('analytics consent UI', () => {
   it('offers equal accept and decline choices and remembers a choice', async () => {
     const user = userEvent.setup()
     render(<AnalyticsConsentProvider><p>Application</p></AnalyticsConsentProvider>)
-    expect(screen.getByRole('dialog', { name: 'Analytics preferences' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Accept analytics' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Decline analytics' }))
+    expect(screen.getByRole('dialog', { name: 'Cookie preferences' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Accept' })).toHaveClass('primary-action')
+    await user.click(screen.getByRole('button', { name: 'Decline' }))
     expect(localStorage.getItem(CONSENT_KEY)).toBe('declined')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
