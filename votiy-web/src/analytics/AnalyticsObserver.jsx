@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { analytics, classifyAlert, safeButtonAction } from './analytics.js'
+import { ANALYTICS_EVENTS, buttonEventName, errorEventName } from './analytics-events.js'
 
 export default function AnalyticsObserver() {
   const location = useLocation()
@@ -9,21 +10,25 @@ export default function AnalyticsObserver() {
   useEffect(() => {
     if (lastPath.current === location.pathname) return
     lastPath.current = location.pathname
-    analytics.send('page_view', { pathname: location.pathname })
+    analytics.send(ANALYTICS_EVENTS.PAGE_VIEW, { pathname: location.pathname })
   }, [location.pathname])
 
   useEffect(() => {
     const recordAlert = (node) => {
       if (!(node instanceof Element)) return
       const alerts = node.matches('[role="alert"]') ? [node] : node.querySelectorAll('[role="alert"]')
-      alerts.forEach((alert) => analytics.send('unhappy_path', { pathname: globalThis.location.pathname, errorName: classifyAlert(alert) }))
+      alerts.forEach((alert) => {
+        const errorName = classifyAlert(alert)
+        analytics.send(errorEventName(errorName), { pathname: globalThis.location.pathname, errorName })
+      })
     }
     const onClick = (event) => {
       const button = event.target?.closest?.('button')
       if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true') return
-      analytics.send('button_click', { pathname: globalThis.location.pathname, actionName: safeButtonAction(button) })
+      const actionName = safeButtonAction(button)
+      analytics.send(buttonEventName(actionName), { pathname: globalThis.location.pathname, actionName })
     }
-    const onUnexpected = () => analytics.send('unhappy_path', { pathname: globalThis.location.pathname, errorName: 'Unexpected application error' })
+    const onUnexpected = () => analytics.send(ANALYTICS_EVENTS.ERROR_UNEXPECTED_APPLICATION, { pathname: globalThis.location.pathname, errorName: 'Unexpected application error' })
     document.addEventListener('click', onClick)
     const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(recordAlert)))
     observer.observe(document.body, { childList: true, subtree: true })

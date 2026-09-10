@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { analytics } from '../analytics/analytics.js'
+import { ANALYTICS_EVENTS } from '../analytics/analytics-events.js'
 
 export default class AppErrorBoundary extends Component {
   state = { error: null }
@@ -9,7 +10,7 @@ export default class AppErrorBoundary extends Component {
   }
 
   componentDidCatch(error, details) {
-    analytics.send('unhappy_path', { pathname: globalThis.location?.pathname, errorName: 'Unexpected application error' })
+    analytics.send(ANALYTICS_EVENTS.ERROR_UNEXPECTED_APPLICATION, { pathname: globalThis.location?.pathname, errorName: 'Unexpected application error' })
     this.props.onError?.(error, details)
   }
 

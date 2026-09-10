@@ -10,6 +10,13 @@ import {
   readConsent,
   safeButtonAction,
 } from '../../src/analytics/analytics.js'
+import {
+  ANALYTICS_EVENTS,
+  BUTTON_EVENTS_BY_ACTION,
+  ERROR_EVENTS_BY_NAME,
+  buttonEventName,
+  errorEventName,
+} from '../../src/analytics/analytics-events.js'
 
 beforeEach(() => {
   const values = new Map()
@@ -45,6 +52,20 @@ describe('analytics privacy boundary', () => {
     expect(safeButtonAction(safe)).toBe('Open voting')
     safe.textContent = 'Delete Pat@example.com from Secret Event'
     expect(safeButtonAction(safe)).toBe('Other button')
+    expect(buttonEventName('Open voting')).toBe('click_open_voting_button')
+    expect(buttonEventName('Private dynamic label')).toBe('click_other_button')
+  })
+
+  it('keeps every provider event name unique and provider-safe', () => {
+    const names = Object.values(ANALYTICS_EVENTS)
+    expect(new Set(names).size).toBe(names.length)
+    names.forEach((name) => {
+      expect(name).toMatch(/^[a-z][a-z0-9_]{0,39}$/)
+      expect(name.length).toBeLessThanOrEqual(40)
+    })
+    expect(BUTTON_EVENTS_BY_ACTION.get('Vote')).toBe(ANALYTICS_EVENTS.CLICK_VOTE_BUTTON)
+    expect(ERROR_EVENTS_BY_NAME.get('Service unavailable')).toBe(ANALYTICS_EVENTS.ERROR_SERVICE_UNAVAILABLE)
+    expect(errorEventName('Raw private error')).toBe(ANALYTICS_EVENTS.ERROR_ACTION_NOT_COMPLETED)
   })
 
   it('orders denied consent before config and sends only normalized fields', () => {
@@ -54,17 +75,17 @@ describe('analytics privacy boundary', () => {
     const documentRef = { createElement: () => ({ dataset: {} }), head: { appendChild: (node) => appended.push(node) } }
     const client = createAnalytics({ windowRef, documentRef })
     client.initialize('declined')
-    client.send('page_view', { pathname: '/events/private-id/results?code=SECRET', ignored: 'Pat@example.com' })
-    client.send('button_click', { pathname: '/events/private-id/results', actionName: 'Vote', ignored: 'SECRET' })
-    client.send('unhappy_path', { pathname: '/events/private-id/results', errorName: 'Service unavailable', ignored: 'Pat@example.com' })
+    client.send(ANALYTICS_EVENTS.PAGE_VIEW, { pathname: '/events/private-id/results?code=SECRET', ignored: 'Pat@example.com' })
+    client.send(ANALYTICS_EVENTS.CLICK_VOTE_BUTTON, { pathname: '/events/private-id/results', actionName: 'Vote', ignored: 'SECRET' })
+    client.send(ANALYTICS_EVENTS.ERROR_SERVICE_UNAVAILABLE, { pathname: '/events/private-id/results', errorName: 'Service unavailable', ignored: 'Pat@example.com' })
     expect(calls[0][0]).toBe('consent')
     expect(calls[0][2].analytics_storage).toBe('denied')
     expect(calls.find((call) => call[0] === 'config')[2].send_page_view).toBe(false)
     const events = calls.filter((call) => call[0] === 'event')
     expect(events).toEqual([
       ['event', 'page_view', { page_route: '/events/:eventId/results', page_title: 'Event results' }],
-      ['event', 'button_click', { page_route: '/events/:eventId/results', action_name: 'Vote' }],
-      ['event', 'unhappy_path', { page_route: '/events/:eventId/results', error_name: 'Service unavailable', operation_name: 'Event action' }],
+      ['event', 'click_vote_button', { page_route: '/events/:eventId/results', action_name: 'Vote' }],
+      ['event', 'error_service_unavailable', { page_route: '/events/:eventId/results', error_name: 'Service unavailable', operation_name: 'Event action' }],
     ])
     expect(JSON.stringify(calls)).not.toContain('private-id')
     expect(JSON.stringify(calls)).not.toContain('SECRET')
@@ -76,9 +97,19 @@ describe('analytics privacy boundary', () => {
     const gtag = vi.fn()
     const client = createAnalytics({ windowRef: { location: { hostname: 'localhost' }, gtag }, documentRef: { createElement: vi.fn(), head: { appendChild } } })
     expect(client.initialize('accepted')).toBe(false)
-    client.send('button_click', { pathname: '/', actionName: 'Vote' })
+    client.send(ANALYTICS_EVENTS.CLICK_VOTE_BUTTON, { pathname: '/', actionName: 'Vote' })
     expect(gtag).not.toHaveBeenCalled()
     expect(appendChild).not.toHaveBeenCalled()
+  })
+
+  it('rejects event names absent from the centralized catalog', () => {
+    const gtag = vi.fn()
+    const windowRef = { location: { hostname: 'votiy.com' }, gtag, localStorage: { getItem: () => 'declined' } }
+    const documentRef = { createElement: () => ({ dataset: {} }), head: { appendChild: vi.fn() } }
+    const client = createAnalytics({ windowRef, documentRef })
+    client.initialize('declined')
+    expect(client.send('inline_private_event', { pathname: '/' })).toBe(false)
+    expect(gtag).not.toHaveBeenCalledWith('event', expect.anything(), expect.anything())
   })
 
   it('handles corrupt or unavailable preference storage', () => {

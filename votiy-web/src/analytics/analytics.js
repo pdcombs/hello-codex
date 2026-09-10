@@ -94,24 +94,26 @@ export function createAnalytics({ windowRef = globalThis.window, documentRef = g
   }
 
   function send(eventName, values) {
-    if (!enabled) return
+    if (!enabled || !isAnalyticsEventName(eventName)) return false
     if (!initialized) initialize(readConsent(windowRef?.localStorage))
     const route = normalizeRoute(values?.pathname).route
     const params = { page_route: route }
-    if (eventName === 'page_view') params.page_title = normalizeRoute(values?.pathname).title
-    if (eventName === 'button_click') params.action_name = values.actionName
-    if (eventName === 'unhappy_path') {
+    if (eventName === ANALYTICS_EVENTS.PAGE_VIEW) params.page_title = normalizeRoute(values?.pathname).title
+    if (isButtonEventName(eventName)) params.action_name = values.actionName
+    if (isErrorEventName(eventName)) {
       params.error_name = values.errorName
       params.operation_name = operationForRoute(route)
     }
     const signature = JSON.stringify([eventName, params])
     const now = Date.now()
-    if (eventName !== 'button_click' && now - (recent.get(signature) ?? 0) < 750) return
+    if (!isButtonEventName(eventName) && now - (recent.get(signature) ?? 0) < 750) return false
     recent.set(signature, now)
     gtag('event', eventName, params)
+    return true
   }
 
   return { enabled, initialize, updateConsent, send }
 }
 
 export const analytics = createAnalytics()
+import { ANALYTICS_EVENTS, isAnalyticsEventName, isButtonEventName, isErrorEventName } from './analytics-events.js'
