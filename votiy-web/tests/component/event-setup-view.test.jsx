@@ -12,11 +12,12 @@ const categories = [
 ]
 
 describe('grouped event setup view', () => {
-  it('renders grouped entry ownership, empty categories, and no contact data', () => {
+  it('renders grouped entries without owner attribution or contact data', () => {
     render(<EventCategoryList categories={categories} />)
     expect(screen.getByRole('heading', { name: 'Desserts' })).toBeVisible()
     expect(screen.getByText('Apple Pie')).toBeVisible()
-    expect(screen.getByText('Owned by Peyton')).toBeVisible()
+    expect(screen.queryByText('Owned by Peyton')).not.toBeInTheDocument()
+    expect(document.body.textContent).not.toContain('Owned by')
     expect(screen.getByText('No entries in this category.')).toBeVisible()
     expect(document.body.textContent).not.toMatch(/@|\+1555/)
   })

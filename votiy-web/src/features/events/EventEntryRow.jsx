@@ -13,7 +13,7 @@ export default function EventEntryRow({ entry, onRemove, iconOnly = false, edita
           htmlFor={`entry-title-${entry.id}`} error={error} fullWidth>
           <TextInput id={`entry-title-${entry.id}`} value={value}
             onChange={(event) => onTitleChange?.(event.target.value)} />
-        </FormField> : <><strong>{entry.title}</strong><span>Owned by {entry.ownerDisplayName}</span></>}
+        </FormField> : <strong>{entry.title}</strong>}
       </div>
       {onRemove && <button className={iconOnly ? 'entry-delete-action' : 'secondary-action'} type="button"
         onClick={confirmRemoval} aria-label={iconOnly ? `Delete ${entry.title}` : undefined} title="Delete entry">
