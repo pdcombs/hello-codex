@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <h2>What we do not send</h2>
       <p>We do not send names, email addresses, phone numbers, account or event identifiers, event or entry titles, voting codes, ballots, form contents, precise location, raw errors, request bodies, or stack traces to analytics.</p>
       <h2>Purpose, retention, and control</h2>
-      <p>We use aggregate analytics to improve site navigation and understand feature use and failures. Google Analytics retention follows the site owner’s property configuration. You can change your analytics preference from the footer at any time without losing access to Votiy.</p>
+      <p>We use aggregate analytics to improve site navigation and understand feature use and failures. When analytics storage is declined, event counts remain available through cookieless measurement, but visitor and session totals may be modeled or less precise. Google Analytics retention follows the site owner’s property configuration. You can change your analytics preference from the footer at any time without losing access to Votiy.</p>
       <h2>Contact</h2>
       <p>Privacy contact details will be added before this draft receives final legal approval.</p>
     </main>

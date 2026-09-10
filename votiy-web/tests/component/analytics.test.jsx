@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AnalyticsConsentProvider } from '../../src/analytics/AnalyticsConsent.jsx'
+import { AnalyticsConsentProvider, useAnalyticsConsent } from '../../src/analytics/AnalyticsConsent.jsx'
 import {
   CONSENT_KEY,
   createAnalytics,
@@ -55,11 +55,17 @@ describe('analytics privacy boundary', () => {
     const client = createAnalytics({ windowRef, documentRef })
     client.initialize('declined')
     client.send('page_view', { pathname: '/events/private-id/results?code=SECRET', ignored: 'Pat@example.com' })
+    client.send('button_click', { pathname: '/events/private-id/results', actionName: 'Vote', ignored: 'SECRET' })
+    client.send('unhappy_path', { pathname: '/events/private-id/results', errorName: 'Service unavailable', ignored: 'Pat@example.com' })
     expect(calls[0][0]).toBe('consent')
     expect(calls[0][2].analytics_storage).toBe('denied')
     expect(calls.find((call) => call[0] === 'config')[2].send_page_view).toBe(false)
-    const event = calls.find((call) => call[0] === 'event')
-    expect(event).toEqual(['event', 'page_view', { page_route: '/events/:eventId/results', page_title: 'Event results' }])
+    const events = calls.filter((call) => call[0] === 'event')
+    expect(events).toEqual([
+      ['event', 'page_view', { page_route: '/events/:eventId/results', page_title: 'Event results' }],
+      ['event', 'button_click', { page_route: '/events/:eventId/results', action_name: 'Vote' }],
+      ['event', 'unhappy_path', { page_route: '/events/:eventId/results', error_name: 'Service unavailable', operation_name: 'Event action' }],
+    ])
     expect(JSON.stringify(calls)).not.toContain('private-id')
     expect(JSON.stringify(calls)).not.toContain('SECRET')
     expect(appended[0].src).toContain('G-3KJEB4ZGRH')
@@ -90,5 +96,20 @@ describe('analytics consent UI', () => {
     await user.click(screen.getByRole('button', { name: 'Decline' }))
     expect(localStorage.getItem(CONSENT_KEY)).toBe('declined')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('honors saved choices and lets visitors reopen preferences', async () => {
+    localStorage.setItem(CONSENT_KEY, 'accepted')
+    const user = userEvent.setup()
+    function PreferenceControl() {
+      const { preference, openPreferences } = useAnalyticsConsent()
+      return <><span>{preference}</span><button onClick={openPreferences}>Analytics preferences</button></>
+    }
+    render(<AnalyticsConsentProvider><PreferenceControl /></AnalyticsConsentProvider>)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByText('accepted')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Analytics preferences' }))
+    await user.click(screen.getByRole('button', { name: 'Decline' }))
+    expect(localStorage.getItem(CONSENT_KEY)).toBe('declined')
   })
 })
